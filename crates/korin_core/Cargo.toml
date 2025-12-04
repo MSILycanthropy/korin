@@ -1,0 +1,11 @@
+[package]
+name = "korin_core"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+ratatui.workspace = true
+korin_layout.workspace = true
+
+[lints]
+workspace = true

@@ -411,6 +411,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "korin_core"
+version = "0.1.0"
+dependencies = [
+ "korin_layout",
+ "ratatui",
+]
+
+[[package]]
 name = "korin_focus"
 version = "0.1.0"
 
