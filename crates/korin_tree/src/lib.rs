@@ -11,7 +11,7 @@ pub struct Node<T> {
 }
 
 impl<T> Node<T> {
-    fn from(data: T) -> Self {
+    const fn from(data: T) -> Self {
         Self {
             data,
             parent: None,
@@ -26,6 +26,7 @@ pub struct Tree<T> {
 }
 
 impl<T> Tree<T> {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             nodes: SlotMap::with_key(),
@@ -33,7 +34,8 @@ impl<T> Tree<T> {
         }
     }
 
-    pub fn root(&self) -> Option<NodeId> {
+    #[must_use]
+    pub const fn root(&self) -> Option<NodeId> {
         self.root
     }
 
@@ -71,13 +73,14 @@ impl<T> Tree<T> {
 
         let removed = self.nodes.remove(id).map(|n| n.data);
 
-        descendants.into_iter().for_each(|d| {
+        for d in descendants {
             self.nodes.remove(d);
-        });
+        }
 
         removed
     }
 
+    #[must_use]
     pub fn get(&self, id: NodeId) -> Option<&Node<T>> {
         self.nodes.get(id)
     }
@@ -86,10 +89,12 @@ impl<T> Tree<T> {
         self.nodes.get_mut(id)
     }
 
+    #[must_use]
     pub fn contains(&self, id: NodeId) -> bool {
         self.nodes.contains_key(id)
     }
 
+    #[must_use]
     pub fn descendants(&self, id: NodeId) -> Vec<NodeId> {
         let mut result = vec![];
         let mut stack = vec![id];
@@ -104,6 +109,7 @@ impl<T> Tree<T> {
         result
     }
 
+    #[must_use]
     pub fn ancestors(&self, id: NodeId) -> Vec<NodeId> {
         let mut result = Vec::new();
         let mut current = id;
@@ -131,7 +137,7 @@ impl<T> Tree<T> {
                 f(current, &node.data);
 
                 for &child in node.children.iter().rev() {
-                    stack.push(child)
+                    stack.push(child);
                 }
             }
         }
@@ -148,7 +154,7 @@ impl<T> Tree<T> {
                 f(current, &mut node.data);
 
                 for &child in node.children.iter().rev() {
-                    stack.push(child)
+                    stack.push(child);
                 }
             }
         }
