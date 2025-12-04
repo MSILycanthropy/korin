@@ -224,9 +224,6 @@ dependencies = [
 [[package]]
 name = "korin_focus"
 version = "0.1.0"
-dependencies = [
- "korin_tree",
-]
 
 [[package]]
 name = "korin_layout"
