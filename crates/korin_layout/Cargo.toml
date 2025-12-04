@@ -5,6 +5,7 @@ edition.workspace = true
 
 [dependencies]
 taffy.workspace = true
+ratatui.workspace = true
 
 [lints]
 workspace = true

@@ -1,20 +1,22 @@
-mod style;
+mod geometry;
+mod layout;
 
-pub use style::LayoutStyle;
+pub use geometry::{Point, Rect, Size};
+pub use layout::Layout;
 use taffy::LengthPercentage;
 
 #[must_use]
-pub fn layout() -> LayoutStyle {
-    LayoutStyle::new()
+pub fn layout() -> Layout {
+    Layout::new()
 }
 
 #[must_use]
-pub fn row() -> LayoutStyle {
+pub fn row() -> Layout {
     layout().row()
 }
 
 #[must_use]
-pub fn col() -> LayoutStyle {
+pub fn col() -> Layout {
     layout().col()
 }
 

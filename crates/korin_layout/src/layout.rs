@@ -4,8 +4,8 @@ use taffy::{
 };
 
 #[derive(Clone, Default)]
-pub struct LayoutStyle(pub Style);
-impl LayoutStyle {
+pub struct Layout(pub Style);
+impl Layout {
     #[must_use]
     pub fn new() -> Self {
         Self(Style::default())
@@ -240,8 +240,8 @@ impl LayoutStyle {
     }
 }
 
-impl From<LayoutStyle> for Style {
-    fn from(value: LayoutStyle) -> Self {
+impl From<Layout> for Style {
+    fn from(value: Layout) -> Self {
         value.0
     }
 }

@@ -27,3 +27,4 @@ korin_render = { path = "crates/korin_render" }
 slotmap = "1.0.7"
 taffy = "0.9.2"
 reactive_graph="0.2.11"
+ratatui="0.29.0"
