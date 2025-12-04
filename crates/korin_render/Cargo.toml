@@ -1,0 +1,9 @@
+[package]
+name = "korin_render"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+
+[lints]
+workspace = true

@@ -1,0 +1,10 @@
+[package]
+name = "korin_focus"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+korin_tree.workspace = true
+
+[lints]
+workspace = true

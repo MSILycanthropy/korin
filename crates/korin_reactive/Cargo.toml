@@ -1,0 +1,10 @@
+[package]
+name = "korin_reactive"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+reactive_graph.workspace = true
+
+[lints]
+workspace = true

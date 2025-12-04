@@ -1,0 +1,14 @@
+[package]
+name = "korin"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+korin_tree.workspace = true
+korin_layout.workspace = true
+korin_reactive.workspace = true
+korin_focus.workspace = true
+korin_render.workspace = true
+
+[lints]
+workspace = true
