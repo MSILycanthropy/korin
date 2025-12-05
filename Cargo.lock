@@ -416,8 +416,10 @@ version = "0.1.0"
 dependencies = [
  "bitflags",
  "korin_layout",
+ "korin_tree",
  "ratatui",
  "taffy",
+ "thiserror",
 ]
 
 [[package]]

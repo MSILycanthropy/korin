@@ -6,7 +6,6 @@ use ratatui::widgets::{Block, BorderType, Borders, Padding};
 use ratatui::{style::Style, symbols::border};
 use taffy::LengthPercentage;
 
-use crate::View;
 use crate::primitives::Primitive;
 
 #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
@@ -94,8 +93,6 @@ pub struct Div<'a> {
     pub title_alignment: Alignment,
     pub title_position: TitlePosition,
 
-    pub children: Vec<View<'a>>,
-
     pub focusable: bool,
     pub on_key: Option<Box<dyn Fn(KeyEvent)>>,
     pub on_focus: Option<Box<dyn Fn()>>,
@@ -165,18 +162,6 @@ impl<'a> Div<'a> {
     #[must_use]
     pub const fn title_position(mut self, position: TitlePosition) -> Self {
         self.title_position = position;
-        self
-    }
-
-    #[must_use]
-    pub fn child(mut self, view: impl Into<View<'a>>) -> Self {
-        self.children.push(view.into());
-        self
-    }
-
-    #[must_use]
-    pub fn children(mut self, views: impl IntoIterator<Item = View<'a>>) -> Self {
-        self.children.extend(views);
         self
     }
 

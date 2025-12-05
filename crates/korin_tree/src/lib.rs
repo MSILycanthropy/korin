@@ -1,7 +1,13 @@
-use slotmap::{SlotMap, new_key_type};
+use slotmap::{Key, SlotMap, new_key_type};
 
 new_key_type! {
   pub struct NodeId;
+}
+
+impl std::fmt::Display for NodeId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!("{}", self.data().as_ffi()))
+    }
 }
 
 pub struct Node<T> {

@@ -1,0 +1,129 @@
+use korin_layout::{Rect, Size};
+use korin_tree::{NodeId, Tree};
+use taffy::{NodeId as TaffyId, TaffyTree};
+
+use crate::{
+    element::Element,
+    error::{KorinError, KorinResult},
+};
+
+pub struct Node<'a> {
+    pub element: Element<'a>,
+    pub taffy_id: TaffyId,
+    pub rect: Rect,
+}
+
+impl<'a> Node<'a> {
+    pub fn new(element: Element<'a>, taffy_id: TaffyId) -> Self {
+        Self {
+            element,
+            taffy_id,
+            rect: Rect::default(),
+        }
+    }
+}
+
+pub struct Document<'a> {
+    tree: Tree<Node<'a>>,
+    taffy: TaffyTree<()>,
+}
+
+impl<'a> Document<'a> {
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            tree: Tree::new(),
+            taffy: TaffyTree::new(),
+        }
+    }
+
+    /// Sets the root of this [`Document`].
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if creating the `taffy` Node fails.
+    pub fn set_root(&mut self, element: Element<'a>) -> KorinResult<NodeId> {
+        let taffy_id = self.create_taffy_node(&element, &[])?;
+
+        let node_id = self.tree.set_root(Node::new(element, taffy_id));
+
+        Ok(node_id)
+    }
+
+    fn create_taffy_node(
+        &mut self,
+        element: &Element<'a>,
+        children: &[TaffyId],
+    ) -> KorinResult<TaffyId> {
+        let style = match element {
+            Element::Div(div) => div.layout.0.clone(),
+            Element::Text(_) => taffy::Style::default(),
+        };
+
+        let id = self.taffy.new_with_children(style, children)?;
+
+        Ok(id)
+    }
+
+    /// Run the layout pass for this document
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if
+    ///     - There is no root for the document
+    ///     - Computing the layout fails at the taffy level
+    ///     - Applying the layout to the tree fails
+    pub fn run_layout(&mut self, size: Size) -> KorinResult<()> {
+        let Some(root_id) = self.tree.root() else {
+            return Err(KorinError::NoRoot);
+        };
+        let Some(root) = self.tree.get(root_id) else {
+            return Err(KorinError::NodeNotFound(root_id));
+        };
+
+        self.taffy.compute_layout(root.data.taffy_id, size.into())?;
+        self.apply_layout(root_id, 0, 0)?;
+
+        Ok(())
+    }
+
+    fn apply_layout(&mut self, node_id: NodeId, offset_x: u16, offset_y: u16) -> KorinResult<()> {
+        let Some(taffy_id) = self.tree.get(node_id).map(|n| n.data.taffy_id) else {
+            return Err(KorinError::NodeNotFound(node_id));
+        };
+
+        let layout = self.taffy.layout(taffy_id)?;
+        let rect: Rect = layout.into();
+
+        let absolute_rect = Rect::new(
+            rect.x + offset_x,
+            rect.y + offset_y,
+            rect.width,
+            rect.height,
+        );
+
+        if let Some(node) = self.tree.get_mut(node_id) {
+            node.data.rect = absolute_rect;
+        } else {
+            return Err(KorinError::NodeNotFound(node_id));
+        }
+
+        let children: Vec<NodeId> = self
+            .tree
+            .get(node_id)
+            .map(|n| n.children.clone())
+            .unwrap_or_default();
+
+        for child_id in children {
+            self.apply_layout(child_id, absolute_rect.x, absolute_rect.y)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl Default for Document<'_> {
+    fn default() -> Self {
+        Self::new()
+    }
+}

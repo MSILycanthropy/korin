@@ -4,11 +4,13 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
+korin_tree.workspace = true
 korin_layout.workspace = true
 
 bitflags.workspace = true
 ratatui.workspace = true
 taffy.workspace = true
+thiserror.workspace = true
 
 [lints]
 workspace = true
