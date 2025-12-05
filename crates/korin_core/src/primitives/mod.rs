@@ -1,6 +1,8 @@
+use ratatui::widgets::Widget;
+
 pub mod div;
 pub mod text;
 
-mod traits;
-
-pub use traits::*;
+pub trait Primitive<T: Widget> {
+    fn to_widget(&self) -> T;
+}
