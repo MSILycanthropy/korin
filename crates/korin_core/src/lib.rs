@@ -1,6 +1,6 @@
-mod document;
-mod element;
+pub mod document;
+pub mod element;
 pub mod error;
-pub(crate) mod primitives;
+pub mod primitives;
 
 pub use document::Document;

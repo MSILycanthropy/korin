@@ -3,7 +3,7 @@ mod layout;
 
 pub use geometry::{Point, Rect, Size};
 pub use layout::Layout;
-use taffy::LengthPercentage;
+use taffy::{Dimension, LengthPercentage};
 
 #[must_use]
 pub fn layout() -> Layout {
@@ -28,4 +28,9 @@ pub const fn len(val: f32) -> LengthPercentage {
 #[must_use]
 pub const fn pct(val: f32) -> LengthPercentage {
     LengthPercentage::percent(val)
+}
+
+#[must_use]
+pub const fn full() -> Dimension {
+    Dimension::percent(100.0)
 }
