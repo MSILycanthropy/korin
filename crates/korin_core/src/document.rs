@@ -1,7 +1,7 @@
-use korin_focus::FocusManager;
+use korin_focus::{FocusChange, FocusManager};
 use korin_layout::{Rect, Size};
 use korin_tree::{Node as TreeNode, NodeId, Tree};
-use ratatui::Frame;
+use ratatui::{Frame, crossterm::event::KeyEvent};
 use taffy::{NodeId as TaffyId, TaffyTree};
 
 use crate::{
@@ -26,6 +26,9 @@ impl<'a> Node<'a> {
     }
 }
 
+// TODO: I think we might wanna refactor focus_manager into a Trait
+// rather than a generic struct
+// and then move `layout` and `render` into traits as well
 pub struct Document<'a> {
     tree: Tree<Node<'a>>,
     taffy: TaffyTree<()>,
@@ -203,12 +206,40 @@ impl<'a> Document<'a> {
         self.focus_manager.focus(id)
     }
 
-    pub const fn focus_next(&mut self) {
-        self.focus_manager.focus_next();
+    pub fn focus_next(&mut self) {
+        let change = self.focus_manager.focus_next();
+
+        if !change.relevant() {
+            return;
+        }
+
+        self.handle_focus_change(&change);
     }
 
     pub fn focus_prev(&mut self) {
-        self.focus_manager.focus_prev();
+        let change = self.focus_manager.focus_prev();
+
+        if !change.relevant() {
+            return;
+        }
+
+        self.handle_focus_change(&change);
+    }
+
+    fn handle_focus_change(&mut self, change: &FocusChange<NodeId>) {
+        if let Some(node) = change.prev().and_then(|id| self.tree.get_mut(id)) {
+            node.data.element.on_blur();
+        }
+
+        if let Some(node) = change.next().and_then(|id| self.tree.get_mut(id)) {
+            node.data.element.on_focus();
+        }
+    }
+
+    pub fn handle_key(&mut self, event: KeyEvent) {
+        if let Some(node) = self.focused().and_then(|id| self.tree.get_mut(id)) {
+            node.data.element.on_key(event);
+        }
     }
 }
 

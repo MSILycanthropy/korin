@@ -6,6 +6,36 @@ where
     index: usize,
 }
 
+pub struct FocusChange<Id>
+where
+    Id: Copy + Eq,
+{
+    prev: Option<Id>,
+    next: Option<Id>,
+}
+
+impl<Id> FocusChange<Id>
+where
+    Id: Copy + Eq,
+{
+    const EMPTY: Self = Self {
+        prev: None,
+        next: None,
+    };
+
+    pub fn relevant(&self) -> bool {
+        self.prev != self.next
+    }
+
+    pub const fn prev(&self) -> Option<Id> {
+        self.prev
+    }
+
+    pub const fn next(&self) -> Option<Id> {
+        self.next
+    }
+}
+
 impl<Id: Copy + Eq> FocusManager<Id> {
     #[must_use]
     pub const fn new() -> Self {
@@ -34,20 +64,24 @@ impl<Id: Copy + Eq> FocusManager<Id> {
         false
     }
 
-    pub const fn focus_next(&mut self) {
+    pub fn focus_next(&mut self) -> FocusChange<Id> {
         if self.order.is_empty() {
-            return;
+            return FocusChange::EMPTY;
         }
 
-        self.index = (self.index + 1) % self.len();
+        let to = (self.index + 1) % self.len();
+
+        self.change_focus(to)
     }
 
-    pub fn focus_prev(&mut self) {
+    pub fn focus_prev(&mut self) -> FocusChange<Id> {
         if self.order.is_empty() {
-            return;
+            return FocusChange::EMPTY;
         }
 
-        self.index = self.index.checked_sub(1).unwrap_or(self.order.len() - 1);
+        let to = self.index.checked_sub(1).unwrap_or(self.order.len() - 1);
+
+        self.change_focus(to)
     }
 
     pub fn set_order(&mut self, order: Vec<Id>) {
@@ -80,6 +114,16 @@ impl<Id: Copy + Eq> FocusManager<Id> {
     #[must_use]
     pub const fn is_empty(&self) -> bool {
         self.order.is_empty()
+    }
+
+    fn change_focus(&mut self, to: usize) -> FocusChange<Id> {
+        let prev = self.focused();
+
+        self.index = to;
+
+        let next = self.focused();
+
+        FocusChange { prev, next }
     }
 }
 

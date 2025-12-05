@@ -247,4 +247,22 @@ impl Primitive for Div<'_> {
     fn is_focusable(&self) -> bool {
         self.focusable
     }
+
+    fn on_key(&mut self, event: KeyEvent) {
+        if let Some(handler) = &self.on_key {
+            handler(event);
+        }
+    }
+
+    fn on_focus(&mut self) {
+        if let Some(handler) = &self.on_focus {
+            handler();
+        }
+    }
+
+    fn on_blur(&mut self) {
+        if let Some(handler) = &self.on_blur {
+            handler();
+        }
+    }
 }

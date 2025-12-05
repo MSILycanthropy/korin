@@ -1,4 +1,4 @@
-use ratatui::{buffer::Buffer, layout::Rect, widgets::Widget};
+use ratatui::{buffer::Buffer, crossterm::event::KeyEvent, layout::Rect, widgets::Widget};
 
 use crate::primitives::{AnyPrimitive, div::Div, text::Text};
 
@@ -30,6 +30,18 @@ impl<'a> Element<'a> {
     #[must_use]
     pub fn is_focusable(&self) -> bool {
         self.inner.is_focusable()
+    }
+
+    pub fn on_key(&mut self, event: KeyEvent) {
+        self.inner.on_key(event);
+    }
+
+    pub fn on_focus(&mut self) {
+        self.inner.on_focus();
+    }
+
+    pub fn on_blur(&mut self) {
+        self.inner.on_blur();
     }
 }
 
