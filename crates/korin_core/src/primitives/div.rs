@@ -240,26 +240,7 @@ impl Primitive for Div<'_> {
         Widget::render(block, area, buf);
     }
 
-    fn layout(&self) -> taffy::Style {
-        let mut style = self.layout.0.clone();
-
-        let borders = self.borders;
-
-        style.border = taffy::Rect {
-            left: border_length_percentage(borders, Borders::LEFT),
-            right: border_length_percentage(borders, Borders::RIGHT),
-            top: border_length_percentage(borders, Borders::TOP),
-            bottom: border_length_percentage(borders, Borders::BOTTOM),
-        };
-
-        style
+    fn taffy_style(&self) -> taffy::Style {
+        self.layout.0.clone()
     }
-}
-
-const fn border_length_percentage(borders: Borders, test: Borders) -> taffy::LengthPercentage {
-    if borders.contains(test) {
-        return taffy::LengthPercentage::length(1.0);
-    }
-
-    taffy::LengthPercentage::length(0.0)
 }

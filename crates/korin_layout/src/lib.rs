@@ -32,5 +32,5 @@ pub const fn pct(val: f32) -> LengthPercentage {
 
 #[must_use]
 pub const fn full() -> Dimension {
-    Dimension::percent(100.0)
+    Dimension::percent(1.0)
 }

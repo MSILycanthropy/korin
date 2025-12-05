@@ -110,6 +110,19 @@ impl<'a> Document<'a> {
 
         let layout = self.taffy.layout(taffy_id)?;
 
+        eprintln!(
+            "node {:?}: location=({}, {}), size=({}, {}), border=({}, {}, {}, {})",
+            node_id,
+            layout.location.x,
+            layout.location.y,
+            layout.size.width,
+            layout.size.height,
+            layout.border.left,
+            layout.border.right,
+            layout.border.top,
+            layout.border.bottom
+        );
+
         let rect: Rect = layout.into();
 
         let absolute_rect = Rect::new(

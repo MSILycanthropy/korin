@@ -129,7 +129,7 @@ impl Primitive for Text<'_> {
         Widget::render(paragraph, area, buf);
     }
 
-    fn layout(&self) -> taffy::Style {
+    fn taffy_style(&self) -> taffy::Style {
         let (width, height) = self.measure();
 
         taffy::Style {

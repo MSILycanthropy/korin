@@ -54,6 +54,6 @@ impl<'a> From<Text<'a>> for Element<'a> {
 
 impl<'a> From<&Element<'a>> for taffy::Style {
     fn from(value: &Element<'a>) -> Self {
-        value.to_inner().layout()
+        value.to_inner().taffy_style()
     }
 }

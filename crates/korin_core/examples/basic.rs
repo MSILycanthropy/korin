@@ -65,30 +65,30 @@ fn build_ui() -> Result<Document<'static>, KorinError> {
 
     doc.append(nested, Element::text(Text::new("Press 'q' to quit")))?;
 
-    // let row_container = doc.append(
-    //     root,
-    //     Element::div(Div::new().layout(row().gap(len(1.0)).grow(1.0))),
-    // )?;
+    let row_container = doc.append(
+        root,
+        Element::div(Div::new().layout(row().gap(len(1.0)).grow(1.0))),
+    )?;
 
-    // doc.append(
-    //     row_container,
-    //     Element::div(
-    //         Div::bordered()
-    //             .layout(col().grow(1.0).p(len(1.0)))
-    //             .title("Left")
-    //             .style(Style::default().bg(Color::Blue)),
-    //     ),
-    // )?;
+    doc.append(
+        row_container,
+        Element::div(
+            Div::bordered()
+                .layout(col().grow(1.0).p(len(1.0)))
+                .title("Left")
+                .style(Style::default().bg(Color::Blue)),
+        ),
+    )?;
 
-    // doc.append(
-    //     row_container,
-    //     Element::div(
-    //         Div::bordered()
-    //             .layout(col().grow(1.0).p(len(1.0)))
-    //             .title("Right")
-    //             .style(Style::default().bg(Color::Red)),
-    //     ),
-    // )?;
+    doc.append(
+        row_container,
+        Element::div(
+            Div::new()
+                .layout(col().grow(1.0).p(len(1.0)))
+                .title("Right")
+                .style(Style::default().bg(Color::Red)),
+        ),
+    )?;
 
     Ok(doc)
 }
