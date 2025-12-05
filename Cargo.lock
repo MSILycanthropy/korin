@@ -415,6 +415,7 @@ name = "korin_core"
 version = "0.1.0"
 dependencies = [
  "bitflags",
+ "korin_focus",
  "korin_layout",
  "korin_tree",
  "ratatui",

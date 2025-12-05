@@ -26,6 +26,11 @@ impl<'a> Element<'a> {
     pub fn to_inner(&self) -> &AnyPrimitive<'a> {
         &self.inner
     }
+
+    #[must_use]
+    pub fn is_focusable(&self) -> bool {
+        self.inner.is_focusable()
+    }
 }
 
 impl Widget for Element<'_> {
@@ -36,7 +41,7 @@ impl Widget for Element<'_> {
 
 impl Widget for &Element<'_> {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        self.to_inner().render(area, buf);
+        self.inner.render(area, buf);
     }
 }
 

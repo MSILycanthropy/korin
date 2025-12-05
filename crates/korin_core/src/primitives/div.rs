@@ -243,4 +243,8 @@ impl Primitive for Div<'_> {
     fn taffy_style(&self) -> taffy::Style {
         self.layout.0.clone()
     }
+
+    fn is_focusable(&self) -> bool {
+        self.focusable
+    }
 }

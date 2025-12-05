@@ -1,3 +1,4 @@
+use korin_focus::FocusManager;
 use korin_layout::{Rect, Size};
 use korin_tree::{Node as TreeNode, NodeId, Tree};
 use ratatui::Frame;
@@ -28,6 +29,7 @@ impl<'a> Node<'a> {
 pub struct Document<'a> {
     tree: Tree<Node<'a>>,
     taffy: TaffyTree<()>,
+    focus_manager: FocusManager<NodeId>,
 }
 
 impl<'a> Document<'a> {
@@ -36,6 +38,7 @@ impl<'a> Document<'a> {
         Self {
             tree: Tree::new(),
             taffy: TaffyTree::new(),
+            focus_manager: FocusManager::new(),
         }
     }
 
@@ -94,12 +97,14 @@ impl<'a> Document<'a> {
     ///     - There is no root for the document
     ///     - Computing the layout fails at the taffy level
     ///     - Applying the layout to the tree fails
+    ///     - Creating the focus order fails
     pub fn layout(&mut self, size: Size) -> KorinResult<()> {
         let root_id = self.root_id()?;
         let root = self.get_node(root_id)?;
 
         self.taffy.compute_layout(root.data.taffy_id, size.into())?;
         self.apply_layout(root_id, 0, 0)?;
+        self.build_focus_order()?;
 
         Ok(())
     }
@@ -109,19 +114,6 @@ impl<'a> Document<'a> {
         let taffy_id = node.data.taffy_id;
 
         let layout = self.taffy.layout(taffy_id)?;
-
-        eprintln!(
-            "node {:?}: location=({}, {}), size=({}, {}), border=({}, {}, {}, {})",
-            node_id,
-            layout.location.x,
-            layout.location.y,
-            layout.size.width,
-            layout.size.height,
-            layout.border.left,
-            layout.border.right,
-            layout.border.top,
-            layout.border.bottom
-        );
 
         let rect: Rect = layout.into();
 
@@ -184,6 +176,39 @@ impl<'a> Document<'a> {
         self.tree
             .get(node_id)
             .ok_or(KorinError::NodeNotFound(node_id))
+    }
+
+    fn build_focus_order(&mut self) -> KorinResult<()> {
+        let root = self.root_id()?;
+
+        let mut order = Vec::new();
+
+        self.tree.traverse(root, |id, node| {
+            if node.element.is_focusable() {
+                order.push(id);
+            }
+        });
+
+        self.focus_manager.set_order(order);
+
+        Ok(())
+    }
+
+    #[must_use]
+    pub fn focused(&self) -> Option<NodeId> {
+        self.focus_manager.focused()
+    }
+
+    pub fn focus(&mut self, id: NodeId) -> bool {
+        self.focus_manager.focus(id)
+    }
+
+    pub const fn focus_next(&mut self) {
+        self.focus_manager.focus_next();
+    }
+
+    pub fn focus_prev(&mut self) {
+        self.focus_manager.focus_prev();
     }
 }
 
