@@ -4,8 +4,12 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-ratatui.workspace = true
 korin_layout.workspace = true
+
+bitflags.workspace = true
+ratatui-core.workspace = true
+ratatui-crossterm.workspace = true
+taffy.workspace = true
 
 [lints]
 workspace = true

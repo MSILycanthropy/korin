@@ -24,7 +24,9 @@ korin_focus = { path = "crates/korin_focus" }
 korin_render = { path = "crates/korin_render" }
 
 # member deps
+bitflags = "2.10.0"
+ratatui-core = "0.1.0-beta.0"
+ratatui-crossterm = "0.1.0-beta.0"
+reactive_graph = "0.2.11"
 slotmap = "1.0.7"
 taffy = "0.9.2"
-reactive_graph="0.2.11"
-ratatui="0.29.0"

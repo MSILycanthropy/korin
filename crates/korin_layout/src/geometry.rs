@@ -86,7 +86,7 @@ impl From<&taffy::Layout> for Rect {
     }
 }
 
-impl From<Rect> for ratatui::layout::Rect {
+impl From<Rect> for ratatui_core::layout::Rect {
     fn from(r: Rect) -> Self {
         Self {
             x: r.x,

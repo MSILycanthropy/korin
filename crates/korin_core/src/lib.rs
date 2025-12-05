@@ -1,24 +1,15 @@
-use korin_layout::Layout;
-use ratatui::{crossterm::event::KeyEvent, style::Style};
+use crate::primitives::{div::Div, text::Text};
+
+pub(crate) mod border;
+pub(crate) mod primitives;
+
+pub enum View<'a> {
+    Div(Box<Div<'a>>),
+    Text(Text),
+    Fragment(Vec<View<'a>>),
+}
 
 pub enum TextContent {
     Static(String),
     Dynamic(Box<dyn Fn() -> String>),
-}
-
-pub enum View {
-    Div {
-        layout: Box<Layout>,
-        style: Style,
-        children: Vec<View>,
-        focusable: bool,
-        on_key: Option<Box<dyn Fn(KeyEvent)>>,
-        on_focus: Option<Box<dyn Fn()>>,
-        on_blur: Option<Box<dyn Fn()>>,
-    },
-    Text {
-        content: TextContent,
-        style: Style,
-    },
-    Fragment(Vec<View>),
 }
