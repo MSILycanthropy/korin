@@ -1,8 +1,9 @@
 use ratatui::{
-    layout::Alignment,
+    buffer::Buffer,
+    layout::{Alignment, Rect},
     style::Style,
-    text::Text as RatatuiText,
-    widgets::{Paragraph, Wrap},
+    text::{Line, Text as RatatuiText},
+    widgets::{Paragraph, Widget, Wrap},
 };
 
 use crate::primitives::Primitive;
@@ -88,10 +89,22 @@ impl<'a> Text<'a> {
         self.scroll = offset;
         self
     }
-}
 
-impl<'a> Primitive<Paragraph<'a>> for Text<'a> {
-    fn to_widget(&self) -> Paragraph<'a> {
+    #[allow(clippy::cast_possible_truncation)]
+    #[must_use]
+    pub fn measure(&self) -> (u16, u16) {
+        let text = match &self.content {
+            TextContent::Static(t) => t,
+            TextContent::Dynamic(f) => &f(),
+        };
+
+        let width = text.lines.iter().map(Line::width).max().unwrap_or(0);
+        let height = text.lines.len();
+
+        (width as u16, height as u16)
+    }
+
+    fn to_paragraph(&self) -> Paragraph<'_> {
         let text = match &self.content {
             TextContent::Static(t) => t.clone(),
             TextContent::Dynamic(f) => f(),
@@ -107,5 +120,24 @@ impl<'a> Primitive<Paragraph<'a>> for Text<'a> {
         }
 
         paragraph
+    }
+}
+
+impl Primitive for Text<'_> {
+    fn render(&self, area: Rect, buf: &mut Buffer) {
+        let paragraph = self.to_paragraph();
+        Widget::render(paragraph, area, buf);
+    }
+
+    fn layout(&self) -> taffy::Style {
+        let (width, height) = self.measure();
+
+        taffy::Style {
+            size: taffy::Size {
+                width: taffy::Dimension::length(f32::from(width)),
+                height: taffy::Dimension::length(f32::from(height)),
+            },
+            ..Default::default()
+        }
     }
 }

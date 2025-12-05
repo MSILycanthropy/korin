@@ -79,10 +79,7 @@ impl<'a> Document<'a> {
         element: &Element<'a>,
         children: &[TaffyId],
     ) -> KorinResult<TaffyId> {
-        let style = match element {
-            Element::Div(div) => div.layout.0.clone(),
-            Element::Text(_) => taffy::Style::default(),
-        };
+        let style = taffy::Style::from(element);
 
         let id = self.taffy.new_with_children(style, children)?;
 

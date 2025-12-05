@@ -1,12 +1,12 @@
+use crate::primitives::Primitive;
 use korin_layout::Layout;
+use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyEvent;
-use ratatui::layout::Alignment;
+use ratatui::layout::{Alignment, Rect};
 use ratatui::text::Line;
-use ratatui::widgets::{Block, BorderType, Borders, Padding};
+use ratatui::widgets::{Block, BorderType, Borders, Padding, Widget};
 use ratatui::{style::Style, symbols::border};
 use taffy::LengthPercentage;
-
-use crate::primitives::Primitive;
 
 #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 fn length_to_u16(lp: LengthPercentage) -> u16 {
@@ -200,10 +200,8 @@ impl<'a> Div<'a> {
             length_to_u16(p.bottom),
         )
     }
-}
 
-impl<'a> Primitive<Block<'a>> for Div<'a> {
-    fn to_widget(&self) -> Block<'a> {
+    fn to_block(&self) -> Block<'a> {
         let padding = self.layout_padding();
 
         let mut block = Block::new()
@@ -234,4 +232,34 @@ impl<'a> Primitive<Block<'a>> for Div<'a> {
 
         block
     }
+}
+
+impl Primitive for Div<'_> {
+    fn render(&self, area: Rect, buf: &mut Buffer) {
+        let block = self.to_block();
+        Widget::render(block, area, buf);
+    }
+
+    fn layout(&self) -> taffy::Style {
+        let mut style = self.layout.0.clone();
+
+        let borders = self.borders;
+
+        style.border = taffy::Rect {
+            left: border_length_percentage(borders, Borders::LEFT),
+            right: border_length_percentage(borders, Borders::RIGHT),
+            top: border_length_percentage(borders, Borders::TOP),
+            bottom: border_length_percentage(borders, Borders::BOTTOM),
+        };
+
+        style
+    }
+}
+
+const fn border_length_percentage(borders: Borders, test: Borders) -> taffy::LengthPercentage {
+    if borders.contains(test) {
+        return taffy::LengthPercentage::length(1.0);
+    }
+
+    taffy::LengthPercentage::length(0.0)
 }

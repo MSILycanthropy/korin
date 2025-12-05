@@ -8,8 +8,7 @@ use korin_core::{
 };
 use korin_layout::{Size, col, full, len, row};
 use ratatui::{
-    DefaultTerminal, Terminal,
-    backend::TestBackend,
+    DefaultTerminal,
     crossterm::event::{self, Event, KeyCode, KeyEventKind},
     style::{Color, Style},
 };
@@ -64,32 +63,32 @@ fn build_ui() -> Result<Document<'static>, KorinError> {
         )
         .expect("append failed");
 
-    doc.append(nested, Element::Text(Text::new("Press 'q' to quit")))?;
+    doc.append(nested, Element::text(Text::new("Press 'q' to quit")))?;
 
-    let row_container = doc.append(
-        root,
-        Element::div(Div::new().layout(row().gap(len(1.0)).grow(1.0))),
-    )?;
+    // let row_container = doc.append(
+    //     root,
+    //     Element::div(Div::new().layout(row().gap(len(1.0)).grow(1.0))),
+    // )?;
 
-    doc.append(
-        row_container,
-        Element::div(
-            Div::bordered()
-                .layout(col().grow(1.0).p(len(1.0)))
-                .title("Left")
-                .style(Style::default().bg(Color::Blue)),
-        ),
-    )?;
+    // doc.append(
+    //     row_container,
+    //     Element::div(
+    //         Div::bordered()
+    //             .layout(col().grow(1.0).p(len(1.0)))
+    //             .title("Left")
+    //             .style(Style::default().bg(Color::Blue)),
+    //     ),
+    // )?;
 
-    doc.append(
-        row_container,
-        Element::div(
-            Div::bordered()
-                .layout(col().grow(1.0).p(len(1.0)))
-                .title("Right")
-                .style(Style::default().bg(Color::Red)),
-        ),
-    )?;
+    // doc.append(
+    //     row_container,
+    //     Element::div(
+    //         Div::bordered()
+    //             .layout(col().grow(1.0).p(len(1.0)))
+    //             .title("Right")
+    //             .style(Style::default().bg(Color::Red)),
+    //     ),
+    // )?;
 
     Ok(doc)
 }

@@ -1,21 +1,30 @@
 use ratatui::{buffer::Buffer, layout::Rect, widgets::Widget};
 
-use crate::primitives::{Primitive, div::Div, text::Text};
+use crate::primitives::{AnyPrimitive, div::Div, text::Text};
 
-pub enum Element<'a> {
-    Div(Box<Div<'a>>),
-    Text(Text<'a>),
+pub struct Element<'a> {
+    inner: AnyPrimitive<'a>,
 }
 
 impl<'a> Element<'a> {
     #[must_use]
-    pub fn div(div: Div<'a>) -> Self {
-        Self::Div(Box::new(div))
+    pub fn new(primitive: AnyPrimitive<'a>) -> Self {
+        Self { inner: primitive }
     }
 
     #[must_use]
-    pub const fn text(text: Text<'a>) -> Self {
-        Self::Text(text)
+    pub fn div(div: Div<'a>) -> Self {
+        Self::new(Box::new(div))
+    }
+
+    #[must_use]
+    pub fn text(text: Text<'a>) -> Self {
+        Self::new(Box::new(text))
+    }
+
+    #[must_use]
+    pub fn to_inner(&self) -> &AnyPrimitive<'a> {
+        &self.inner
     }
 }
 
@@ -27,10 +36,7 @@ impl Widget for Element<'_> {
 
 impl Widget for &Element<'_> {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        match self {
-            Element::Div(div) => div.to_widget().render(area, buf),
-            Element::Text(text) => text.to_widget().render(area, buf),
-        }
+        self.to_inner().render(area, buf);
     }
 }
 
@@ -43,5 +49,11 @@ impl<'a> From<Div<'a>> for Element<'a> {
 impl<'a> From<Text<'a>> for Element<'a> {
     fn from(value: Text<'a>) -> Self {
         Self::text(value)
+    }
+}
+
+impl<'a> From<&Element<'a>> for taffy::Style {
+    fn from(value: &Element<'a>) -> Self {
+        value.to_inner().layout()
     }
 }
