@@ -17,6 +17,7 @@ unwrap_used = "warn"
 
 [workspace.dependencies]
 korin = { path = "crates/korin" }
+korin_document = { path = "crates/korin_document" }
 korin_tree = { path = "crates/korin_tree" }
 korin_layout = { path = "crates/korin_layout" }
 korin_reactive = { path = "crates/korin_reactive" }
