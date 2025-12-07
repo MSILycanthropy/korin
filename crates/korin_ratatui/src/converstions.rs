@@ -86,6 +86,6 @@ pub const fn to_rat_rect(rect: Rect) -> RatRect {
         x: rect.x.max(0.0) as u16,
         y: rect.y.max(0.0) as u16,
         width: rect.width.max(0.0) as u16,
-        height: rect.width.max(0.0) as u16,
+        height: rect.height.max(0.0) as u16,
     }
 }

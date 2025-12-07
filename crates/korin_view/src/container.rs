@@ -119,7 +119,12 @@ impl<Ctx: RenderContext + Clone> Render<Ctx> for Container<Ctx> {
             ctx.set_focus_callbacks(id, self.on_focus, self.on_blur);
         }
 
-        let children: Vec<AnyState> = self.children.into_iter().map(|c| c.build(ctx)).collect();
+        let mut child_ctx = ctx.with_parent(id);
+        let children: Vec<AnyState> = self
+            .children
+            .into_iter()
+            .map(|c| c.build(&mut child_ctx))
+            .collect();
 
         ContainerState {
             node_id: id,

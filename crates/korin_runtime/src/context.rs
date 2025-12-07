@@ -64,6 +64,8 @@ impl RenderContext for RuntimeContext {
 
         if let Some(parent) = self.parent {
             self.runtime_mut().append_child(parent, node).ok()?;
+        } else {
+            self.runtime_mut().set_root(node).ok()?;
         }
 
         Some(node)
@@ -88,6 +90,8 @@ impl RenderContext for RuntimeContext {
 
         if let Some(parent) = self.parent {
             self.runtime_mut().append_child(parent, node).ok()?;
+        } else {
+            self.runtime_mut().set_root(node).ok()?;
         }
 
         Some(node)

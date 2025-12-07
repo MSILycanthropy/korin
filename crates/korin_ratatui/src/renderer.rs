@@ -1,5 +1,5 @@
 use korin_layout::Rect;
-use korin_runtime::{NodeContent, Runtime, RuntimeContext};
+use korin_runtime::{NodeContent, Runtime};
 use korin_tree::NodeId;
 use ratatui::{
     Frame,
@@ -7,19 +7,11 @@ use ratatui::{
     widgets::{Block, Paragraph},
 };
 
-use crate::{
-    converstions::{
-        to_rat_border_type, to_rat_borders, to_rat_color, to_rat_rect, to_rat_style_text,
-    },
-    state::RenderState,
+use crate::converstions::{
+    to_rat_border_type, to_rat_borders, to_rat_color, to_rat_rect, to_rat_style_text,
 };
 
 pub fn render(frame: &mut Frame, ctx: &Runtime) {
-    let size = frame.area();
-    let clip = Rect::new(0.0, 0.0, f32::from(size.width), f32::from(size.height));
-
-    let state = RenderState::new(clip);
-
     let runtime = ctx.inner();
 
     let Some(root) = runtime.root() else {
@@ -28,10 +20,16 @@ pub fn render(frame: &mut Frame, ctx: &Runtime) {
 
     drop(runtime);
 
-    render_node(frame, ctx, root, &state);
+    render_node(frame, ctx, root, 0.0, 0.0);
 }
 
-pub fn render_node(frame: &mut Frame, ctx: &Runtime, node_id: NodeId, state: &RenderState) {
+pub fn render_node(
+    frame: &mut Frame,
+    ctx: &Runtime,
+    node_id: NodeId,
+    offset_x: f32,
+    offset_y: f32,
+) {
     let runtime = ctx.inner();
 
     let Some(node) = runtime.get(node_id) else {
@@ -42,13 +40,14 @@ pub fn render_node(frame: &mut Frame, ctx: &Runtime, node_id: NodeId, state: &Re
         return;
     };
 
-    let Some(rect) = state.transform(layout_rect) else {
-        return;
-    };
+    let abs_x = offset_x + layout_rect.x;
+    let abs_y = offset_y + layout_rect.y;
+    let abs_rect = Rect::new(abs_x, abs_y, layout_rect.width, layout_rect.height);
 
-    let rat_rect = to_rat_rect(rect);
+    let rat_rect = to_rat_rect(abs_rect);
     let style = node.style;
     let content = node.content.clone();
+    let children = runtime.children(node_id);
 
     drop(runtime);
 
@@ -57,7 +56,8 @@ pub fn render_node(frame: &mut Frame, ctx: &Runtime, node_id: NodeId, state: &Re
             let block = Block::default()
                 .borders(to_rat_borders(style.borders))
                 .border_type(to_rat_border_type(style.border_style))
-                .border_style(to_rat_color(style.border_color));
+                .border_style(to_rat_color(style.border_color))
+                .style(ratatui::style::Style::default().bg(to_rat_color(style.background)));
 
             frame.render_widget(block, rat_rect);
         }
@@ -67,5 +67,9 @@ pub fn render_node(frame: &mut Frame, ctx: &Runtime, node_id: NodeId, state: &Re
 
             frame.render_widget(paragraph, rat_rect);
         }
+    }
+
+    for child_id in children {
+        render_node(frame, ctx, child_id, abs_x, abs_y);
     }
 }
