@@ -4,6 +4,9 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
+korin_tree.workspace = true
+korin_layout.workspace = true
+korin_style.workspace = true
 
 [lints]
 workspace = true

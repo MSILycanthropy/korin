@@ -264,6 +264,11 @@ dependencies = [
 [[package]]
 name = "korin_view"
 version = "0.1.0"
+dependencies = [
+ "korin_layout",
+ "korin_style",
+ "korin_tree",
+]
 
 [[package]]
 name = "memchr"

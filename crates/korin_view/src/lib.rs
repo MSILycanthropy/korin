@@ -1,35 +1,20 @@
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct View<T>
-where
-    T: Sized,
-{
-    inner: T,
+mod any;
+mod container;
+mod event;
+mod into_view;
+mod render;
+mod text;
+
+pub use container::Container;
+pub use into_view::{IntoView, View};
+pub use render::Render;
+pub use text::Text;
+
+#[must_use] 
+pub fn container() -> Container {
+    Container::new()
 }
 
-impl<T> View<T> {
-    pub const fn new(inner: T) -> Self {
-        Self { inner }
-    }
-
-    pub fn into_inner(self) -> T {
-        self.inner
-    }
+pub fn text(content: impl Into<String>) -> Text {
+    Text::new(content)
 }
-
-pub trait IntoView
-where
-    Self: Sized + Send,
-{
-    fn into_view(self) -> View<Self>;
-}
-
-impl<T> IntoView for T
-where
-    T: Sized + Send,
-{
-    fn into_view(self) -> View<Self> {
-        View::new(self)
-    }
-}
-
-pub trait Render {}

@@ -20,6 +20,7 @@ missing_errors_doc = { level = "allow", priority = 1 }
 korin = { path = "crates/korin" }
 korin_tree = { path = "crates/korin_tree" }
 korin_layout = { path = "crates/korin_layout" }
+korin_style = { path = "crates/korin_style" }
 korin_reactive = { path = "crates/korin_reactive" }
 korin_focus = { path = "crates/korin_focus" }
 korin_view = { path = "crates/korin_view" }
