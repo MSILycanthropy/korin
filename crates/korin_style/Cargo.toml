@@ -1,0 +1,10 @@
+[package]
+name = "korin_style"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+bitflags.workspace = true
+
+[lints]
+workspace = true

@@ -17,12 +17,11 @@ unwrap_used = "warn"
 
 [workspace.dependencies]
 korin = { path = "crates/korin" }
-korin_document = { path = "crates/korin_document" }
 korin_tree = { path = "crates/korin_tree" }
 korin_layout = { path = "crates/korin_layout" }
 korin_reactive = { path = "crates/korin_reactive" }
 korin_focus = { path = "crates/korin_focus" }
-korin_render = { path = "crates/korin_render" }
+korin_view = { path = "crates/korin_view" }
 
 # member deps
 bitflags = "2.10.0"
