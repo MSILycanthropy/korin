@@ -6,6 +6,10 @@ pub struct Point {
     pub y: f32,
 }
 
+impl Point {
+    pub const ZERO: Self = Self { x: 0.0, y: 0.0 };
+}
+
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Size {
     pub width: f32,

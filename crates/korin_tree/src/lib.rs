@@ -119,6 +119,14 @@ impl<T> Tree<T> {
     }
 
     #[must_use]
+    pub fn children(&self, id: NodeId) -> Vec<NodeId> {
+        self.nodes
+            .get(id)
+            .map(|n| n.children.clone())
+            .unwrap_or_default()
+    }
+
+    #[must_use]
     pub fn descendants(&self, id: NodeId) -> Vec<NodeId> {
         let mut result = vec![];
         let mut stack = vec![id];

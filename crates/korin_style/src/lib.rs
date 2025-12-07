@@ -1,4 +1,4 @@
-use crate::{
+pub use crate::{
     border::{BorderStyle, Borders},
     color::Color,
     text::{Alignment, Modifiers},

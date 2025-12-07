@@ -13,6 +13,9 @@ pub enum RuntimeError {
     #[error("node not found: {0}")]
     NodeNotFound(NodeId),
 
+    #[error("no event handler registered")]
+    NoHandler,
+
     #[error("no root node set")]
     NoRoot,
 }

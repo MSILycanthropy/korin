@@ -5,7 +5,7 @@ use korin_layout::{Layout, LayoutEngine, Rect, Size};
 use korin_tree::{NodeId, Tree};
 use korin_view::{EventHandler, FocusHandler};
 
-use crate::{error::RuntimeResult, node::Node};
+use crate::{RuntimeError, error::RuntimeResult, node::Node};
 
 pub struct FocusCallbacks {
     pub on_focus: Option<FocusHandler>,
@@ -83,6 +83,44 @@ impl RuntimeInner {
             .insert(id, FocusCallbacks { on_focus, on_blur });
     }
 
+    pub fn try_on_blur(&self, id: NodeId) -> RuntimeResult<()> {
+        let Some(callbacks) = self.focus_callbacks.get(&id) else {
+            return Err(RuntimeError::NodeNotFound(id));
+        };
+
+        let Some(ref on_blur) = callbacks.on_blur else {
+            return Err(RuntimeError::NoHandler);
+        };
+
+        on_blur();
+
+        Ok(())
+    }
+
+    pub fn try_on_focus(&self, id: NodeId) -> RuntimeResult<()> {
+        let Some(callbacks) = self.focus_callbacks.get(&id) else {
+            return Err(RuntimeError::NodeNotFound(id));
+        };
+
+        let Some(ref on_focus) = callbacks.on_focus else {
+            return Err(RuntimeError::NoHandler);
+        };
+
+        on_focus();
+
+        Ok(())
+    }
+
+    pub fn try_on_event<E: 'static>(&self, id: NodeId, event: &E) -> RuntimeResult<()> {
+        let Some(on_event) = self.event_handlers.get(&id) else {
+            return Err(RuntimeError::NoHandler);
+        };
+
+        on_event.call::<E>(event);
+
+        Ok(())
+    }
+
     pub fn compute_layout(&mut self, size: Size) -> RuntimeResult<()> {
         self.layout.compute(&self.tree, size)?;
 
@@ -99,6 +137,10 @@ impl RuntimeInner {
 
     pub const fn root(&self) -> Option<NodeId> {
         self.tree.root()
+    }
+
+    pub fn children(&self, id: NodeId) -> Vec<NodeId> {
+        self.tree.children(id)
     }
 
     pub fn update_focus_order(&mut self) {

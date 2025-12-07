@@ -3,7 +3,7 @@ mod error;
 mod inner;
 mod node;
 
-use std::sync::{Arc, RwLock, RwLockWriteGuard};
+use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use inner::RuntimeInner;
 
@@ -45,7 +45,21 @@ impl Runtime {
         Ok(())
     }
 
-    fn inner_mut(&self) -> RwLockWriteGuard<'_, RuntimeInner> {
+    /// Returns the [`RuntimeInner`] of this [`Runtime`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if the inner's `RwLock` is poisoned
+    pub fn inner(&self) -> RwLockReadGuard<'_, RuntimeInner> {
+        self.inner.read().expect("poisoned")
+    }
+
+    /// Returns a mutable version of [`RuntimeInner`] of this [`Runtime`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if the inner's `RwLock` is poisoned
+    pub fn inner_mut(&self) -> RwLockWriteGuard<'_, RuntimeInner> {
         self.inner.write().expect("poisoned")
     }
 }
