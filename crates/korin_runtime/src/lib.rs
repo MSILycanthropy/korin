@@ -9,6 +9,7 @@ use inner::RuntimeInner;
 
 pub use context::RuntimeContext;
 pub use error::{RuntimeError, RuntimeResult};
+use korin_layout::Size;
 use korin_reactive::reactive_graph::owner::{Owner, provide_context};
 use korin_view::Render;
 pub use node::{Node, NodeContent};
@@ -43,6 +44,10 @@ impl Runtime {
         self.inner_mut().update_focus_order();
 
         Ok(())
+    }
+
+    pub fn compute_layout(&mut self, size: Size) -> RuntimeResult<()> {
+        self.inner_mut().compute_layout(size)
     }
 
     /// Returns the [`RuntimeInner`] of this [`Runtime`].

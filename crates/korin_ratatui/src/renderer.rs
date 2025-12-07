@@ -1,5 +1,5 @@
 use korin_layout::Rect;
-use korin_runtime::{NodeContent, RuntimeContext};
+use korin_runtime::{NodeContent, Runtime, RuntimeContext};
 use korin_tree::NodeId;
 use ratatui::{
     Frame,
@@ -14,13 +14,13 @@ use crate::{
     state::RenderState,
 };
 
-pub fn render(frame: &mut Frame, ctx: &RuntimeContext) {
+pub fn render(frame: &mut Frame, ctx: &Runtime) {
     let size = frame.area();
     let clip = Rect::new(0.0, 0.0, f32::from(size.width), f32::from(size.height));
 
     let state = RenderState::new(clip);
 
-    let runtime = ctx.runtime();
+    let runtime = ctx.inner();
 
     let Some(root) = runtime.root() else {
         return;
@@ -31,8 +31,8 @@ pub fn render(frame: &mut Frame, ctx: &RuntimeContext) {
     render_node(frame, ctx, root, &state);
 }
 
-pub fn render_node(frame: &mut Frame, ctx: &RuntimeContext, node_id: NodeId, state: &RenderState) {
-    let runtime = ctx.runtime();
+pub fn render_node(frame: &mut Frame, ctx: &Runtime, node_id: NodeId, state: &RenderState) {
+    let runtime = ctx.inner();
 
     let Some(node) = runtime.get(node_id) else {
         return;

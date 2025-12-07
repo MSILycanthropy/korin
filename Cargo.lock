@@ -430,6 +430,7 @@ dependencies = [
  "korin_runtime",
  "korin_style",
  "korin_tree",
+ "korin_view",
  "ratatui",
 ]
 

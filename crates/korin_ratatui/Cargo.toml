@@ -11,5 +11,8 @@ korin_style.workspace = true
 
 ratatui.workspace = true
 
+[dev-dependencies]
+korin_view.workspace = true
+
 [lints]
 workspace = true
