@@ -1,0 +1,16 @@
+[package]
+name = "korin_runtime"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+korin_tree.workspace = true
+korin_layout.workspace = true
+korin_style.workspace = true
+korin_view.workspace = true
+korin_focus.workspace = true
+
+thiserror.workspace = true
+
+[lints]
+workspace = true

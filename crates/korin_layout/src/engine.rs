@@ -19,20 +19,22 @@ impl Engine {
         }
     }
 
-    pub fn create_node(&mut self, layout: Layout) -> LayoutResult<TaffyId> {
-        let id = self.taffy.new_leaf(layout.into())?;
+    pub fn insert(&mut self, layout: Layout, node_id: NodeId) -> LayoutResult<TaffyId> {
+        let taffy_id = self.taffy.new_leaf(layout.into())?;
 
-        Ok(id)
+        self.nodes.insert(node_id, taffy_id);
+
+        Ok(taffy_id)
     }
 
-    pub fn insert(&mut self, id: NodeId, taffy_id: TaffyId) {
-        self.nodes.insert(id, taffy_id);
-    }
-
-    pub fn remove(&mut self, id: NodeId) {
+    pub fn remove(&mut self, id: NodeId) -> LayoutResult<TaffyId> {
         if let Some(taffy_id) = self.nodes.remove(&id) {
-            let _ = self.taffy.remove(taffy_id);
+            let id = self.taffy.remove(taffy_id)?;
+
+            return Ok(id);
         }
+
+        Err(LayoutError::NodeNotFound(id))
     }
 
     pub fn append(&mut self, parent: NodeId, child: NodeId) -> LayoutResult<()> {

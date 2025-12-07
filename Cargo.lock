@@ -247,6 +247,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "korin_runtime"
+version = "0.1.0"
+dependencies = [
+ "korin_focus",
+ "korin_layout",
+ "korin_style",
+ "korin_tree",
+ "korin_view",
+ "thiserror",
+]
+
+[[package]]
 name = "korin_style"
 version = "0.1.0"
 dependencies = [

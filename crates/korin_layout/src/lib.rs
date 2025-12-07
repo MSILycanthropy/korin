@@ -6,7 +6,7 @@ mod geometry;
 mod layout;
 
 pub use engine::Engine as LayoutEngine;
-pub use error::LayoutResult;
+pub use error::{LayoutError, LayoutResult};
 pub use geometry::{Point, Rect, Size};
 pub use layout::Layout;
 

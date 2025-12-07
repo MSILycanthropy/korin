@@ -6,11 +6,12 @@ mod render;
 mod text;
 
 pub use container::Container;
+pub use event::{EventHandler, FocusHandler};
 pub use into_view::{IntoView, View};
 pub use render::Render;
 pub use text::Text;
 
-#[must_use] 
+#[must_use]
 pub fn container() -> Container {
     Container::new()
 }
