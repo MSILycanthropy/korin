@@ -1,12 +1,56 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    ops::{Deref, DerefMut},
+};
 
 use korin_tree::{NodeId, Tree};
 use taffy::{NodeId as TaffyId, TaffyTree};
 
 use crate::{Layout, LayoutResult, Rect, Size, error::LayoutError};
 
+#[derive(Default, Clone, Copy)]
+pub struct NodeMeasure;
+
+#[expect(unsafe_code, reason = "TaffyTree is safe as long as calc is not used")]
+/// SAFETY: Taffy Tree becomes thread unsafe when you use the calc feature, which we do not implement
+unsafe impl Send for NodeMeasure {}
+
+#[expect(unsafe_code, reason = "TaffyTree is safe as long as calc is not used")]
+/// SAFETY: Taffy Tree becomes thread unsafe when you use the calc feature, which we do not implement
+unsafe impl Sync for NodeMeasure {}
+
+pub struct LayoutTree<T: Send + Sync>(TaffyTree<T>);
+
+impl<T: Send + Sync> LayoutTree<T> {
+    pub fn new() -> Self {
+        Self(TaffyTree::new())
+    }
+}
+
+#[expect(unsafe_code, reason = "TaffyTree is safe as long as calc is not used")]
+#[allow(clippy::non_send_fields_in_send_ty)]
+/// SAFETY: Taffy Tree becomes thread unsafe when you use the calc feature, which we do not implement
+unsafe impl<T: Send + Sync> Send for LayoutTree<T> {}
+
+#[expect(unsafe_code, reason = "TaffyTree is safe as long as calc is not used")]
+/// SAFETY: Taffy Tree becomes thread unsafe when you use the calc feature, which we do not implement
+unsafe impl<T: Send + Sync> Sync for LayoutTree<T> {}
+
+impl<T: Send + Sync> Deref for LayoutTree<T> {
+    type Target = TaffyTree<T>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<T: Send + Sync> DerefMut for LayoutTree<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
 pub struct Engine {
-    taffy: TaffyTree,
+    taffy: LayoutTree<NodeMeasure>,
     nodes: HashMap<NodeId, TaffyId>,
 }
 
@@ -14,7 +58,7 @@ impl Engine {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            taffy: TaffyTree::new(),
+            taffy: LayoutTree::new(),
             nodes: HashMap::new(),
         }
     }

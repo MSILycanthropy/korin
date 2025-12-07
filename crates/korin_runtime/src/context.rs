@@ -1,23 +1,27 @@
-use std::{cell::RefCell, rc::Rc};
+use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
+use korin_layout::Layout;
+use korin_style::Style;
 use korin_tree::NodeId;
+use korin_view::{EventHandler, FocusHandler, RenderContext};
 
-use crate::inner::RuntimeInner;
+use crate::{Node, RuntimeResult, inner::RuntimeInner};
 
-pub struct RenderContext {
-    runtime: Rc<RefCell<RuntimeInner>>,
+#[derive(Clone)]
+pub struct RuntimeContext {
+    runtime: Arc<RwLock<RuntimeInner>>,
     parent: Option<NodeId>,
 }
 
-impl RenderContext {
-    pub const fn new(runtime: Rc<RefCell<RuntimeInner>>) -> Self {
+impl RuntimeContext {
+    pub const fn new(runtime: Arc<RwLock<RuntimeInner>>) -> Self {
         Self {
             runtime,
             parent: None,
         }
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn with_parent(&self, parent: NodeId) -> Self {
         Self {
             runtime: self.runtime.clone(),
@@ -25,13 +29,72 @@ impl RenderContext {
         }
     }
 
-    #[must_use] 
-    pub const fn runtime(&self) -> &Rc<RefCell<RuntimeInner>> {
-        &self.runtime
+    /// Returns the runtime of this [`RuntimeContext`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if the `runtime` is poisoned.
+    pub fn runtime(&self) -> RwLockReadGuard<'_, RuntimeInner> {
+        self.runtime.read().expect("poisoned")
     }
 
-    #[must_use] 
+    /// Returns the runtime of this [`RuntimeContext`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if the `runtime` is poisoned.
+    pub fn runtime_mut(&mut self) -> RwLockWriteGuard<'_, RuntimeInner> {
+        self.runtime.write().expect("poisoned")
+    }
+
+    #[must_use]
     pub const fn parent(&self) -> Option<NodeId> {
         self.parent
+    }
+
+    pub fn set_root(&mut self, id: NodeId) -> RuntimeResult<()> {
+        self.runtime_mut().set_root(id)
+    }
+}
+
+impl RenderContext for RuntimeContext {
+    fn create_container(&mut self, layout: Layout, style: Style) -> Option<NodeId> {
+        let node = Node::container(style);
+        let node = self.runtime_mut().create_node(node, layout).ok()?;
+
+        if let Some(parent) = self.parent {
+            self.runtime_mut().append_child(parent, node).ok()?;
+        }
+
+        Some(node)
+    }
+
+    fn create_text(&mut self, content: String, layout: Layout, style: Style) -> Option<NodeId> {
+        let node = Node::text(content, style);
+        let node = self.runtime_mut().create_node(node, layout).ok()?;
+
+        if let Some(parent) = self.parent {
+            self.runtime_mut().append_child(parent, node).ok()?;
+        }
+
+        Some(node)
+    }
+
+    fn set_focusable(&mut self, id: NodeId) {
+        self.runtime_mut().set_focusable(id);
+    }
+
+    fn set_event_handler(&mut self, id: NodeId, handler: EventHandler) {
+        self.runtime_mut().set_event_handler(id, handler);
+    }
+
+    fn set_focus_callbacks(
+        &mut self,
+        id: NodeId,
+        on_focus: Option<FocusHandler>,
+        on_blur: Option<FocusHandler>,
+    ) {
+        self.runtime_mut()
+            .set_focus_callbacks(id, on_focus, on_blur);
     }
 }

@@ -13,7 +13,7 @@ impl Text {
         }
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn content(&self) -> &str {
         &self.content
     }
@@ -26,14 +26,14 @@ pub struct TextState {
 impl Render for Text {
     type State = TextState;
 
-    fn build(self, _ctx: &mut RenderContext) -> Self::State {
+    fn build(self, _ctx: &mut impl RenderContext) -> Self::State {
         // TODO: Create text node in layout engine
         TextState {
             node_id: NodeId::default(), // placeholder
         }
     }
 
-    fn rebuild(self, _state: &mut Self::State, _ctx: &mut RenderContext) {
+    fn rebuild(self, _state: &mut Self::State, _ctx: &mut impl RenderContext) {
         // TODO: Update text content
     }
 }

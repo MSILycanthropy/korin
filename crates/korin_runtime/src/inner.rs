@@ -5,10 +5,7 @@ use korin_layout::{Layout, LayoutEngine, Rect, Size};
 use korin_tree::{NodeId, Tree};
 use korin_view::{EventHandler, FocusHandler};
 
-use crate::{
-    error::RuntimeResult,
-    node::Node,
-};
+use crate::{error::RuntimeResult, node::Node};
 
 pub struct FocusCallbacks {
     pub on_focus: Option<FocusHandler>,
@@ -45,8 +42,10 @@ impl RuntimeInner {
         Ok(node_id)
     }
 
-    pub fn set_root(&mut self, id: NodeId) {
-        self.tree.set_root(id).ok();
+    pub fn set_root(&mut self, id: NodeId) -> RuntimeResult<()> {
+        self.tree.set_root(id)?;
+
+        Ok(())
     }
 
     pub fn append_child(&mut self, parent: NodeId, child: NodeId) -> RuntimeResult<()> {

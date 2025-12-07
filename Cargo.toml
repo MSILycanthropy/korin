@@ -7,7 +7,7 @@ version = "0.1.0"
 edition = "2024"
 
 [workspace.lints.rust]
-unsafe_code = "forbid"
+unsafe_code = "deny"
 
 [workspace.lints.clippy]
 enum_glob_use = "warn"
@@ -30,5 +30,16 @@ bitflags = "2.10.0"
 ratatui = "0.29.0"
 reactive_graph = "0.2.11"
 slotmap = "1.0.7"
-taffy = "0.9.2"
+
+# The `calc` feature makes it unsafe for TaffyTree to be `Send + Sync`
+taffy = { version = "0.9.2", default-features = false, features = [
+  "block_layout",
+  "flexbox",
+  "grid",
+  "content_size",
+  "detailed_layout_info",
+  "taffy_tree",
+  "std",
+  "alloc",
+] }
 thiserror = "2.0.17"

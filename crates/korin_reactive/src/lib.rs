@@ -1,5 +1,9 @@
 use reactive_graph::owner::LocalStorage;
 
+pub mod reactive_graph {
+    pub use reactive_graph::*;
+}
+
 pub use reactive_graph::{
     computed::Memo,
     effect::Effect,

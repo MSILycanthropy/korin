@@ -8,7 +8,7 @@ mod text;
 pub use container::Container;
 pub use event::{EventHandler, FocusHandler};
 pub use into_view::{IntoView, View};
-pub use render::Render;
+pub use render::{Render, RenderContext};
 pub use text::Text;
 
 #[must_use]

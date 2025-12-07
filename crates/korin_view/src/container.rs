@@ -69,20 +69,20 @@ impl Container {
     }
 
     #[must_use]
-    pub fn on_event<E: 'static>(mut self, handler: impl Fn(&E) + 'static) -> Self {
+    pub fn on_event<E: 'static>(mut self, handler: impl Fn(&E) + Send + Sync + 'static) -> Self {
         self.on_event = Some(EventHandler::new(handler));
         self.focusable = true;
         self
     }
 
     #[must_use]
-    pub fn on_focus(mut self, handler: impl Fn() + 'static) -> Self {
+    pub fn on_focus(mut self, handler: impl Fn() + Send + Sync + 'static) -> Self {
         self.on_focus = Some(Box::new(handler));
         self
     }
 
     #[must_use]
-    pub fn on_blur(mut self, handler: impl Fn() + 'static) -> Self {
+    pub fn on_blur(mut self, handler: impl Fn() + Send + Sync + 'static) -> Self {
         self.on_blur = Some(Box::new(handler));
         self
     }
@@ -102,8 +102,8 @@ pub struct ContainerState {
 impl Render for Container {
     type State = ContainerState;
 
-    fn build(self, ctx: &mut RenderContext) -> Self::State {
-        // TODO: Actually implement when we have RenderContext
+    fn build(self, ctx: &mut impl RenderContext) -> Self::State {
+        // TODO: Actually implement when we have impl RenderContext
         // 1. Create node in layout engine
         // 2. Register handlers
         // 3. Build children
@@ -117,7 +117,7 @@ impl Render for Container {
         }
     }
 
-    fn rebuild(self, _state: &mut Self::State, _ctx: &mut RenderContext) {
+    fn rebuild(self, _state: &mut Self::State, _ctx: &mut impl RenderContext) {
         // TODO: Update node style/layout, rebuild children
     }
 }

@@ -1,12 +1,12 @@
 use std::any::Any;
 
 pub struct EventHandler {
-    inner: Box<dyn Any>,
+    inner: Box<dyn Any + Send + Sync>,
 }
 
 impl EventHandler {
-    pub fn new<E: 'static>(handler: impl Fn(&E) + 'static) -> Self {
-        let boxed: Box<dyn Fn(&E)> = Box::new(handler);
+    pub fn new<E: 'static>(handler: impl Fn(&E) + Send + Sync + 'static) -> Self {
+        let boxed: Box<dyn Fn(&E) + Send + Sync> = Box::new(handler);
         Self {
             inner: Box::new(boxed),
         }
@@ -19,4 +19,4 @@ impl EventHandler {
     }
 }
 
-pub type FocusHandler = Box<dyn Fn()>;
+pub type FocusHandler = Box<dyn Fn() + Send + Sync>;

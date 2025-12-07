@@ -9,6 +9,7 @@ korin_layout.workspace = true
 korin_style.workspace = true
 korin_view.workspace = true
 korin_focus.workspace = true
+korin_reactive.workspace = true
 
 thiserror.workspace = true
 

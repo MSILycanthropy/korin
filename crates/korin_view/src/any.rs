@@ -1,31 +1,43 @@
-use std::any::Any;
-
 use crate::{Render, render::RenderContext};
+use std::any::{Any, TypeId};
+use std::fmt::Debug;
 
 pub trait IntoAny {
     fn into_any(self) -> AnyView;
 }
 
 pub struct AnyView {
-    build_fn: Box<dyn FnOnce(&mut RenderContext) -> AnyState>,
+    type_id: TypeId,
+    value: Box<dyn Any>,
+
+    build_fn: fn(Box<dyn Any>, &mut dyn RenderContext) -> AnyState,
+    rebuild_fn: fn(Box<dyn Any>, &mut AnyState, &mut dyn RenderContext),
 }
 
 impl AnyView {
-    pub fn new<V>(view: V) -> Self
-    where
-        V: Render + 'static,
-        V::State: 'static,
-    {
-        Self {
-            build_fn: Box::new(move |ctx| {
-                let state = view.build(ctx);
-                AnyState::new(state)
-            }),
-        }
+    #[doc(hidden)]
+    pub const fn as_type_id(&self) -> TypeId {
+        self.type_id
+    }
+}
+
+impl Render for AnyView {
+    type State = AnyState;
+
+    fn build(self, ctx: &mut impl RenderContext) -> AnyState {
+        (self.build_fn)(self.value, ctx)
     }
 
-    pub fn build(self, ctx: &mut RenderContext) -> AnyState {
-        (self.build_fn)(ctx)
+    fn rebuild(self, state: &mut AnyState, ctx: &mut impl RenderContext) {
+        (self.rebuild_fn)(self.value, state, ctx);
+    }
+}
+
+impl Debug for AnyView {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AnyView")
+            .field("type_id", &self.type_id)
+            .finish_non_exhaustive()
     }
 }
 

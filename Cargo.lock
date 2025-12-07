@@ -252,6 +252,7 @@ version = "0.1.0"
 dependencies = [
  "korin_focus",
  "korin_layout",
+ "korin_reactive",
  "korin_style",
  "korin_tree",
  "korin_view",
