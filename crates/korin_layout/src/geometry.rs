@@ -1,20 +1,20 @@
 use taffy::AvailableSpace;
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Point {
-    pub x: u16,
-    pub y: u16,
+    pub x: f32,
+    pub y: f32,
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Size {
-    pub width: u16,
-    pub height: u16,
+    pub width: f32,
+    pub height: f32,
 }
 
 impl Size {
     #[must_use]
-    pub const fn new(width: u16, height: u16) -> Self {
+    pub const fn new(width: f32, height: f32) -> Self {
         Self { width, height }
     }
 }
@@ -22,8 +22,8 @@ impl Size {
 impl From<Size> for taffy::Size<f32> {
     fn from(s: Size) -> Self {
         Self {
-            width: f32::from(s.width),
-            height: f32::from(s.height),
+            width: s.width,
+            height: s.height,
         }
     }
 }
@@ -31,23 +31,23 @@ impl From<Size> for taffy::Size<f32> {
 impl From<Size> for taffy::Size<AvailableSpace> {
     fn from(s: Size) -> Self {
         Self {
-            width: AvailableSpace::Definite(f32::from(s.width)),
-            height: AvailableSpace::Definite(f32::from(s.height)),
+            width: AvailableSpace::Definite(s.width),
+            height: AvailableSpace::Definite(s.height),
         }
     }
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Rect {
-    pub x: u16,
-    pub y: u16,
-    pub width: u16,
-    pub height: u16,
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
+    pub height: f32,
 }
 
 impl Rect {
     #[must_use]
-    pub const fn new(x: u16, y: u16, width: u16, height: u16) -> Self {
+    pub const fn new(x: f32, y: f32, width: f32, height: f32) -> Self {
         Self {
             x,
             y,
@@ -78,21 +78,10 @@ impl Rect {
 impl From<&taffy::Layout> for Rect {
     fn from(value: &taffy::Layout) -> Self {
         Self {
-            x: value.location.x as u16,
-            y: value.location.y as u16,
-            width: value.size.width as u16,
-            height: value.size.height as u16,
-        }
-    }
-}
-
-impl From<Rect> for ratatui::layout::Rect {
-    fn from(r: Rect) -> Self {
-        Self {
-            x: r.x,
-            y: r.y,
-            width: r.width,
-            height: r.height,
+            x: value.location.x,
+            y: value.location.y,
+            width: value.size.width,
+            height: value.size.height,
         }
     }
 }

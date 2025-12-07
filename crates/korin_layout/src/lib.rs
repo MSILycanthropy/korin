@@ -1,9 +1,14 @@
+use taffy::{Dimension, LengthPercentage};
+
+mod engine;
+mod error;
 mod geometry;
 mod layout;
 
+pub use engine::Engine as LayoutEngine;
+pub use error::LayoutResult;
 pub use geometry::{Point, Rect, Size};
 pub use layout::Layout;
-use taffy::{Dimension, LengthPercentage};
 
 #[must_use]
 pub fn layout() -> Layout {

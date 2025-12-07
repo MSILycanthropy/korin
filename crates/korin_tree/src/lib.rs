@@ -1,4 +1,5 @@
 use slotmap::{Key, SlotMap, new_key_type};
+use thiserror::Error;
 
 new_key_type! {
   pub struct NodeId;
@@ -9,6 +10,14 @@ impl std::fmt::Display for NodeId {
         f.write_str(&format!("{}", self.data().as_ffi()))
     }
 }
+
+#[derive(Error, Debug)]
+pub enum TreeError {
+    #[error("node not found: {0}")]
+    NodeNotFound(NodeId),
+}
+
+pub type TreeResult<T> = Result<T, TreeError>;
 
 pub struct Node<T> {
     pub data: T,
@@ -45,39 +54,48 @@ impl<T> Tree<T> {
         self.root
     }
 
-    pub fn set_root(&mut self, data: T) -> NodeId {
-        let id = self.nodes.insert(Node::from(data));
+    pub fn set_root(&mut self, id: NodeId) -> TreeResult<()> {
+        if !self.nodes.contains_key(id) {
+            return Err(TreeError::NodeNotFound(id));
+        }
 
         self.root = Some(id);
 
-        id
+        Ok(())
     }
 
-    pub fn append(&mut self, parent: NodeId, data: T) -> Option<NodeId> {
-        if !self.contains(parent) {
-            return None;
-        }
-
-        let id = self.nodes.insert(Node::from(data));
-
-        self.nodes[parent].children.push(id);
-
-        Some(id)
+    pub fn new_leaf(&mut self, data: T) -> NodeId {
+        self.nodes.insert(Node::from(data))
     }
 
-    // TODO: This
-    pub fn remove(&mut self, id: NodeId) -> Option<T> {
+    pub fn append(&mut self, parent: NodeId, child: NodeId) -> TreeResult<()> {
+        let parent = self
+            .nodes
+            .get_mut(parent)
+            .ok_or(TreeError::NodeNotFound(parent))?;
+
+        parent.children.push(child);
+
+        Ok(())
+    }
+
+    pub fn remove(&mut self, id: NodeId) -> TreeResult<T> {
         let descendants = self.descendants(id);
 
         if let Some(parent) = self
+            .nodes
             .get(id)
             .and_then(|n| n.parent)
-            .and_then(|n| self.get_mut(n))
+            .and_then(|n| self.nodes.get_mut(n))
         {
             parent.children.retain(|&c| c != id);
         }
 
-        let removed = self.nodes.remove(id).map(|n| n.data);
+        let removed = self
+            .nodes
+            .remove(id)
+            .map(|n| n.data)
+            .ok_or(TreeError::NodeNotFound(id));
 
         for d in descendants {
             self.nodes.remove(d);
@@ -87,12 +105,12 @@ impl<T> Tree<T> {
     }
 
     #[must_use]
-    pub fn get(&self, id: NodeId) -> Option<&Node<T>> {
-        self.nodes.get(id)
+    pub fn get(&self, id: NodeId) -> Option<&T> {
+        self.nodes.get(id).map(|n| &n.data)
     }
 
-    pub fn get_mut(&mut self, id: NodeId) -> Option<&mut Node<T>> {
-        self.nodes.get_mut(id)
+    pub fn get_mut(&mut self, id: NodeId) -> Option<&mut T> {
+        self.nodes.get_mut(id).map(|n| &mut n.data)
     }
 
     #[must_use]
@@ -105,7 +123,7 @@ impl<T> Tree<T> {
         let mut result = vec![];
         let mut stack = vec![id];
 
-        while let Some(node) = stack.pop().and_then(|current| self.get(current)) {
+        while let Some(node) = stack.pop().and_then(|current| self.nodes.get(current)) {
             for &child in &node.children {
                 result.push(child);
                 stack.push(child);
@@ -139,7 +157,7 @@ impl<T> Tree<T> {
         let mut stack = vec![id];
 
         while let Some(current) = stack.pop() {
-            if let Some(node) = self.get(current) {
+            if let Some(node) = self.nodes.get(current) {
                 f(current, &node.data);
 
                 for &child in node.children.iter().rev() {
@@ -156,7 +174,7 @@ impl<T> Tree<T> {
         let mut stack = vec![id];
 
         while let Some(current) = stack.pop() {
-            if let Some(node) = self.get_mut(current) {
+            if let Some(node) = self.nodes.get_mut(current) {
                 f(current, &mut node.data);
 
                 for &child in node.children.iter().rev() {

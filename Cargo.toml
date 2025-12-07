@@ -13,7 +13,8 @@ unsafe_code = "forbid"
 enum_glob_use = "warn"
 pedantic = "warn"
 nursery = "warn"
-unwrap_used = "warn"
+unwrap_used = { level = "forbid", priority = 1 }
+missing_errors_doc = { level = "allow", priority = 1 }
 
 [workspace.dependencies]
 korin = { path = "crates/korin" }
