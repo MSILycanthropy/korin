@@ -30,7 +30,7 @@ impl Runtime {
 
     pub fn mount<V>(&mut self, view: V) -> RuntimeResult<()>
     where
-        V: Render,
+        V: Render<RuntimeContext>,
         V::State: 'static,
     {
         self.owner.set();

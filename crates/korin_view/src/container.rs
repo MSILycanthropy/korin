@@ -4,22 +4,22 @@ use korin_tree::NodeId;
 
 use crate::{
     Render,
-    any::{AnyState, AnyView, IntoAny},
     event::{EventHandler, FocusHandler},
     render::RenderContext,
+    view::{AnyState, AnyView, IntoAny},
 };
 
-pub struct Container {
+pub struct Container<Ctx> {
     layout: Layout,
     style: Style,
-    children: Vec<AnyView>,
+    children: Vec<AnyView<Ctx>>,
     focusable: bool,
     on_event: Option<EventHandler>,
     on_focus: Option<FocusHandler>,
     on_blur: Option<FocusHandler>,
 }
 
-impl Container {
+impl<Ctx> Container<Ctx> {
     #[must_use]
     pub fn new() -> Self {
         Self {
@@ -52,7 +52,7 @@ impl Container {
     }
 
     #[must_use]
-    pub fn child(mut self, child: impl IntoAny) -> Self {
+    pub fn child(mut self, child: impl IntoAny<Ctx>) -> Self {
         self.children.push(child.into_any());
         self
     }
@@ -61,7 +61,7 @@ impl Container {
     pub fn children<I, C>(mut self, children: I) -> Self
     where
         I: IntoIterator<Item = C>,
-        C: IntoAny,
+        C: IntoAny<Ctx>,
     {
         self.children
             .extend(children.into_iter().map(IntoAny::into_any));
@@ -88,7 +88,7 @@ impl Container {
     }
 }
 
-impl Default for Container {
+impl<Ctx> Default for Container<Ctx> {
     fn default() -> Self {
         Self::new()
     }
@@ -99,25 +99,39 @@ pub struct ContainerState {
     children: Vec<AnyState>,
 }
 
-impl Render for Container {
+impl<Ctx: RenderContext + Clone> Render<Ctx> for Container<Ctx> {
     type State = ContainerState;
 
-    fn build(self, ctx: &mut impl RenderContext) -> Self::State {
-        // TODO: Actually implement when we have impl RenderContext
-        // 1. Create node in layout engine
-        // 2. Register handlers
-        // 3. Build children
-        // 4. Return state
+    fn build(self, ctx: &mut Ctx) -> Self::State {
+        let id = ctx
+            .create_container(self.layout, self.style)
+            .expect("failed to create container");
+
+        if self.focusable {
+            ctx.set_focusable(id);
+        }
+
+        if let Some(handler) = self.on_event {
+            ctx.set_event_handler(id, handler);
+        }
+
+        if self.on_focus.is_some() || self.on_blur.is_some() {
+            ctx.set_focus_callbacks(id, self.on_focus, self.on_blur);
+        }
 
         let children: Vec<AnyState> = self.children.into_iter().map(|c| c.build(ctx)).collect();
 
         ContainerState {
-            node_id: NodeId::default(), // placeholder
+            node_id: id,
             children,
         }
     }
 
-    fn rebuild(self, _state: &mut Self::State, _ctx: &mut impl RenderContext) {
-        // TODO: Update node style/layout, rebuild children
+    fn rebuild(self, state: &mut Self::State, ctx: &mut Ctx) {
+        ctx.update_container(state.node_id, self.layout, self.style);
+
+        for (child, child_state) in self.children.into_iter().zip(state.children.iter_mut()) {
+            child.rebuild(child_state, &mut ctx.with_parent(state.node_id));
+        }
     }
 }

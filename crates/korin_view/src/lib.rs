@@ -1,18 +1,16 @@
-mod any;
 mod container;
 mod event;
-mod into_view;
 mod render;
 mod text;
+mod view;
 
 pub use container::Container;
 pub use event::{EventHandler, FocusHandler};
-pub use into_view::{IntoView, View};
 pub use render::{Render, RenderContext};
 pub use text::Text;
 
 #[must_use]
-pub fn container() -> Container {
+pub fn container<Ctx: RenderContext + Clone>() -> Container<Ctx> {
     Container::new()
 }
 

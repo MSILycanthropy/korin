@@ -90,6 +90,14 @@ impl Engine {
         Ok(())
     }
 
+    pub fn update(&mut self, id: NodeId, layout: Layout) -> LayoutResult<()> {
+        if let Some(&taffy_id) = self.nodes.get(&id) {
+            self.taffy.set_style(taffy_id, layout.into())?;
+        }
+
+        Ok(())
+    }
+
     pub fn compute<T>(&mut self, tree: &Tree<T>, size: Size) -> LayoutResult<()> {
         let root = tree.root().ok_or(LayoutError::NoRoot)?;
         let root_taffy = self.taffy_node(root)?;

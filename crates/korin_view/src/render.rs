@@ -9,7 +9,10 @@ use crate::{
 
 pub trait RenderContext {
     fn create_container(&mut self, layout: Layout, style: Style) -> Option<NodeId>;
+    fn update_container(&mut self, id: NodeId, layout: Layout, style: Style);
     fn create_text(&mut self, content: String, layout: Layout, style: Style) -> Option<NodeId>;
+    fn update_text(&mut self, id: NodeId, content: String, layout: Layout, style: Style);
+
     fn set_focusable(&mut self, id: NodeId);
     fn set_event_handler(&mut self, id: NodeId, handler: EventHandler);
     fn set_focus_callbacks(
@@ -18,68 +21,76 @@ pub trait RenderContext {
         on_focus: Option<FocusHandler>,
         on_blur: Option<FocusHandler>,
     );
+
+    #[must_use]
+    fn with_parent(&self, parent: NodeId) -> Self;
 }
 
-pub trait Render {
+pub trait Render<Ctx>
+where
+    Ctx: RenderContext + Clone,
+{
     type State;
 
-    fn build(self, ctx: &mut impl RenderContext) -> Self::State;
+    fn build(self, ctx: &mut Ctx) -> Self::State;
 
-    fn rebuild(self, state: &mut Self::State, ctx: &mut impl RenderContext);
+    fn rebuild(self, state: &mut Self::State, ctx: &mut Ctx);
 }
 
-impl Render for &str {
+impl<Ctx: RenderContext + Clone> Render<Ctx> for &str {
     type State = TextState;
 
-    fn build(self, ctx: &mut impl RenderContext) -> Self::State {
+    fn build(self, ctx: &mut Ctx) -> Self::State {
         Text::new(self).build(ctx)
     }
 
-    fn rebuild(self, state: &mut Self::State, ctx: &mut impl RenderContext) {
+    fn rebuild(self, state: &mut Self::State, ctx: &mut Ctx) {
         Text::new(self).rebuild(state, ctx);
     }
 }
 
-impl Render for String {
+impl<Ctx: RenderContext + Clone> Render<Ctx> for String {
     type State = TextState;
 
-    fn build(self, ctx: &mut impl RenderContext) -> Self::State {
+    fn build(self, ctx: &mut Ctx) -> Self::State {
         Text::new(self).build(ctx)
     }
 
-    fn rebuild(self, state: &mut Self::State, ctx: &mut impl RenderContext) {
+    fn rebuild(self, state: &mut Self::State, ctx: &mut Ctx) {
         Text::new(self).rebuild(state, ctx);
     }
 }
 
-impl<F, V> Render for F
+impl<F, V, Ctx> Render<Ctx> for F
 where
     F: Fn() -> V,
-    V: Render,
+    V: Render<Ctx>,
+    Ctx: RenderContext + Clone,
 {
     type State = V::State;
 
-    fn build(self, ctx: &mut impl RenderContext) -> Self::State {
+    fn build(self, ctx: &mut Ctx) -> Self::State {
         // TODO: wrap in reactive effect
         (self)().build(ctx)
     }
 
-    fn rebuild(self, state: &mut Self::State, ctx: &mut impl RenderContext) {
+    fn rebuild(self, state: &mut Self::State, ctx: &mut Ctx) {
         (self)().rebuild(state, ctx);
     }
 }
 
-impl<T> Render for Option<T>
+impl<T, Ctx> Render<Ctx> for Option<T>
 where
-    T: Render,
+    T: Render<Ctx>,
+    Ctx: RenderContext + Clone,
 {
     type State = Option<T::State>;
 
-    fn build(self, ctx: &mut impl RenderContext) -> Self::State {
+    fn build(self, ctx: &mut Ctx) -> Self::State {
         self.map(|v| v.build(ctx))
     }
 
-    fn rebuild(self, state: &mut Self::State, ctx: &mut impl RenderContext) {
+    fn rebuild(self, state: &mut Self::State, ctx: &mut Ctx) {
         match (self, state.as_mut()) {
             (Some(new), Some(existing)) => new.rebuild(existing, ctx),
             (Some(new), None) => *state = Some(new.build(ctx)),

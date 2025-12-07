@@ -5,7 +5,7 @@ use korin_style::Style;
 use korin_tree::NodeId;
 use korin_view::{EventHandler, FocusHandler, RenderContext};
 
-use crate::{Node, RuntimeResult, inner::RuntimeInner};
+use crate::{Node, NodeContent, RuntimeResult, inner::RuntimeInner};
 
 #[derive(Clone)]
 pub struct RuntimeContext {
@@ -69,6 +69,19 @@ impl RenderContext for RuntimeContext {
         Some(node)
     }
 
+    fn update_container(&mut self, id: NodeId, layout: Layout, style: Style) {
+        let mut runtime = self.runtime_mut();
+
+        if let Some(node) = runtime.tree.get_mut(id) {
+            node.style = style;
+        }
+
+        runtime
+            .layout
+            .update(id, layout)
+            .expect("updating container failed");
+    }
+
     fn create_text(&mut self, content: String, layout: Layout, style: Style) -> Option<NodeId> {
         let node = Node::text(content, style);
         let node = self.runtime_mut().create_node(node, layout).ok()?;
@@ -78,6 +91,20 @@ impl RenderContext for RuntimeContext {
         }
 
         Some(node)
+    }
+
+    fn update_text(&mut self, id: NodeId, content: String, layout: Layout, style: Style) {
+        let mut runtime = self.runtime_mut();
+
+        if let Some(node) = runtime.tree.get_mut(id) {
+            node.content = NodeContent::Text(content);
+            node.style = style;
+        }
+
+        runtime
+            .layout
+            .update(id, layout)
+            .expect("updating text failed");
     }
 
     fn set_focusable(&mut self, id: NodeId) {
@@ -96,5 +123,12 @@ impl RenderContext for RuntimeContext {
     ) {
         self.runtime_mut()
             .set_focus_callbacks(id, on_focus, on_blur);
+    }
+
+    fn with_parent(&self, parent: NodeId) -> Self {
+        Self {
+            runtime: self.runtime.clone(),
+            parent: Some(parent),
+        }
     }
 }
