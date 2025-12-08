@@ -81,8 +81,9 @@ where
 {
     fn build(self: Box<Self>, ctx: &mut Ctx) -> AnyState {
         let type_id = TypeId::of::<T::State>();
+        let state = self.inner.build(ctx);
 
-        AnyState::new(self.inner.build(ctx), type_id)
+        AnyState::new(state, type_id)
     }
 
     fn rebuild(self: Box<Self>, state: &mut AnyState, ctx: &mut Ctx) {

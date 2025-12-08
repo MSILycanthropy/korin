@@ -28,6 +28,10 @@ pub fn effect<T: 'static>(
     Effect::new(f)
 }
 
+pub async fn tick() {
+    any_spawner::Executor::tick().await;
+}
+
 #[cfg(feature = "tokio")]
 pub fn init_tokio() -> Result<(), ExecutorError> {
     any_spawner::Executor::init_tokio()
@@ -40,13 +44,14 @@ pub fn init_tokio() -> Result<(), ExecutorError> {
 /// Panics if a global executor has already been set.
 #[cfg(feature = "tokio")]
 #[allow(clippy::future_not_send, reason = "LocalSet is.. well local")]
-pub async fn run_tokio<F, T>(f: F) -> T
+pub async fn run_tokio<F, Fut, T>(f: F) -> T
 where
-    F: FnOnce() -> T,
+    F: FnOnce() -> Fut,
+    Fut: Future<Output = T>,
 {
     init_tokio().expect("failed to init executor");
     let local = tokio::task::LocalSet::new();
-    local.run_until(async { f() }).await
+    local.run_until(f()).await
 }
 
 #[cfg(feature = "async-executor")]

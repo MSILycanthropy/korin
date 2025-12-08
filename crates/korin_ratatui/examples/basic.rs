@@ -3,7 +3,7 @@ use std::{io, time::Duration};
 use korin_layout::{col, full, len, row};
 use korin_ratatui::{Event, dispatch, poll, render};
 use korin_reactive::{
-    reactive_graph::traits::{Get, Set},
+    reactive_graph::traits::{Get, GetUntracked, Update},
     rw_signal,
 };
 use korin_runtime::Runtime;
@@ -13,24 +13,28 @@ use ratatui::{Terminal, backend::TestBackend, crossterm::event::KeyCode, prelude
 
 #[tokio::main]
 async fn main() -> io::Result<()> {
-    korin_reactive::run_tokio(|| {
+    let mut runtime = Runtime::new();
+
+    korin_reactive::run_tokio(async || {
         let debug = std::env::args().any(|x| x == "--debug");
 
         if debug {
             let mut terminal = Terminal::new(TestBackend::new(97, 11))?;
-            run(&mut terminal, debug)
+            run(&mut runtime, &mut terminal, debug).await
         } else {
             let mut terminal = ratatui::init();
 
-            run(&mut terminal, debug)
+            run(&mut runtime, &mut terminal, debug).await
         }
     })
     .await
 }
 
-fn run<B: Backend>(terminal: &mut Terminal<B>, debug: bool) -> io::Result<()> {
-    let mut runtime = Runtime::new();
-
+async fn run<B: Backend>(
+    mut runtime: &mut Runtime,
+    terminal: &mut Terminal<B>,
+    debug: bool,
+) -> io::Result<()> {
     let count = rw_signal(0isize);
 
     terminal.clear()?;
@@ -62,7 +66,6 @@ fn run<B: Backend>(terminal: &mut Terminal<B>, debug: bool) -> io::Result<()> {
                         .child(move || {
                             let c = count.get();
 
-                            eprintln!("Closure running, count = {}", c);
                             format!("{c}")
                         }),
                 ),
@@ -76,11 +79,13 @@ fn run<B: Backend>(terminal: &mut Terminal<B>, debug: bool) -> io::Result<()> {
         .on_event::<Event>(move |event| {
             if let Event::Key(key) = event {
                 match key.code {
-                    KeyCode::Char('j') => count.set(count.get() + 1),
-                    KeyCode::Char('k') => count.set(count.get().saturating_sub(1)),
+                    KeyCode::Char('j') => count.update(|c| *c += 1),
+                    KeyCode::Char('k') => count.update(|c| *c = c.saturating_sub(1)),
                     _ => {}
                 }
             }
+
+            eprintln!("Count updated to: {}", count.get_untracked());
         });
 
     runtime.mount(view).expect("failed to mount");
@@ -90,6 +95,8 @@ fn run<B: Backend>(terminal: &mut Terminal<B>, debug: bool) -> io::Result<()> {
     } else {
         loop {
             run_once(terminal, &mut runtime)?;
+
+            korin_reactive::tick().await;
         }
     }
 
@@ -110,8 +117,6 @@ fn run_once<B: Backend>(terminal: &mut Terminal<B>, runtime: &mut Runtime) -> io
     })?;
 
     if let Some(event) = poll(Duration::from_millis(16)) {
-        dispatch(&event, runtime);
-
         if let Event::Key(key) = &event
             && key.code == KeyCode::Char('q')
         {
@@ -119,6 +124,8 @@ fn run_once<B: Backend>(terminal: &mut Terminal<B>, runtime: &mut Runtime) -> io
             ratatui::restore();
             std::process::exit(0);
         }
+
+        dispatch(&event, runtime);
     }
 
     Ok(())

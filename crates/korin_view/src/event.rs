@@ -13,7 +13,7 @@ impl EventHandler {
     }
 
     pub fn call<E: 'static>(&self, event: &E) {
-        if let Some(handler) = self.inner.downcast_ref::<Box<dyn Fn(&E)>>() {
+        if let Some(handler) = self.inner.downcast_ref::<Box<dyn Fn(&E) + Send + Sync>>() {
             handler(event);
         }
     }

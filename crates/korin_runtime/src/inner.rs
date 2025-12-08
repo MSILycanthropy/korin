@@ -172,6 +172,10 @@ impl RuntimeInner {
         self.tree.root()
     }
 
+    pub fn focused(&self) -> Option<NodeId> {
+        self.focus.focused().or_else(|| self.root())
+    }
+
     pub fn children(&self, id: NodeId) -> Vec<NodeId> {
         self.tree.children(id)
     }

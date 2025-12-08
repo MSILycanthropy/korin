@@ -3,7 +3,10 @@ mod error;
 mod inner;
 mod node;
 
-use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use std::{
+    any::Any,
+    sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
+};
 
 use inner::RuntimeInner;
 
@@ -14,10 +17,10 @@ use korin_reactive::reactive_graph::owner::{Owner, provide_context};
 use korin_view::Render;
 pub use node::{Node, NodeContent};
 
-#[derive(Clone)]
 pub struct Runtime {
     inner: Arc<RwLock<RuntimeInner>>,
     owner: Owner,
+    state: Option<Box<dyn Any>>,
 }
 
 impl Runtime {
@@ -26,6 +29,7 @@ impl Runtime {
         Self {
             inner: Arc::new(RwLock::new(RuntimeInner::new())),
             owner: Owner::new(),
+            state: None,
         }
     }
 
@@ -39,8 +43,9 @@ impl Runtime {
         provide_context(self.inner.clone());
 
         let mut ctx = RuntimeContext::new(self.inner.clone());
-        let _state = view.build(&mut ctx);
+        let state = view.build(&mut ctx);
 
+        self.state = Some(Box::new(state));
         self.inner_mut().update_focus_order();
 
         Ok(())
