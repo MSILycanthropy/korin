@@ -465,6 +465,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "korin_components"
+version = "0.1.0"
+dependencies = [
+ "korin_ratatui",
+ "korin_reactive",
+ "korin_runtime",
+ "korin_style",
+ "korin_view",
+ "ratatui",
+]
+
+[[package]]
 name = "korin_focus"
 version = "0.1.0"
 

@@ -1,0 +1,15 @@
+[package]
+name = "korin_components"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+korin_runtime.workspace = true
+korin_style.workspace = true
+korin_reactive.workspace = true
+korin_view.workspace = true
+korin_ratatui.workspace = true
+ratatui.workspace = true
+
+[lints]
+workspace = true

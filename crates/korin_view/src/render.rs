@@ -11,8 +11,11 @@ use crate::{
 pub trait RenderContext {
     fn create_container(&mut self, layout: Layout, style: Style) -> Option<NodeId>;
     fn update_container(&mut self, id: NodeId, layout: Layout, style: Style);
+
     fn create_text(&mut self, content: String, layout: Layout, style: Style) -> Option<NodeId>;
     fn update_text(&mut self, id: NodeId, content: String, layout: Layout, style: Style);
+
+    fn update_style(&mut self, id: NodeId, style: Style);
 
     fn set_focusable(&mut self, id: NodeId);
     fn set_event_handler(&mut self, id: NodeId, handler: EventHandler);

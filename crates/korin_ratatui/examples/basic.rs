@@ -3,8 +3,8 @@ use std::{io, time::Duration};
 use korin_layout::{col, full, len, row};
 use korin_ratatui::{Event, dispatch, poll, render};
 use korin_reactive::{
+    RwSignal,
     reactive_graph::traits::{Get, Update},
-    rw_signal,
 };
 use korin_runtime::Runtime;
 use korin_style::{Color, Style};
@@ -35,7 +35,7 @@ async fn run<B: Backend>(
     terminal: &mut Terminal<B>,
     debug: bool,
 ) -> io::Result<()> {
-    let count = rw_signal(0isize);
+    let count = RwSignal::new(0isize);
 
     terminal.clear()?;
     terminal.hide_cursor()?;

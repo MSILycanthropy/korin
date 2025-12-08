@@ -111,6 +111,14 @@ impl RenderContext for RuntimeContext {
             .expect("updating text failed");
     }
 
+    fn update_style(&mut self, id: NodeId, style: Style) {
+        let mut runtime = self.runtime_mut();
+
+        if let Some(node) = runtime.tree.get_mut(id) {
+            node.style = style;
+        }
+    }
+
     fn set_focusable(&mut self, id: NodeId) {
         self.runtime_mut().set_focusable(id);
     }

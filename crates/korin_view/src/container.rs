@@ -6,12 +6,13 @@ use crate::{
     Render,
     event::{EventHandler, FocusHandler},
     render::RenderContext,
+    style::{AnyStyle, AnyStyleState, IntoStyle, StyleWrapper},
     view::{AnyState, AnyView, IntoAny},
 };
 
-pub struct Container<Ctx> {
+pub struct Container<Ctx: RenderContext + Clone + 'static> {
     layout: Layout,
-    style: Style,
+    style: Option<AnyStyle<Ctx>>,
     children: Vec<AnyView<Ctx>>,
     focusable: bool,
     on_event: Option<EventHandler>,
@@ -19,12 +20,12 @@ pub struct Container<Ctx> {
     on_blur: Option<FocusHandler>,
 }
 
-impl<Ctx> Container<Ctx> {
+impl<Ctx: RenderContext + Clone> Container<Ctx> {
     #[must_use]
     pub fn new() -> Self {
         Self {
             layout: Layout::default(),
-            style: Style::default(),
+            style: None,
             children: Vec::new(),
             focusable: false,
             on_event: None,
@@ -40,8 +41,13 @@ impl<Ctx> Container<Ctx> {
     }
 
     #[must_use]
-    pub const fn style(mut self, style: Style) -> Self {
-        self.style = style;
+    pub fn style<S>(mut self, style: S) -> Self
+    where
+        S: IntoStyle<Ctx> + Send + Sync + 'static,
+    {
+        self.style = Some(AnyStyle {
+            inner: Box::new(StyleWrapper(style)),
+        });
         self
     }
 
@@ -88,7 +94,7 @@ impl<Ctx> Container<Ctx> {
     }
 }
 
-impl<Ctx> Default for Container<Ctx> {
+impl<Ctx: RenderContext + Clone> Default for Container<Ctx> {
     fn default() -> Self {
         Self::new()
     }
@@ -97,6 +103,7 @@ impl<Ctx> Default for Container<Ctx> {
 pub struct ContainerState {
     node_id: NodeId,
     children: Vec<AnyState>,
+    style_state: Option<AnyStyleState>,
 }
 
 impl<Ctx: RenderContext + Clone> Render<Ctx> for Container<Ctx> {
@@ -104,8 +111,10 @@ impl<Ctx: RenderContext + Clone> Render<Ctx> for Container<Ctx> {
 
     fn build(self, ctx: &mut Ctx) -> Self::State {
         let id = ctx
-            .create_container(self.layout, self.style)
+            .create_container(self.layout, Style::default())
             .expect("failed to create container");
+
+        let style_state = self.style.map(|s| s.inner.build(id, ctx));
 
         if self.focusable {
             ctx.set_focusable(id);
@@ -129,11 +138,16 @@ impl<Ctx: RenderContext + Clone> Render<Ctx> for Container<Ctx> {
         ContainerState {
             node_id: id,
             children,
+            style_state,
         }
     }
 
     fn rebuild(self, state: &mut Self::State, ctx: &mut Ctx) {
-        ctx.update_container(state.node_id, self.layout, self.style);
+        ctx.update_container(state.node_id, self.layout, Style::default());
+
+        if let (Some(style), Some(style_state)) = (self.style, &mut state.style_state) {
+            style.inner.rebuild(state.node_id, style_state, ctx);
+        }
 
         for (child, child_state) in self.children.into_iter().zip(state.children.iter_mut()) {
             child.rebuild(child_state, &mut ctx.with_parent(state.node_id));

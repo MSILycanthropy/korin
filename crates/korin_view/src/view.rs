@@ -43,6 +43,7 @@ pub struct AnyView<Ctx> {
 }
 
 impl<Ctx> AnyView<Ctx> {
+    #[must_use]
     pub const fn type_id(&self) -> TypeId {
         self.type_id
     }

@@ -14,8 +14,10 @@ pub use context::RuntimeContext;
 pub use error::{RuntimeError, RuntimeResult};
 use korin_layout::Size;
 use korin_reactive::reactive_graph::owner::{Owner, provide_context};
-use korin_view::Render;
+use korin_view::{AnyView, Render};
 pub use node::{Node, NodeContent};
+
+pub type View = AnyView<RuntimeContext>;
 
 pub struct Runtime {
     inner: Arc<RwLock<RuntimeInner>>,
