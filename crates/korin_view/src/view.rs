@@ -5,11 +5,11 @@ use crate::{Render, RenderContext};
 
 pub struct AnyState {
     type_id: TypeId,
-    inner: Box<dyn Any>,
+    inner: Box<dyn Any + Send + Sync>,
 }
 
 impl AnyState {
-    pub fn new<T: 'static>(inner: T, type_id: TypeId) -> Self {
+    pub fn new<T: Send + Sync + 'static>(inner: T, type_id: TypeId) -> Self {
         Self {
             type_id,
             inner: Box::new(inner),
@@ -64,7 +64,7 @@ impl<Ctx> Debug for AnyView<Ctx> {
     }
 }
 
-trait ErasedView<Ctx> {
+trait ErasedView<Ctx>: Send + Sync {
     fn build(self: Box<Self>, ctx: &mut Ctx) -> AnyState;
     fn rebuild(self: Box<Self>, state: &mut AnyState, ctx: &mut Ctx);
 }
@@ -75,9 +75,9 @@ pub struct View<T> {
 
 impl<T, Ctx> ErasedView<Ctx> for View<T>
 where
-    T: Render<Ctx> + 'static,
+    T: Render<Ctx> + Send + Sync + 'static,
     Ctx: RenderContext + Clone,
-    T::State: 'static,
+    T::State: Send + Sync + 'static,
 {
     fn build(self: Box<Self>, ctx: &mut Ctx) -> AnyState {
         let type_id = TypeId::of::<T::State>();
@@ -99,9 +99,9 @@ pub trait IntoAny<Ctx> {
 
 impl<T, Ctx> IntoAny<Ctx> for T
 where
-    T: Render<Ctx> + 'static,
+    T: Render<Ctx> + Send + Sync + 'static,
     Ctx: RenderContext + Clone,
-    T::State: 'static,
+    T::State: Send + Sync + 'static,
 {
     fn into_any(self) -> AnyView<Ctx> {
         AnyView {

@@ -20,7 +20,7 @@ pub use node::{Node, NodeContent};
 pub struct Runtime {
     inner: Arc<RwLock<RuntimeInner>>,
     owner: Owner,
-    state: Option<Box<dyn Any>>,
+    state: Option<Box<dyn Any + Send + Sync>>,
 }
 
 impl Runtime {

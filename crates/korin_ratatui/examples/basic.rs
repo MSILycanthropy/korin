@@ -3,7 +3,7 @@ use std::{io, time::Duration};
 use korin_layout::{col, full, len, row};
 use korin_ratatui::{Event, dispatch, poll, render};
 use korin_reactive::{
-    reactive_graph::traits::{Get, GetUntracked, Update},
+    reactive_graph::traits::{Get, Update},
     rw_signal,
 };
 use korin_runtime::Runtime;
@@ -31,7 +31,7 @@ async fn main() -> io::Result<()> {
 }
 
 async fn run<B: Backend>(
-    mut runtime: &mut Runtime,
+    runtime: &mut Runtime,
     terminal: &mut Terminal<B>,
     debug: bool,
 ) -> io::Result<()> {
@@ -84,17 +84,15 @@ async fn run<B: Backend>(
                     _ => {}
                 }
             }
-
-            eprintln!("Count updated to: {}", count.get_untracked());
         });
 
     runtime.mount(view).expect("failed to mount");
 
     if debug {
-        run_once(terminal, &mut runtime)?;
+        run_once(terminal, runtime)?;
     } else {
         loop {
-            run_once(terminal, &mut runtime)?;
+            run_once(terminal, runtime)?;
 
             korin_reactive::tick().await;
         }

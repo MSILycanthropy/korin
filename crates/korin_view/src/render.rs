@@ -1,10 +1,5 @@
-use std::pin::Pin;
-
 use korin_layout::Layout;
-use korin_reactive::{
-    RwSignal,
-    reactive_graph::{effect::RenderEffect, owner::Owner, traits::Get},
-};
+use korin_reactive::reactive_graph::effect::RenderEffect;
 use korin_style::Style;
 use korin_tree::NodeId;
 
@@ -36,7 +31,7 @@ pub trait Render<Ctx>
 where
     Ctx: RenderContext + Clone,
 {
-    type State;
+    type State: Send + Sync;
 
     fn build(self, ctx: &mut Ctx) -> Self::State;
 
@@ -79,22 +74,12 @@ where
     fn build(self, ctx: &mut Ctx) -> Self::State {
         let mut ctx = ctx.clone();
 
-        let test_signal: RwSignal<i32> = RwSignal::new(999);
-
         RenderEffect::new(move |prev: Option<V::State>| {
-            let _test = test_signal.get();
-            eprintln!("RenderEffect running, test_signal = {}", _test);
-
             let new_view = self();
 
             match prev {
-                None => {
-                    eprintln!("Building new state");
-                    new_view.build(&mut ctx)
-                }
+                None => new_view.build(&mut ctx),
                 Some(mut state) => {
-                    eprintln!("Rebuilding existing state");
-
                     new_view.rebuild(&mut state, &mut ctx);
                     state
                 }

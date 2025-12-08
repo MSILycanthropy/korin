@@ -5,6 +5,7 @@ use taffy::{
 
 #[derive(Clone, Default)]
 pub struct Layout(pub Style);
+
 impl Layout {
     #[must_use]
     pub fn new() -> Self {
@@ -245,3 +246,16 @@ impl From<Layout> for Style {
         value.0
     }
 }
+
+#[expect(
+    unsafe_code,
+    reason = "Style is safe as long as calc feature is not used"
+)]
+#[allow(clippy::non_send_fields_in_send_ty)]
+unsafe impl Send for Layout {}
+
+#[expect(
+    unsafe_code,
+    reason = "Style is safe as long as calc feature is not used"
+)]
+unsafe impl Sync for Layout {}
