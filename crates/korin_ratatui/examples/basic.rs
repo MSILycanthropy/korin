@@ -8,7 +8,7 @@ use korin_view::container;
 use ratatui::{Terminal, backend::TestBackend, crossterm::event::KeyCode, prelude::Backend};
 
 fn main() -> io::Result<()> {
-    let debug = false;
+    let debug = std::env::args().any(|x| x == "--debug");
 
     if debug {
         let mut terminal = Terminal::new(TestBackend::new(97, 11))?;

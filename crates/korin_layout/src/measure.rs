@@ -47,7 +47,7 @@ fn measure_text(text: &str, available_width: f32) -> Size<f32> {
 
         if line_width <= max_width {
             total_height += 1.0;
-            max_line_width = max_line_width.max(total_height);
+            max_line_width = max_line_width.max(line_width);
         } else {
             let wrapped_lines = (line_width + max_width - 1.0) / max_width;
             total_height += wrapped_lines;
