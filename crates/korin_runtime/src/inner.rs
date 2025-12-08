@@ -5,7 +5,7 @@ use korin_layout::{Layout, LayoutEngine, Rect, Size};
 use korin_tree::{NodeId, Tree};
 use korin_view::{EventHandler, FocusHandler};
 
-use crate::{RuntimeError, error::RuntimeResult, node::Node};
+use crate::{NodeContent, RuntimeError, error::RuntimeResult, node::Node};
 
 pub struct FocusCallbacks {
     pub on_focus: Option<FocusHandler>,
@@ -35,9 +35,18 @@ impl RuntimeInner {
     }
 
     pub fn create_node(&mut self, node: Node, layout: Layout) -> RuntimeResult<NodeId> {
+        let text = if let NodeContent::Text(text) = &node.content {
+            Some(text.clone())
+        } else {
+            None
+        };
         let node_id = self.tree.new_leaf(node);
 
-        self.layout.insert(layout, node_id)?;
+        if let Some(text) = text {
+            self.layout.insert_text(layout, node_id, text)?;
+        } else {
+            self.layout.insert(layout, node_id)?;
+        }
 
         Ok(node_id)
     }

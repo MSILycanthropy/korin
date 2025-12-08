@@ -6,10 +6,10 @@ use std::{
 use korin_tree::{NodeId, Tree};
 use taffy::{NodeId as TaffyId, TaffyTree};
 
-use crate::{Layout, LayoutResult, Rect, Size, error::LayoutError};
+use crate::{Layout, LayoutResult, Rect, Size, error::LayoutError, measure::taffy_measure};
 
-#[derive(Default, Clone, Copy)]
-pub struct NodeMeasure;
+#[derive(Default, Clone)]
+pub struct NodeMeasure(pub Option<String>);
 
 #[expect(unsafe_code, reason = "TaffyTree is safe as long as calc is not used")]
 /// SAFETY: Taffy Tree becomes thread unsafe when you use the calc feature, which we do not implement
@@ -64,7 +64,22 @@ impl Engine {
     }
 
     pub fn insert(&mut self, layout: Layout, node_id: NodeId) -> LayoutResult<TaffyId> {
-        let taffy_id = self.taffy.new_leaf(layout.into())?;
+        let ctx = NodeMeasure(None);
+        let taffy_id = self.taffy.new_leaf_with_context(layout.into(), ctx)?;
+
+        self.nodes.insert(node_id, taffy_id);
+
+        Ok(taffy_id)
+    }
+
+    pub fn insert_text(
+        &mut self,
+        layout: Layout,
+        node_id: NodeId,
+        text: String,
+    ) -> LayoutResult<TaffyId> {
+        let ctx = NodeMeasure(Some(text));
+        let taffy_id = self.taffy.new_leaf_with_context(layout.into(), ctx)?;
 
         self.nodes.insert(node_id, taffy_id);
 
@@ -102,7 +117,8 @@ impl Engine {
         let root = tree.root().ok_or(LayoutError::NoRoot)?;
         let root_taffy = self.taffy_node(root)?;
 
-        self.taffy.compute_layout(root_taffy, size.into())?;
+        self.taffy
+            .compute_layout_with_measure(root_taffy, size.into(), taffy_measure)?;
 
         Ok(())
     }

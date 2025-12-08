@@ -31,6 +31,7 @@ bitflags = "2.10.0"
 ratatui = "0.29.0"
 reactive_graph = "0.2.11"
 slotmap = "1.0.7"
+unicode-width = "0.2"
 
 # The `calc` feature makes it unsafe for TaffyTree to be `Send + Sync`
 taffy = { version = "0.9.2", default-features = false, features = [

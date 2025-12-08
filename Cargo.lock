@@ -420,6 +420,7 @@ dependencies = [
  "korin_tree",
  "taffy",
  "thiserror",
+ "unicode-width 0.2.0",
 ]
 
 [[package]]

@@ -4,6 +4,7 @@ mod engine;
 mod error;
 mod geometry;
 mod layout;
+mod measure;
 
 pub use engine::Engine as LayoutEngine;
 pub use error::{LayoutError, LayoutResult};
