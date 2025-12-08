@@ -109,4 +109,25 @@ impl Style {
     pub const fn text_right(self) -> Self {
         self.text_alignment(Alignment::Right)
     }
+
+    #[must_use]
+    pub fn merge(mut self, parent: &Self) -> Self {
+        if self.text_color == Color::Reset {
+            self.text_color = parent.text_color;
+        }
+
+        if self.text_modifiers.is_empty() {
+            self.text_modifiers = parent.text_modifiers;
+        }
+
+        if self.text_alignment == Alignment::Left && parent.text_alignment != Alignment::Left {
+            self.text_alignment = parent.text_alignment;
+        }
+
+        if self.background == Color::Reset {
+            self.background = parent.background;
+        }
+
+        self
+    }
 }

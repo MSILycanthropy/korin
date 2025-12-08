@@ -10,14 +10,16 @@ pub enum NodeContent {
 pub struct Node {
     pub content: NodeContent,
     pub style: Style,
+    pub computed_style: Style,
 }
 
 impl Node {
-    #[must_use] 
+    #[must_use]
     pub const fn container(style: Style) -> Self {
         Self {
             content: NodeContent::Container,
             style,
+            computed_style: Style::new(),
         }
     }
 
@@ -25,6 +27,7 @@ impl Node {
         Self {
             content: NodeContent::Text(text.into()),
             style,
+            computed_style: Style::new(),
         }
     }
 }

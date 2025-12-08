@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use korin_focus::FocusManager;
 use korin_layout::{Layout, LayoutEngine, Rect, Size};
+use korin_style::Style;
 use korin_tree::{NodeId, Tree};
 use korin_view::{EventHandler, FocusHandler};
 
@@ -130,7 +131,26 @@ impl RuntimeInner {
         Ok(())
     }
 
+    pub fn cascade_styles(&mut self, node_id: NodeId, inherited: Style) -> RuntimeResult<()> {
+        let Some(node) = self.get_mut(node_id) else {
+            return Err(RuntimeError::NodeNotFound(node_id));
+        };
+
+        node.computed_style = node.style.merge(&inherited);
+        let computed = node.computed_style;
+
+        for child_id in self.tree.children(node_id) {
+            self.cascade_styles(child_id, computed)?;
+        }
+
+        Ok(())
+    }
+
     pub fn compute_layout(&mut self, size: Size) -> RuntimeResult<()> {
+        if let Some(root) = self.root() {
+            self.cascade_styles(root, Style::new())?;
+        }
+
         self.layout.compute(&self.tree, size)?;
 
         Ok(())
@@ -142,6 +162,10 @@ impl RuntimeInner {
 
     pub fn get(&self, id: NodeId) -> Option<&Node> {
         self.tree.get(id)
+    }
+
+    pub fn get_mut(&mut self, id: NodeId) -> Option<&mut Node> {
+        self.tree.get_mut(id)
     }
 
     pub const fn root(&self) -> Option<NodeId> {

@@ -45,7 +45,7 @@ pub fn render_node(
     let abs_rect = Rect::new(abs_x, abs_y, layout_rect.width, layout_rect.height);
 
     let rat_rect = to_rat_rect(abs_rect);
-    let style = node.style;
+    let style = node.computed_style;
     let content = node.content.clone();
     let children = runtime.children(node_id);
 
