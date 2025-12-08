@@ -2,26 +2,36 @@ use std::{io, time::Duration};
 
 use korin_layout::{col, full, len, row};
 use korin_ratatui::{Event, dispatch, poll, render};
+use korin_reactive::{
+    reactive_graph::traits::{Get, Set},
+    rw_signal,
+};
 use korin_runtime::Runtime;
 use korin_style::{Color, Style};
 use korin_view::container;
 use ratatui::{Terminal, backend::TestBackend, crossterm::event::KeyCode, prelude::Backend};
 
-fn main() -> io::Result<()> {
-    let debug = std::env::args().any(|x| x == "--debug");
+#[tokio::main]
+async fn main() -> io::Result<()> {
+    korin_reactive::run_tokio(|| {
+        let debug = std::env::args().any(|x| x == "--debug");
 
-    if debug {
-        let mut terminal = Terminal::new(TestBackend::new(97, 11))?;
-        run(&mut terminal, debug)
-    } else {
-        let mut terminal = ratatui::init();
+        if debug {
+            let mut terminal = Terminal::new(TestBackend::new(97, 11))?;
+            run(&mut terminal, debug)
+        } else {
+            let mut terminal = ratatui::init();
 
-        run(&mut terminal, debug)
-    }
+            run(&mut terminal, debug)
+        }
+    })
+    .await
 }
 
 fn run<B: Backend>(terminal: &mut Terminal<B>, debug: bool) -> io::Result<()> {
     let mut runtime = Runtime::new();
+
+    let count = rw_signal(0isize);
 
     terminal.clear()?;
     terminal.hide_cursor()?;
@@ -49,7 +59,12 @@ fn run<B: Backend>(terminal: &mut Terminal<B>, debug: bool) -> io::Result<()> {
                     container()
                         .layout(col().grow(1.0).h(full()))
                         .style(Style::new().bordered().background(Color::Red))
-                        .child("Main Content"),
+                        .child(move || {
+                            let c = count.get();
+
+                            eprintln!("Closure running, count = {}", c);
+                            format!("{c}")
+                        }),
                 ),
         )
         .child(
@@ -57,7 +72,16 @@ fn run<B: Backend>(terminal: &mut Terminal<B>, debug: bool) -> io::Result<()> {
                 .layout(row().h(len(3.0)).w(full()))
                 .style(Style::new().bordered().background(Color::Magenta))
                 .child("Footer - Press 'q' to quit"),
-        );
+        )
+        .on_event::<Event>(move |event| {
+            if let Event::Key(key) = event {
+                match key.code {
+                    KeyCode::Char('j') => count.set(count.get() + 1),
+                    KeyCode::Char('k') => count.set(count.get().saturating_sub(1)),
+                    _ => {}
+                }
+            }
+        });
 
     runtime.mount(view).expect("failed to mount");
 

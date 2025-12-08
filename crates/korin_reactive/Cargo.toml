@@ -4,7 +4,17 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
+any_spawner.workspace = true
 reactive_graph.workspace = true
+
+tokio = { workspace = true, optional = true }
+
+[features]
+default = ["tokio"]
+tokio = ["any_spawner/tokio", "dep:tokio"]
+async-executor = ["any_spawner/async-executor"]
+futures-executor = ["any_spawner/futures-executor"]
+wasm-bindgen = ["any_spawner/wasm-bindgen"]
 
 [lints]
 workspace = true

@@ -1,4 +1,5 @@
 use korin_layout::Layout;
+use korin_reactive::reactive_graph::effect::RenderEffect;
 use korin_style::Style;
 use korin_tree::NodeId;
 
@@ -63,19 +64,37 @@ impl<Ctx: RenderContext + Clone> Render<Ctx> for String {
 
 impl<F, V, Ctx> Render<Ctx> for F
 where
-    F: Fn() -> V,
-    V: Render<Ctx>,
-    Ctx: RenderContext + Clone,
+    F: Fn() -> V + Clone + 'static,
+    V: Render<Ctx> + 'static,
+    V::State: 'static,
+    Ctx: RenderContext + Clone + 'static,
 {
-    type State = V::State;
+    type State = RenderEffect<V::State>;
 
     fn build(self, ctx: &mut Ctx) -> Self::State {
-        // TODO: wrap in reactive effect
-        (self)().build(ctx)
+        let ctx = ctx.clone();
+
+        RenderEffect::new(move |prev: Option<V::State>| {
+            let new_view = (self.clone())();
+            let mut ctx = ctx.clone();
+
+            match prev {
+                None => new_view.build(&mut ctx),
+                Some(mut state) => {
+                    new_view.rebuild(&mut state, &mut ctx);
+                    state
+                }
+            }
+        })
     }
 
     fn rebuild(self, state: &mut Self::State, ctx: &mut Ctx) {
-        (self)().rebuild(state, ctx);
+        let new_view = (self)();
+        let mut ctx = ctx.clone();
+
+        state.with_value_mut(|inner| {
+            new_view.rebuild(inner, &mut ctx);
+        });
     }
 }
 
