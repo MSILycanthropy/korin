@@ -2,7 +2,7 @@ use std::{io, time::Duration};
 
 use korin_components::text_input;
 use korin_event::KeyCode;
-use korin_layout::{col, full, len, row};
+use korin_layout::{Layout, full};
 use korin_ratatui::{Event, dispatch, poll, render};
 use korin_reactive::RwSignal;
 use korin_runtime::Runtime;
@@ -41,33 +41,33 @@ async fn run<B: Backend>(
     terminal.hide_cursor()?;
 
     let view = container()
-        .layout(col().w(full()).h(full()).gap(len(1.0)))
+        .layout(Layout::col().w(full()).h(full()).gap(1))
         .style(Style::new().background(Color::DarkGray))
         .child(
             container()
-                .layout(row().h(len(3.0)).w(full()))
+                .layout(Layout::row().h(3).w(full()))
                 .style(Style::new().bordered().background(Color::Blue))
                 .child("Login Form"),
         )
         .child(
             container()
-                .layout(col().grow(1.0).w(full()).gap(len(1.0)))
+                .layout(Layout::col().grow(1).w(full()).gap(1))
                 .child(
                     container()
-                        .layout(col().gap(len(0.5)))
+                        .layout(Layout::col().gap(0.5))
                         .child("Username:")
                         .child(text_input(username).placeholder("Enter username...")),
                 )
                 .child(
                     container()
-                        .layout(col().gap(len(0.5)))
+                        .layout(Layout::col().gap(0.5))
                         .child("Password:")
                         .child(text_input(password).placeholder("Enter password...")),
                 ),
         )
         .child(
             container()
-                .layout(row().h(len(3.0)).w(full()))
+                .layout(Layout::row().h(3).w(full()))
                 .style(Style::new().bordered().background(Color::Magenta))
                 .child("Press Tab to switch fields, Ctrl+Q to quit"),
         );

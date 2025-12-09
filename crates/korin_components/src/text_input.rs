@@ -1,5 +1,5 @@
 use korin_event::KeyCode;
-use korin_layout::{Layout, full, len};
+use korin_layout::{Layout, full};
 use korin_ratatui::Event;
 use korin_reactive::{
     RwSignal,
@@ -21,7 +21,7 @@ fn text_input_impl(
 
     container()
         .focusable(true)
-        .layout(Layout::new().w(full()).h(len(3.0)))
+        .layout(Layout::new().w(full()).h(3.0))
         .on_focus(move || focused.set(true))
         .on_blur(move || focused.set(false))
         .child(move || {

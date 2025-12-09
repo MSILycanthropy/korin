@@ -1,6 +1,10 @@
 use taffy::{
-    AlignContent, AlignItems, AlignSelf, Dimension, Display, FlexDirection, FlexWrap,
-    JustifyContent, LengthPercentage, LengthPercentageAuto, Rect, Size, Style,
+    AlignContent, AlignItems, AlignSelf, Display, FlexDirection, FlexWrap, GridPlacement,
+    JustifyContent, Rect, Size, Style,
+};
+
+use crate::conversions::{
+    IntoDimension, IntoF32, IntoLengthPercentage, IntoLengthPercentageAuto, IntoTracks,
 };
 
 #[derive(Clone, Default)]
@@ -13,34 +17,55 @@ impl Layout {
     }
 
     #[must_use]
-    pub const fn row(mut self) -> Self {
+    pub fn row() -> Self {
+        Self::new().flex_row()
+    }
+
+    #[must_use]
+    pub fn col() -> Self {
+        Self::new().flex_col()
+    }
+
+    #[must_use]
+    pub fn grid() -> Self {
+        Self::new().display_grid()
+    }
+
+    #[must_use]
+    pub const fn display_grid(mut self) -> Self {
+        self.0.display = Display::Grid;
+        self
+    }
+
+    #[must_use]
+    pub const fn flex_row(mut self) -> Self {
         self.0.display = Display::Flex;
         self.0.flex_direction = FlexDirection::Row;
         self
     }
 
     #[must_use]
-    pub const fn col(mut self) -> Self {
+    pub const fn flex_col(mut self) -> Self {
         self.0.display = Display::Flex;
         self.0.flex_direction = FlexDirection::Column;
         self
     }
 
     #[must_use]
-    pub const fn grow(mut self, v: f32) -> Self {
-        self.0.flex_grow = v;
+    pub fn grow(mut self, v: impl IntoF32) -> Self {
+        self.0.flex_grow = v.into_f32();
         self
     }
 
     #[must_use]
-    pub const fn shrink(mut self, v: f32) -> Self {
-        self.0.flex_shrink = v;
+    pub fn shrink(mut self, v: impl IntoF32) -> Self {
+        self.0.flex_shrink = v.into_f32();
         self
     }
 
     #[must_use]
-    pub fn basis(mut self, v: impl Into<Dimension>) -> Self {
-        self.0.flex_basis = v.into();
+    pub fn basis(mut self, v: impl IntoDimension) -> Self {
+        self.0.flex_basis = v.into_dimension();
         self
     }
 
@@ -51,29 +76,30 @@ impl Layout {
     }
 
     #[must_use]
-    pub fn gap(mut self, v: impl Into<LengthPercentage> + Copy) -> Self {
+    pub fn gap(mut self, v: impl IntoLengthPercentage + Copy) -> Self {
+        let val = v.into_length_percentage();
         self.0.gap = Size {
-            width: v.into(),
-            height: v.into(),
+            width: val,
+            height: val,
         };
         self
     }
 
     #[must_use]
-    pub fn gap_x(mut self, v: impl Into<LengthPercentage>) -> Self {
-        self.0.gap.width = v.into();
+    pub fn gap_x(mut self, v: impl IntoLengthPercentage) -> Self {
+        self.0.gap.width = v.into_length_percentage();
         self
     }
 
     #[must_use]
-    pub fn gap_y(mut self, v: impl Into<LengthPercentage>) -> Self {
-        self.0.gap.height = v.into();
+    pub fn gap_y(mut self, v: impl IntoLengthPercentage) -> Self {
+        self.0.gap.height = v.into_length_percentage();
         self
     }
 
     #[must_use]
-    pub fn p(mut self, v: impl Into<LengthPercentage> + Copy) -> Self {
-        let val = v.into();
+    pub fn p(mut self, v: impl IntoLengthPercentage + Copy) -> Self {
+        let val = v.into_length_percentage();
         self.0.padding = Rect {
             left: val,
             right: val,
@@ -84,48 +110,48 @@ impl Layout {
     }
 
     #[must_use]
-    pub fn px(mut self, v: impl Into<LengthPercentage> + Copy) -> Self {
-        let val = v.into();
+    pub fn px(mut self, v: impl IntoLengthPercentage + Copy) -> Self {
+        let val = v.into_length_percentage();
         self.0.padding.left = val;
         self.0.padding.right = val;
         self
     }
 
     #[must_use]
-    pub fn py(mut self, v: impl Into<LengthPercentage> + Copy) -> Self {
-        let val = v.into();
+    pub fn py(mut self, v: impl IntoLengthPercentage + Copy) -> Self {
+        let val = v.into_length_percentage();
         self.0.padding.top = val;
         self.0.padding.bottom = val;
         self
     }
 
     #[must_use]
-    pub fn pt(mut self, v: impl Into<LengthPercentage>) -> Self {
-        self.0.padding.top = v.into();
+    pub fn pt(mut self, v: impl IntoLengthPercentage) -> Self {
+        self.0.padding.top = v.into_length_percentage();
         self
     }
 
     #[must_use]
-    pub fn pb(mut self, v: impl Into<LengthPercentage>) -> Self {
-        self.0.padding.bottom = v.into();
+    pub fn pb(mut self, v: impl IntoLengthPercentage) -> Self {
+        self.0.padding.bottom = v.into_length_percentage();
         self
     }
 
     #[must_use]
-    pub fn pl(mut self, v: impl Into<LengthPercentage>) -> Self {
-        self.0.padding.left = v.into();
+    pub fn pl(mut self, v: impl IntoLengthPercentage) -> Self {
+        self.0.padding.left = v.into_length_percentage();
         self
     }
 
     #[must_use]
-    pub fn pr(mut self, v: impl Into<LengthPercentage>) -> Self {
-        self.0.padding.right = v.into();
+    pub fn pr(mut self, v: impl IntoLengthPercentage) -> Self {
+        self.0.padding.right = v.into_length_percentage();
         self
     }
 
     #[must_use]
-    pub fn m(mut self, v: impl Into<LengthPercentageAuto> + Copy) -> Self {
-        let val = v.into();
+    pub fn m(mut self, v: impl IntoLengthPercentageAuto + Copy) -> Self {
+        let val = v.into_length_percentage_auto();
         self.0.margin = Rect {
             left: val,
             right: val,
@@ -136,78 +162,78 @@ impl Layout {
     }
 
     #[must_use]
-    pub fn mx(mut self, v: impl Into<LengthPercentageAuto> + Copy) -> Self {
-        let val = v.into();
+    pub fn mx(mut self, v: impl IntoLengthPercentageAuto + Copy) -> Self {
+        let val = v.into_length_percentage_auto();
         self.0.margin.left = val;
         self.0.margin.right = val;
         self
     }
 
     #[must_use]
-    pub fn my(mut self, v: impl Into<LengthPercentageAuto> + Copy) -> Self {
-        let val = v.into();
+    pub fn my(mut self, v: impl IntoLengthPercentageAuto + Copy) -> Self {
+        let val = v.into_length_percentage_auto();
         self.0.margin.top = val;
         self.0.margin.bottom = val;
         self
     }
 
     #[must_use]
-    pub fn mt(mut self, v: impl Into<LengthPercentageAuto>) -> Self {
-        self.0.margin.top = v.into();
+    pub fn mt(mut self, v: impl IntoLengthPercentageAuto) -> Self {
+        self.0.margin.top = v.into_length_percentage_auto();
         self
     }
 
     #[must_use]
-    pub fn mb(mut self, v: impl Into<LengthPercentageAuto>) -> Self {
-        self.0.margin.bottom = v.into();
+    pub fn mb(mut self, v: impl IntoLengthPercentageAuto) -> Self {
+        self.0.margin.bottom = v.into_length_percentage_auto();
         self
     }
 
     #[must_use]
-    pub fn ml(mut self, v: impl Into<LengthPercentageAuto>) -> Self {
-        self.0.margin.left = v.into();
+    pub fn ml(mut self, v: impl IntoLengthPercentageAuto) -> Self {
+        self.0.margin.left = v.into_length_percentage_auto();
         self
     }
 
     #[must_use]
-    pub fn mr(mut self, v: impl Into<LengthPercentageAuto>) -> Self {
-        self.0.margin.right = v.into();
+    pub fn mr(mut self, v: impl IntoLengthPercentageAuto) -> Self {
+        self.0.margin.right = v.into_length_percentage_auto();
         self
     }
 
     #[must_use]
-    pub fn w(mut self, v: impl Into<Dimension>) -> Self {
-        self.0.size.width = v.into();
+    pub fn w(mut self, v: impl IntoDimension) -> Self {
+        self.0.size.width = v.into_dimension();
         self
     }
 
     #[must_use]
-    pub fn h(mut self, v: impl Into<Dimension>) -> Self {
-        self.0.size.height = v.into();
+    pub fn h(mut self, v: impl IntoDimension) -> Self {
+        self.0.size.height = v.into_dimension();
         self
     }
 
     #[must_use]
-    pub fn min_w(mut self, v: impl Into<Dimension>) -> Self {
-        self.0.min_size.width = v.into();
+    pub fn min_w(mut self, v: impl IntoDimension) -> Self {
+        self.0.min_size.width = v.into_dimension();
         self
     }
 
     #[must_use]
-    pub fn min_h(mut self, v: impl Into<Dimension>) -> Self {
-        self.0.min_size.height = v.into();
+    pub fn min_h(mut self, v: impl IntoDimension) -> Self {
+        self.0.min_size.height = v.into_dimension();
         self
     }
 
     #[must_use]
-    pub fn max_w(mut self, v: impl Into<Dimension>) -> Self {
-        self.0.max_size.width = v.into();
+    pub fn max_w(mut self, v: impl IntoDimension) -> Self {
+        self.0.max_size.width = v.into_dimension();
         self
     }
 
     #[must_use]
-    pub fn max_h(mut self, v: impl Into<Dimension>) -> Self {
-        self.0.max_size.height = v.into();
+    pub fn max_h(mut self, v: impl IntoDimension) -> Self {
+        self.0.max_size.height = v.into_dimension();
         self
     }
 
@@ -232,6 +258,76 @@ impl Layout {
     #[must_use]
     pub const fn align_self(mut self, v: AlignSelf) -> Self {
         self.0.align_self = Some(v);
+        self
+    }
+
+    // Grid container methods
+
+    #[must_use]
+    pub fn cols(mut self, tracks: impl IntoTracks) -> Self {
+        self.0.grid_template_columns = tracks.into_tracks();
+        self
+    }
+
+    #[must_use]
+    pub fn rows(mut self, tracks: impl IntoTracks) -> Self {
+        self.0.grid_template_rows = tracks.into_tracks();
+        self
+    }
+
+    // Grid item methods
+
+    #[must_use]
+    pub fn col_start(mut self, v: i16) -> Self {
+        self.0.grid_column = taffy::Line {
+            start: taffy::style_helpers::line(v),
+            end: self.0.grid_column.end,
+        };
+        self
+    }
+
+    #[must_use]
+    pub fn col_end(mut self, v: i16) -> Self {
+        self.0.grid_column = taffy::Line {
+            start: self.0.grid_column.start,
+            end: taffy::style_helpers::line(v),
+        };
+        self
+    }
+
+    #[must_use]
+    pub fn col_span(mut self, v: u16) -> Self {
+        self.0.grid_column = taffy::Line {
+            start: self.0.grid_column.start,
+            end: GridPlacement::Span(v),
+        };
+        self
+    }
+
+    #[must_use]
+    pub fn row_start(mut self, v: i16) -> Self {
+        self.0.grid_row = taffy::Line {
+            start: taffy::style_helpers::line(v),
+            end: self.0.grid_row.end,
+        };
+        self
+    }
+
+    #[must_use]
+    pub fn row_end(mut self, v: i16) -> Self {
+        self.0.grid_row = taffy::Line {
+            start: self.0.grid_row.start,
+            end: taffy::style_helpers::line(v),
+        };
+        self
+    }
+
+    #[must_use]
+    pub fn row_span(mut self, v: u16) -> Self {
+        self.0.grid_row = taffy::Line {
+            start: self.0.grid_row.start,
+            end: GridPlacement::Span(v),
+        };
         self
     }
 
