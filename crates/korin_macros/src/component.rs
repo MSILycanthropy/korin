@@ -4,7 +4,7 @@ use proc_macro2::TokenStream as TokenStream2;
 use quote::{format_ident, quote};
 use syn::{FnArg, Ident, ItemFn, Pat, PatType, ReturnType, Type, Visibility};
 
-use crate::utils::{extract_option_inner, is_option_type};
+use crate::utils::{extract_option_inner, is_option_type, is_string_type, is_string_type_ts};
 
 pub fn implmentation(item: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(item as ItemFn);
@@ -153,17 +153,39 @@ fn generate_builder_struct(
 
         if p.is_optional {
             let inner_ty = extract_option_inner(ty);
-            quote! {
-                pub fn #name(mut self, value: #inner_ty) -> Self {
-                    self.#name = Some(value);
-                    self
+            let is_string = is_string_type_ts(&inner_ty);
+
+            if is_string {
+                quote! {
+                    pub fn #name(mut self, value: impl Into<String>) -> Self {
+                        self.#name = Some(value.into());
+                        self
+                    }
+                }
+            } else {
+                quote! {
+                    pub fn #name(mut self, value: #inner_ty) -> Self {
+                        self.#name = Some(value);
+                        self
+                    }
                 }
             }
         } else {
-            quote! {
-                pub fn #name(mut self, value: #ty) -> Self {
-                    self.#name = Some(value);
-                    self
+            let is_string = is_string_type(ty);
+
+            if is_string {
+                quote! {
+                    pub fn #name(mut self, value: impl Into<String>) -> Self {
+                        self.#name = Some(value.into());
+                        self
+                    }
+                }
+            } else {
+                quote! {
+                    pub fn #name(mut self, value: #ty) -> Self {
+                        self.#name = Some(value);
+                        self
+                    }
                 }
             }
         }

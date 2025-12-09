@@ -48,11 +48,11 @@ async fn run<B: Backend>(
             <Container layout={Layout::col().grow(1.0).w(full()).gap(1.0)}>
                 <Container layout={Layout::col().gap(0.5)}>
                     {"Username:"}
-                    <TextInput value={username} placeholder={"Enter username...".to_string()} />
+                    <TextInput value={username} placeholder={"Enter username..."} />
                 </Container>
                 <Container layout={Layout::col().gap(0.5)}>
                     {"Password:"}
-                    <TextInput value={password} placeholder={"Enter password...".to_string()} />
+                    <TextInput value={password} placeholder={"Enter password..."} />
                 </Container>
             </Container>
             <Container layout={Layout::row().h(3.0).w(full())} style={Style::new().bordered().background(Color::Magenta)}>
