@@ -1,11 +1,9 @@
 use std::{io, time::Duration};
 
+use korin_components::text_input;
 use korin_layout::{col, full, len, row};
 use korin_ratatui::{Event, dispatch, poll, render};
-use korin_reactive::{
-    RwSignal,
-    reactive_graph::traits::{Get, Update},
-};
+use korin_reactive::RwSignal;
 use korin_runtime::Runtime;
 use korin_style::{Color, Style};
 use korin_view::container;
@@ -35,7 +33,8 @@ async fn run<B: Backend>(
     terminal: &mut Terminal<B>,
     debug: bool,
 ) -> io::Result<()> {
-    let count = RwSignal::new(0isize);
+    let username = RwSignal::new(String::new());
+    let password = RwSignal::new(String::new());
 
     terminal.clear()?;
     terminal.hide_cursor()?;
@@ -47,44 +46,30 @@ async fn run<B: Backend>(
             container()
                 .layout(row().h(len(3.0)).w(full()))
                 .style(Style::new().bordered().background(Color::Blue))
-                .child("Header"),
+                .child("Login Form"),
         )
         .child(
             container()
-                .layout(row().grow(1.0).w(full()).gap(len(1.0)))
-                .style(Style::new().background(Color::Black))
+                .layout(col().grow(1.0).w(full()).gap(len(1.0)))
                 .child(
                     container()
-                        .layout(col().w(len(20.0)).h(full()))
-                        .style(Style::new().bordered().background(Color::Green))
-                        .child("Sidebar"),
+                        .layout(col().gap(len(0.5)))
+                        .child("Username:")
+                        .child(text_input(username).placeholder("Enter username...")),
                 )
                 .child(
                     container()
-                        .layout(col().grow(1.0).h(full()))
-                        .style(Style::new().bordered().background(Color::Red))
-                        .child(move || {
-                            let c = count.get();
-
-                            format!("{c}")
-                        }),
+                        .layout(col().gap(len(0.5)))
+                        .child("Password:")
+                        .child(text_input(password).placeholder("Enter password...")),
                 ),
         )
         .child(
             container()
                 .layout(row().h(len(3.0)).w(full()))
                 .style(Style::new().bordered().background(Color::Magenta))
-                .child("Footer - Press 'q' to quit"),
-        )
-        .on_event::<Event>(move |event| {
-            if let Event::Key(key) = event {
-                match key.code {
-                    KeyCode::Char('j') => count.update(|c| *c += 1),
-                    KeyCode::Char('k') => count.update(|c| *c = c.saturating_sub(1)),
-                    _ => {}
-                }
-            }
-        });
+                .child("Press Tab to switch fields, Ctrl+Q to quit"),
+        );
 
     runtime.mount(view).expect("failed to mount");
 
@@ -117,6 +102,7 @@ fn run_once<B: Backend>(terminal: &mut Terminal<B>, runtime: &mut Runtime) -> io
     if let Some(event) = poll(Duration::from_millis(16)) {
         if let Event::Key(key) = &event
             && key.code == KeyCode::Char('q')
+            && key.ctrl()
         {
             terminal.show_cursor()?;
             ratatui::restore();

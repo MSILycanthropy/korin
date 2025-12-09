@@ -108,6 +108,18 @@ impl Engine {
     pub fn update(&mut self, id: NodeId, layout: Layout) -> LayoutResult<()> {
         if let Some(&taffy_id) = self.nodes.get(&id) {
             self.taffy.set_style(taffy_id, layout.into())?;
+            self.taffy.mark_dirty(taffy_id)?;
+        }
+
+        Ok(())
+    }
+
+    pub fn update_text(&mut self, id: NodeId, layout: Layout, text: String) -> LayoutResult<()> {
+        if let Some(&taffy_id) = self.nodes.get(&id) {
+            self.taffy.set_style(taffy_id, layout.into())?;
+            self.taffy
+                .set_node_context(taffy_id, Some(NodeMeasure(Some(text))))?;
+            self.taffy.mark_dirty(taffy_id)?;
         }
 
         Ok(())

@@ -48,7 +48,18 @@ impl Runtime {
         let state = view.build(&mut ctx);
 
         self.state = Some(Box::new(state));
-        self.inner_mut().update_focus_order();
+
+        let mut inner = self.inner_mut();
+        inner.update_focus_order();
+
+        if let Some(first) = inner.focus.focused().or_else(|| {
+            inner.focus.focus_next();
+            inner.focus.focused()
+        }) {
+            let _ = inner.try_on_focus(first);
+        }
+
+        drop(inner);
 
         Ok(())
     }

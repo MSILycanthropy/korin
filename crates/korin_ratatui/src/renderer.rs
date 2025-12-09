@@ -1,5 +1,6 @@
 use korin_layout::Rect;
 use korin_runtime::{NodeContent, Runtime};
+use korin_style::Borders;
 use korin_tree::NodeId;
 use ratatui::{
     Frame,
@@ -20,7 +21,15 @@ pub fn render(frame: &mut Frame, ctx: &Runtime) {
 
     drop(runtime);
 
-    render_node(frame, ctx, root, 0.0, 0.0);
+    let frame_size = frame.area();
+    let clip = Rect::new(
+        f32::from(frame_size.x),
+        f32::from(frame_size.y),
+        f32::from(frame_size.width),
+        f32::from(frame_size.height),
+    );
+
+    render_node(frame, ctx, root, 0.0, 0.0, clip);
 }
 
 pub fn render_node(
@@ -29,6 +38,7 @@ pub fn render_node(
     node_id: NodeId,
     offset_x: f32,
     offset_y: f32,
+    clip: Rect,
 ) {
     let runtime = ctx.inner();
 
@@ -42,9 +52,37 @@ pub fn render_node(
 
     let abs_x = offset_x + layout_rect.x;
     let abs_y = offset_y + layout_rect.y;
-    let abs_rect = Rect::new(abs_x, abs_y, layout_rect.width, layout_rect.height);
 
-    let rat_rect = to_rat_rect(abs_rect);
+    let clipped = clip_rect(
+        Rect::new(abs_x, abs_y, layout_rect.width, layout_rect.height),
+        clip,
+    );
+
+    eprintln!(
+        "node {:?} | layout: ({}, {}, {}, {}) | abs: ({}, {}) | clip: ({}, {}, {}, {}) | clipped: ({}, {}, {}, {})",
+        node_id,
+        layout_rect.x,
+        layout_rect.y,
+        layout_rect.width,
+        layout_rect.height,
+        abs_x,
+        abs_y,
+        clip.x,
+        clip.y,
+        clip.width,
+        clip.height,
+        clipped.x,
+        clipped.y,
+        clipped.width,
+        clipped.height,
+    );
+
+    if clipped.width <= 0.0 || clipped.height <= 0.0 {
+        eprintln!("  -> SKIPPED (zero size)");
+        return;
+    }
+
+    let rat_rect = to_rat_rect(clipped);
     let style = node.computed_style;
     let content = node.content.clone();
     let children = runtime.children(node_id);
@@ -69,7 +107,34 @@ pub fn render_node(
         }
     }
 
+    let inner_offset_x = if style.borders.contains(Borders::LEFT) {
+        1.0
+    } else {
+        0.0
+    };
+    let inner_offset_y = if style.borders.contains(Borders::TOP) {
+        1.0
+    } else {
+        0.0
+    };
+
     for child_id in children {
-        render_node(frame, ctx, child_id, abs_x, abs_y);
+        render_node(
+            frame,
+            ctx,
+            child_id,
+            abs_x + inner_offset_x,
+            abs_y + inner_offset_y,
+            clip,
+        );
     }
+}
+
+fn clip_rect(rect: Rect, clip: Rect) -> Rect {
+    let x1 = rect.x.max(clip.x);
+    let y1 = rect.y.max(clip.y);
+    let x2 = (rect.x + rect.width).min(clip.x + clip.width);
+    let y2 = (rect.y + rect.height).min(clip.y + clip.height);
+
+    Rect::new(x1, y1, (x2 - x1).max(0.0), (y2 - y1).max(0.0))
 }

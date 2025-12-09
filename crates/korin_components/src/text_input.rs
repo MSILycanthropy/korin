@@ -1,7 +1,8 @@
+use korin_layout::{Layout, full, len};
 use korin_ratatui::Event;
 use korin_reactive::{
     RwSignal,
-    reactive_graph::traits::{Get, Set, Update},
+    reactive_graph::traits::{Get, GetUntracked, Set, Update},
 };
 use korin_runtime::{RuntimeContext, View};
 use korin_style::{Color, Style};
@@ -20,6 +21,7 @@ fn text_input_impl(
 
     container()
         .focusable(true)
+        .layout(Layout::new().w(full()).h(len(3.0)))
         .on_focus(move || focused.set(true))
         .on_blur(move || focused.set(false))
         .child(move || {
@@ -53,8 +55,8 @@ fn text_input_impl(
         })
         .on_event::<Event>(move |event| {
             if let Event::Key(key) = event {
-                let v = value.get();
-                let pos = cursor_pos.get().min(v.len());
+                let v = value.get_untracked();
+                let pos = cursor_pos.get_untracked().min(v.len());
 
                 match key.code {
                     KeyCode::Char(c) => {

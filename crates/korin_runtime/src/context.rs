@@ -101,13 +101,13 @@ impl RenderContext for RuntimeContext {
         let mut runtime = self.runtime_mut();
 
         if let Some(node) = runtime.tree.get_mut(id) {
-            node.content = NodeContent::Text(content);
+            node.content = NodeContent::Text(content.clone());
             node.style = style;
         }
 
         runtime
             .layout
-            .update(id, layout)
+            .update_text(id, layout, content)
             .expect("updating text failed");
     }
 

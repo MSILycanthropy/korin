@@ -63,9 +63,16 @@ pub fn poll(timeout: Duration) -> Option<Event> {
 pub fn dispatch(event: &Event, runtime: &Runtime) {
     match event {
         Event::Key(key) => {
-            if key.code == KeyCode::Tab {
-                handle_focus_change(runtime, key.shift());
-                return;
+            match key.code {
+                KeyCode::Tab => {
+                    handle_focus_change(runtime, false);
+                    return;
+                }
+                KeyCode::BackTab => {
+                    handle_focus_change(runtime, true);
+                    return;
+                }
+                _ => {}
             }
 
             dispatch_to_focused(event, runtime);
