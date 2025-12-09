@@ -56,13 +56,21 @@ async fn run<B: Backend>(
                     container()
                         .layout(Layout::col().gap(0.5))
                         .child("Username:")
-                        .child(text_input(username).placeholder("Enter username...")),
-                )
-                .child(
-                    container()
-                        .layout(Layout::col().gap(0.5))
-                        .child("Password:")
-                        .child(text_input(password).placeholder("Enter password...")),
+                        .child(text_input(
+                            username,
+                            Some("Enter username...".to_string()),
+                            None,
+                        ))
+                        .child(
+                            container()
+                                .layout(Layout::col().gap(0.5))
+                                .child("Password:")
+                                .child(text_input(
+                                    password,
+                                    Some("Enter password".to_string()),
+                                    None,
+                                )),
+                        ),
                 ),
         )
         .child(

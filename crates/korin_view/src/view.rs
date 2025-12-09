@@ -57,6 +57,18 @@ impl<Ctx> AnyView<Ctx> {
     }
 }
 
+impl<Ctx: RenderContext + Clone> Render<Ctx> for AnyView<Ctx> {
+    type State = AnyState;
+
+    fn build(self, ctx: &mut Ctx) -> Self::State {
+        self.inner.build(ctx)
+    }
+
+    fn rebuild(self, state: &mut Self::State, ctx: &mut Ctx) {
+        self.inner.rebuild(state, ctx);
+    }
+}
+
 impl<Ctx> Debug for AnyView<Ctx> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("AnyView")

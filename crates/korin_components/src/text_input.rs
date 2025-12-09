@@ -5,9 +5,9 @@ use korin_reactive::{
     RwSignal,
     reactive_graph::traits::{Get, GetUntracked, Set, Update},
 };
-use korin_runtime::{RuntimeContext, View};
+use korin_runtime::{IntoView, View};
 use korin_style::{Color, Style};
-use korin_view::{IntoAny, container};
+use korin_view::container;
 
 type Submit = Box<dyn Fn(&str) + Send + Sync>;
 
@@ -15,7 +15,7 @@ fn text_input_impl(
     value: RwSignal<String>,
     placeholder: Option<String>,
     on_submit: Option<Submit>,
-) -> View {
+) -> impl IntoView {
     let focused = RwSignal::new(false);
     let cursor_pos = RwSignal::new(0usize);
 
@@ -99,39 +99,13 @@ fn text_input_impl(
                 }
             }
         })
-        .into_any()
-}
-pub struct TextInput {
-    value: RwSignal<String>,
-    placeholder: Option<String>,
-    on_submit: Option<Submit>,
-}
-
-impl TextInput {
-    #[must_use]
-    pub fn placeholder(mut self, text: impl Into<String>) -> Self {
-        self.placeholder = Some(text.into());
-        self
-    }
-
-    #[must_use]
-    pub fn on_submit(mut self, handler: impl Fn(&str) + Send + Sync + 'static) -> Self {
-        self.on_submit = Some(Box::new(handler));
-        self
-    }
-}
-
-impl IntoAny<RuntimeContext> for TextInput {
-    fn into_any(self) -> View {
-        text_input_impl(self.value, self.placeholder, self.on_submit)
-    }
 }
 
 #[must_use]
-pub fn text_input(value: RwSignal<String>) -> TextInput {
-    TextInput {
-        value,
-        placeholder: None,
-        on_submit: None,
-    }
+pub fn text_input(
+    value: RwSignal<String>,
+    placeholder: Option<String>,
+    on_submit: Option<Submit>,
+) -> View {
+    text_input_impl(value, placeholder, on_submit).into_view()
 }

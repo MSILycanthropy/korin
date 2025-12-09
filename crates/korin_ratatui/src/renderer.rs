@@ -58,27 +58,7 @@ pub fn render_node(
         clip,
     );
 
-    eprintln!(
-        "node {:?} | layout: ({}, {}, {}, {}) | abs: ({}, {}) | clip: ({}, {}, {}, {}) | clipped: ({}, {}, {}, {})",
-        node_id,
-        layout_rect.x,
-        layout_rect.y,
-        layout_rect.width,
-        layout_rect.height,
-        abs_x,
-        abs_y,
-        clip.x,
-        clip.y,
-        clip.width,
-        clip.height,
-        clipped.x,
-        clipped.y,
-        clipped.width,
-        clipped.height,
-    );
-
     if clipped.width <= 0.0 || clipped.height <= 0.0 {
-        eprintln!("  -> SKIPPED (zero size)");
         return;
     }
 
