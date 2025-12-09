@@ -1,13 +1,14 @@
 use std::{io, time::Duration};
 
+use korin_components::{Container, ContainerProps};
 use korin_components::{TextInput, TextInputProps};
 use korin_event::KeyCode;
 use korin_layout::{Layout, full};
+use korin_macros::view;
 use korin_ratatui::{Event, dispatch, poll, render};
 use korin_reactive::RwSignal;
 use korin_runtime::Runtime;
 use korin_style::{Color, Style};
-use korin_view::container;
 use ratatui::{Terminal, backend::TestBackend, prelude::Backend};
 
 #[tokio::main]
@@ -22,7 +23,6 @@ async fn main() -> io::Result<()> {
             run(&mut runtime, &mut terminal, debug).await
         } else {
             let mut terminal = ratatui::init();
-
             run(&mut runtime, &mut terminal, debug).await
         }
     })
@@ -40,56 +40,34 @@ async fn run<B: Backend>(
     terminal.clear()?;
     terminal.hide_cursor()?;
 
-    let view = container()
-        .layout(Layout::col().w(full()).h(full()).gap(1))
-        .style(Style::new().background(Color::DarkGray))
-        .child(
-            container()
-                .layout(Layout::row().h(3).w(full()))
-                .style(Style::new().bordered().background(Color::Blue))
-                .child("Login Form"),
-        )
-        .child(
-            container()
-                .layout(Layout::col().grow(1).w(full()).gap(1))
-                .child(
-                    container()
-                        .layout(Layout::col().gap(0.5))
-                        .child("Username:")
-                        .child(TextInput(
-                            TextInputProps::builder()
-                                .value(username)
-                                .placeholder("Enter username...".to_string())
-                                .build(),
-                        ))
-                        .child(
-                            container()
-                                .layout(Layout::col().gap(0.5))
-                                .child("Password:")
-                                .child(TextInput(
-                                    TextInputProps::builder()
-                                        .value(password)
-                                        .placeholder("Enter password...".to_string())
-                                        .build(),
-                                )),
-                        ),
-                ),
-        )
-        .child(
-            container()
-                .layout(Layout::row().h(3).w(full()))
-                .style(Style::new().bordered().background(Color::Magenta))
-                .child("Press Tab to switch fields, Ctrl+Q to quit"),
-        );
+    let app = view! {
+        <Container layout={Layout::col().w(full()).h(full()).gap(1.0)} style={Style::new().background(Color::DarkGray)}>
+            <Container layout={Layout::row().h(3.0).w(full())} style={Style::new().bordered().background(Color::Blue)}>
+                {"Login Form"}
+            </Container>
+            <Container layout={Layout::col().grow(1.0).w(full()).gap(1.0)}>
+                <Container layout={Layout::col().gap(0.5)}>
+                    {"Username:"}
+                    <TextInput value={username} placeholder={"Enter username...".to_string()} />
+                </Container>
+                <Container layout={Layout::col().gap(0.5)}>
+                    {"Password:"}
+                    <TextInput value={password} placeholder={"Enter password...".to_string()} />
+                </Container>
+            </Container>
+            <Container layout={Layout::row().h(3.0).w(full())} style={Style::new().bordered().background(Color::Magenta)}>
+                {"Press Tab to switch fields, Ctrl+Q to quit"}
+            </Container>
+        </Container>
+    };
 
-    runtime.mount(view).expect("failed to mount");
+    runtime.mount(app).expect("failed to mount");
 
     if debug {
         run_once(terminal, runtime)?;
     } else {
         loop {
             run_once(terminal, runtime)?;
-
             korin_reactive::tick().await;
         }
     }

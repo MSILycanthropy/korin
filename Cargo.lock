@@ -525,6 +525,7 @@ dependencies = [
  "korin_components",
  "korin_event",
  "korin_layout",
+ "korin_macros",
  "korin_reactive",
  "korin_runtime",
  "korin_style",

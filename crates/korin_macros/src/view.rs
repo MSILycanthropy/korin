@@ -223,7 +223,7 @@ fn generate_node(node: &Node) -> TokenStream2 {
     match node {
         Node::Element(elem) => generate_element(elem),
         Node::Fragment(children) => generate_fragment(children),
-        Node::Expr(expr) => quote! { (#expr).into_view() },
+        Node::Expr(expr) => quote! { korin_view::IntoView::into_view((#expr)) },
     }
 }
 
