@@ -14,10 +14,21 @@ pub use context::RuntimeContext;
 pub use error::{RuntimeError, RuntimeResult};
 use korin_layout::Size;
 use korin_reactive::reactive_graph::owner::{Owner, provide_context};
-use korin_view::{AnyView, Render};
+use korin_view::{AnyStyle, AnyView, IntoAnyStyle, Render};
 pub use node::{Node, NodeContent};
 
 pub type View = AnyView<RuntimeContext>;
+pub type Style = AnyStyle<RuntimeContext>;
+
+pub trait IntoStyle: IntoAnyStyle<RuntimeContext> {
+    fn into_style(self) -> Style;
+}
+
+impl<T: IntoAnyStyle<RuntimeContext>> IntoStyle for T {
+    fn into_style(self) -> Style {
+        IntoAnyStyle::into_style(self)
+    }
+}
 
 pub trait IntoView: korin_view::IntoView<RuntimeContext> {
     fn into_view(self) -> View;

@@ -54,6 +54,30 @@ pub struct AnyStyle<Ctx> {
     pub(crate) inner: Box<dyn ErasedStyle<Ctx>>,
 }
 
+impl<Ctx> AnyStyle<Ctx> {
+    pub fn new<S>(style: S) -> Self
+    where
+        S: IntoStyle<Ctx> + Send + Sync + 'static,
+        Ctx: RenderContext + Clone + 'static,
+    {
+        Self {
+            inner: Box::new(StyleWrapper(style)),
+        }
+    }
+}
+
+impl<Ctx: RenderContext + Clone + 'static> IntoStyle<Ctx> for AnyStyle<Ctx> {
+    type State = AnyStyleState;
+
+    fn build(self, id: NodeId, ctx: &mut Ctx) -> Self::State {
+        self.inner.build(id, ctx)
+    }
+
+    fn rebuild(self, id: NodeId, state: &mut Self::State, ctx: &mut Ctx) {
+        self.inner.rebuild(id, state, ctx);
+    }
+}
+
 pub trait ErasedStyle<Ctx>: Send + Sync {
     fn build(self: Box<Self>, id: NodeId, ctx: &mut Ctx) -> AnyStyleState;
     fn rebuild(self: Box<Self>, id: NodeId, state: &mut AnyStyleState, ctx: &mut Ctx);
@@ -81,5 +105,19 @@ where
         if let Some(s) = state.inner.downcast_mut::<S::State>() {
             self.0.rebuild(id, s, ctx);
         }
+    }
+}
+
+pub trait IntoAnyStyle<Ctx> {
+    fn into_style(self) -> AnyStyle<Ctx>;
+}
+
+impl<T, Ctx> IntoAnyStyle<Ctx> for T
+where
+    T: IntoStyle<Ctx> + Send + Sync + 'static,
+    Ctx: RenderContext + Clone + 'static,
+{
+    fn into_style(self) -> AnyStyle<Ctx> {
+        AnyStyle::new(self)
     }
 }

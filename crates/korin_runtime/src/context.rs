@@ -120,6 +120,7 @@ impl RenderContext for RuntimeContext {
     }
 
     fn set_focusable(&mut self, id: NodeId) {
+        eprintln!("SETTING FOCUSABLE TP {id}");
         self.runtime_mut().set_focusable(id);
     }
 
