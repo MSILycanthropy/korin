@@ -41,27 +41,15 @@ where
     fn rebuild(self, state: &mut Self::State, ctx: &mut Ctx);
 }
 
-impl<Ctx: RenderContext + Clone> Render<Ctx> for &str {
+impl<Ctx: RenderContext + Clone> Render<Ctx> for () {
     type State = TextState;
 
     fn build(self, ctx: &mut Ctx) -> Self::State {
-        Text::new(self).build(ctx)
+        Text::new("").build(ctx)
     }
 
     fn rebuild(self, state: &mut Self::State, ctx: &mut Ctx) {
-        Text::new(self).rebuild(state, ctx);
-    }
-}
-
-impl<Ctx: RenderContext + Clone> Render<Ctx> for String {
-    type State = TextState;
-
-    fn build(self, ctx: &mut Ctx) -> Self::State {
-        Text::new(self).build(ctx)
-    }
-
-    fn rebuild(self, state: &mut Self::State, ctx: &mut Ctx) {
-        Text::new(self).rebuild(state, ctx);
+        Text::new("").rebuild(state, ctx);
     }
 }
 
@@ -120,3 +108,25 @@ where
         }
     }
 }
+
+macro_rules! impl_render_for_types {
+    ($($ty:ty),*) => {
+        $(
+            impl<Ctx: RenderContext + Clone> Render<Ctx> for $ty {
+                type State = TextState;
+
+                fn build(self, ctx: &mut Ctx) -> Self::State {
+                    Text::new(self.to_string()).build(ctx)
+                }
+
+                fn rebuild(self, state: &mut Self::State, ctx: &mut Ctx) {
+                    Text::new(self.to_string()).rebuild(state, ctx);
+                }
+            }
+        )*
+    };
+}
+
+impl_render_for_types!(
+    i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, f32, f64, bool, char, String, &str
+);

@@ -43,20 +43,20 @@ async fn run<B: Backend>(
     let app = view! {
         <Container layout={Layout::col().w(full()).h(full()).gap(1.0)} style={Style::new().background(Color::DarkGray)}>
             <Container layout={Layout::row().h(3.0).w(full())} style={Style::new().bordered().background(Color::Blue)}>
-                {"Login Form"}
+                "Login Form"
             </Container>
             <Container layout={Layout::col().grow(1.0).w(full()).gap(1.0)}>
                 <Container layout={Layout::col().gap(0.5)}>
-                    {"Username:"}
+                    "Username:"
                     <TextInput value={username} placeholder={"Enter username..."} />
                 </Container>
                 <Container layout={Layout::col().gap(0.5)}>
-                    {"Password:"}
+                    "Password:"
                     <TextInput value={password} placeholder={"Enter password..."} />
                 </Container>
             </Container>
             <Container layout={Layout::row().h(3.0).w(full())} style={Style::new().bordered().background(Color::Magenta)}>
-                {"Press Tab to switch fields, Ctrl+Q to quit"}
+                "Press Tab to switch fields, Ctrl+Q to quit"
             </Container>
         </Container>
     };

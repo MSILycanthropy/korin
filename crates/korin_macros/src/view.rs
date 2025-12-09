@@ -53,9 +53,18 @@ fn parse_node(tokens: &mut TokenIter) -> Result<Node, TokenStream2> {
 
             Ok(Node::Expr(g.stream()))
         }
-        Some(_) => Err(quote! {
-            compile_error!("expected '<' or '{...}'")
-        }),
+        Some(TokenTree::Literal(_)) => {
+            let TokenTree::Literal(lit) = tokens.next().expect("literal already peeked") else {
+                unreachable!("already matched as literal")
+            };
+            Ok(Node::Expr(quote! { #lit }))
+        }
+        Some(other) => {
+            let s = other.to_string();
+            Err(quote! {
+                compile_error!(concat!("expected '<', '{...}', or string literal, got: ", #s))
+            })
+        }
         None => Err(quote! {
             compile_error!("unexpected end of input")
         }),
