@@ -11,6 +11,7 @@ korin_reactive.workspace = true
 korin_view.workspace = true
 korin_ratatui.workspace = true
 korin_layout.workspace = true
+korin_macros.workspace = true
 
 [lints]
 workspace = true

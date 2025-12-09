@@ -14,22 +14,18 @@ pub use context::RuntimeContext;
 pub use error::{RuntimeError, RuntimeResult};
 use korin_layout::Size;
 use korin_reactive::reactive_graph::owner::{Owner, provide_context};
-use korin_view::{AnyView, IntoAny, Render};
+use korin_view::{AnyView, Render};
 pub use node::{Node, NodeContent};
 
 pub type View = AnyView<RuntimeContext>;
 
-pub trait IntoView {
+pub trait IntoView: korin_view::IntoView<RuntimeContext> {
     fn into_view(self) -> View;
 }
 
-impl<T> IntoView for T
-where
-    T: Render<RuntimeContext> + Send + Sync + 'static,
-    T::State: Send + Sync + 'static,
-{
+impl<T: korin_view::IntoView<RuntimeContext>> IntoView for T {
     fn into_view(self) -> View {
-        self.into_any()
+        korin_view::IntoView::into_view(self)
     }
 }
 

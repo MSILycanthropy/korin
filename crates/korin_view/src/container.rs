@@ -7,7 +7,7 @@ use crate::{
     event::{EventHandler, FocusHandler},
     render::RenderContext,
     style::{AnyStyle, AnyStyleState, IntoStyle, StyleWrapper},
-    view::{AnyState, AnyView, IntoAny},
+    view::{AnyState, AnyView, IntoView},
 };
 
 pub struct Container<Ctx: RenderContext + Clone + 'static> {
@@ -58,8 +58,8 @@ impl<Ctx: RenderContext + Clone> Container<Ctx> {
     }
 
     #[must_use]
-    pub fn child(mut self, child: impl IntoAny<Ctx>) -> Self {
-        self.children.push(child.into_any());
+    pub fn child(mut self, child: impl IntoView<Ctx>) -> Self {
+        self.children.push(child.into_view());
         self
     }
 
@@ -67,10 +67,10 @@ impl<Ctx: RenderContext + Clone> Container<Ctx> {
     pub fn children<I, C>(mut self, children: I) -> Self
     where
         I: IntoIterator<Item = C>,
-        C: IntoAny<Ctx>,
+        C: IntoView<Ctx>,
     {
         self.children
-            .extend(children.into_iter().map(IntoAny::into_any));
+            .extend(children.into_iter().map(IntoView::into_view));
         self
     }
 

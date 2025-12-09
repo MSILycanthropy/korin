@@ -106,17 +106,17 @@ where
     }
 }
 
-pub trait IntoAny<Ctx> {
-    fn into_any(self) -> AnyView<Ctx>;
+pub trait IntoView<Ctx> {
+    fn into_view(self) -> AnyView<Ctx>;
 }
 
-impl<T, Ctx> IntoAny<Ctx> for T
+impl<T, Ctx> IntoView<Ctx> for T
 where
     T: Render<Ctx> + Send + Sync + 'static,
     Ctx: RenderContext + Clone,
     T::State: Send + Sync + 'static,
 {
-    fn into_any(self) -> AnyView<Ctx> {
+    fn into_view(self) -> AnyView<Ctx> {
         AnyView {
             type_id: TypeId::of::<T>(),
             inner: Box::new(View { inner: self }),

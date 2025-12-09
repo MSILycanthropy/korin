@@ -1,6 +1,6 @@
 use std::{io, time::Duration};
 
-use korin_components::text_input;
+use korin_components::{TextInput, TextInputProps};
 use korin_event::KeyCode;
 use korin_layout::{Layout, full};
 use korin_ratatui::{Event, dispatch, poll, render};
@@ -56,19 +56,21 @@ async fn run<B: Backend>(
                     container()
                         .layout(Layout::col().gap(0.5))
                         .child("Username:")
-                        .child(text_input(
-                            username,
-                            Some("Enter username...".to_string()),
-                            None,
+                        .child(TextInput(
+                            TextInputProps::builder()
+                                .value(username)
+                                .placeholder("Enter username...".to_string())
+                                .build(),
                         ))
                         .child(
                             container()
                                 .layout(Layout::col().gap(0.5))
                                 .child("Password:")
-                                .child(text_input(
-                                    password,
-                                    Some("Enter password".to_string()),
-                                    None,
+                                .child(TextInput(
+                                    TextInputProps::builder()
+                                        .value(password)
+                                        .placeholder("Enter password...".to_string())
+                                        .build(),
                                 )),
                         ),
                 ),

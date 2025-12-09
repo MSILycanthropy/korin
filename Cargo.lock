@@ -121,6 +121,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "convert_case"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "633458d4ef8c78b72454de2d54fd6ab2e60f9e02be22f3c6104cdc8a4e0fceb9"
+dependencies = [
+ "unicode-segmentation",
+]
+
+[[package]]
 name = "crossbeam-utils"
 version = "0.8.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -470,6 +479,7 @@ version = "0.1.0"
 dependencies = [
  "korin_event",
  "korin_layout",
+ "korin_macros",
  "korin_ratatui",
  "korin_reactive",
  "korin_runtime",
@@ -496,6 +506,16 @@ dependencies = [
  "taffy",
  "thiserror",
  "unicode-width 0.2.0",
+]
+
+[[package]]
+name = "korin_macros"
+version = "0.1.0"
+dependencies = [
+ "convert_case",
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

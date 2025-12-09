@@ -1,17 +1,19 @@
 use korin_event::KeyCode;
 use korin_layout::{Layout, full};
+use korin_macros::component;
 use korin_ratatui::Event;
 use korin_reactive::{
     RwSignal,
     reactive_graph::traits::{Get, GetUntracked, Set, Update},
 };
-use korin_runtime::{IntoView, View};
+use korin_runtime::IntoView;
 use korin_style::{Color, Style};
 use korin_view::container;
 
 type Submit = Box<dyn Fn(&str) + Send + Sync>;
 
-fn text_input_impl(
+#[component]
+pub fn text_input(
     value: RwSignal<String>,
     placeholder: Option<String>,
     on_submit: Option<Submit>,
@@ -99,13 +101,4 @@ fn text_input_impl(
                 }
             }
         })
-}
-
-#[must_use]
-pub fn text_input(
-    value: RwSignal<String>,
-    placeholder: Option<String>,
-    on_submit: Option<Submit>,
-) -> View {
-    text_input_impl(value, placeholder, on_submit).into_view()
 }
