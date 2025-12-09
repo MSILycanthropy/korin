@@ -1,13 +1,14 @@
 use std::{io, time::Duration};
 
 use korin_components::text_input;
+use korin_event::KeyCode;
 use korin_layout::{col, full, len, row};
 use korin_ratatui::{Event, dispatch, poll, render};
 use korin_reactive::RwSignal;
 use korin_runtime::Runtime;
 use korin_style::{Color, Style};
 use korin_view::container;
-use ratatui::{Terminal, backend::TestBackend, crossterm::event::KeyCode, prelude::Backend};
+use ratatui::{Terminal, backend::TestBackend, prelude::Backend};
 
 #[tokio::main]
 async fn main() -> io::Result<()> {

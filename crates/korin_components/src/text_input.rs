@@ -1,3 +1,4 @@
+use korin_event::KeyCode;
 use korin_layout::{Layout, full, len};
 use korin_ratatui::Event;
 use korin_reactive::{
@@ -7,7 +8,6 @@ use korin_reactive::{
 use korin_runtime::{RuntimeContext, View};
 use korin_style::{Color, Style};
 use korin_view::{IntoAny, container};
-use ratatui::crossterm::event::KeyCode;
 
 type Submit = Box<dyn Fn(&str) + Send + Sync>;
 

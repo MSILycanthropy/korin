@@ -4,13 +4,13 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
+korin_event.workspace = true
 korin_runtime.workspace = true
 korin_style.workspace = true
 korin_reactive.workspace = true
 korin_view.workspace = true
 korin_ratatui.workspace = true
 korin_layout.workspace = true
-ratatui.workspace = true
 
 [lints]
 workspace = true

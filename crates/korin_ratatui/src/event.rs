@@ -1,57 +1,72 @@
 use std::time::Duration;
 
+use korin_event::{KeyCode, KeyEvent, Modifiers};
 use korin_runtime::Runtime;
-use ratatui::crossterm::event::{self, Event as RatEvent, KeyCode, KeyEvent, KeyModifiers};
+use ratatui::crossterm::event::{
+    self, Event as RatEvent, KeyCode as RatKeyCode, KeyEvent as RatKeyEvent,
+    KeyModifiers as RatModifiers,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Event {
-    Key(Key),
+    Key(KeyEvent),
     Resize(u16, u16),
     Tick,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Key {
-    pub code: KeyCode,
-    pub modifiers: KeyModifiers,
-}
-
-impl Key {
-    pub const fn new(code: KeyCode, modifiers: KeyModifiers) -> Self {
-        Self { code, modifiers }
-    }
-
-    pub const fn is_char(&self, c: char) -> bool {
-        matches!(self.code, KeyCode::Char(ch) if ch == c)
-    }
-
-    pub const fn ctrl(&self) -> bool {
-        self.modifiers.contains(KeyModifiers::CONTROL)
-    }
-
-    pub const fn shift(&self) -> bool {
-        self.modifiers.contains(KeyModifiers::SHIFT)
-    }
-
-    pub const fn alt(&self) -> bool {
-        self.modifiers.contains(KeyModifiers::ALT)
+fn convert_keyevent(event: RatKeyEvent) -> KeyEvent {
+    KeyEvent {
+        code: convert_keycode(event.code),
+        modifiers: convert_modifiers(event.modifiers),
     }
 }
 
-impl From<KeyEvent> for Key {
-    fn from(event: KeyEvent) -> Self {
-        Self {
-            code: event.code,
-            modifiers: event.modifiers,
-        }
+const fn convert_keycode(code: RatKeyCode) -> KeyCode {
+    match code {
+        RatKeyCode::Char(c) => KeyCode::Char(c),
+        RatKeyCode::Enter => KeyCode::Enter,
+        RatKeyCode::Tab => KeyCode::Tab,
+        RatKeyCode::BackTab => KeyCode::BackTab,
+        RatKeyCode::Backspace => KeyCode::Backspace,
+        RatKeyCode::Delete => KeyCode::Delete,
+        RatKeyCode::Insert => KeyCode::Insert,
+        RatKeyCode::Left => KeyCode::Left,
+        RatKeyCode::Right => KeyCode::Right,
+        RatKeyCode::Up => KeyCode::Up,
+        RatKeyCode::Down => KeyCode::Down,
+        RatKeyCode::Home => KeyCode::Home,
+        RatKeyCode::End => KeyCode::End,
+        RatKeyCode::PageUp => KeyCode::PageUp,
+        RatKeyCode::PageDown => KeyCode::PageDown,
+        RatKeyCode::Esc => KeyCode::Esc,
+        RatKeyCode::CapsLock => KeyCode::CapsLock,
+        RatKeyCode::NumLock => KeyCode::NumLock,
+        RatKeyCode::ScrollLock => KeyCode::ScrollLock,
+        RatKeyCode::Pause => KeyCode::Pause,
+        RatKeyCode::F(n) => KeyCode::F(n),
+        _ => KeyCode::Char('\0'),
     }
+}
+
+fn convert_modifiers(m: RatModifiers) -> Modifiers {
+    let mut result = Modifiers::NONE;
+    if m.contains(RatModifiers::CONTROL) {
+        result |= Modifiers::CTRL;
+    }
+    if m.contains(RatModifiers::ALT) {
+        result |= Modifiers::ALT;
+    }
+    if m.contains(RatModifiers::SHIFT) {
+        result |= Modifiers::SHIFT;
+    }
+    result
 }
 
 #[must_use]
 pub fn poll(timeout: Duration) -> Option<Event> {
     if event::poll(timeout).ok()? {
         match event::read().ok()? {
-            RatEvent::Key(key) => Some(Event::Key(key.into())),
+            RatEvent::Key(key) => Some(Event::Key(convert_keyevent(key))),
             RatEvent::Resize(w, h) => Some(Event::Resize(w, h)),
             _ => None,
         }

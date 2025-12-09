@@ -468,13 +468,20 @@ dependencies = [
 name = "korin_components"
 version = "0.1.0"
 dependencies = [
+ "korin_event",
  "korin_layout",
  "korin_ratatui",
  "korin_reactive",
  "korin_runtime",
  "korin_style",
  "korin_view",
- "ratatui",
+]
+
+[[package]]
+name = "korin_event"
+version = "0.1.0"
+dependencies = [
+ "bitflags",
 ]
 
 [[package]]
@@ -496,6 +503,7 @@ name = "korin_ratatui"
 version = "0.1.0"
 dependencies = [
  "korin_components",
+ "korin_event",
  "korin_layout",
  "korin_reactive",
  "korin_runtime",

@@ -19,6 +19,7 @@ missing_errors_doc = { level = "allow", priority = 1 }
 [workspace.dependencies]
 korin = { path = "crates/korin" }
 korin_components = { path = "crates/korin_components" }
+korin_event = { path = "crates/korin_event" }
 korin_tree = { path = "crates/korin_tree" }
 korin_layout = { path = "crates/korin_layout" }
 korin_style = { path = "crates/korin_style" }
