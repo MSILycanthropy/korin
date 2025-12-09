@@ -18,14 +18,14 @@ use korin_view::{AnyStyle, AnyView, IntoAnyStyle, Render};
 pub use node::{Node, NodeContent};
 
 pub type View = AnyView<RuntimeContext>;
-pub type Style = AnyStyle<RuntimeContext>;
+pub type StyleProp = AnyStyle<RuntimeContext>;
 
 pub trait IntoStyle: IntoAnyStyle<RuntimeContext> {
-    fn into_style(self) -> Style;
+    fn into_style(self) -> StyleProp;
 }
 
 impl<T: IntoAnyStyle<RuntimeContext>> IntoStyle for T {
-    fn into_style(self) -> Style {
+    fn into_style(self) -> StyleProp {
         IntoAnyStyle::into_style(self)
     }
 }

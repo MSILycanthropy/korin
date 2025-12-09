@@ -1,21 +1,14 @@
 use std::{io, time::Duration};
 
-use korin_components::{Container, ContainerProps};
-use korin_components::{TextInput, TextInputProps};
-use korin_event::KeyCode;
-use korin_layout::{Layout, full};
-use korin_macros::view;
-use korin_ratatui::{Event, dispatch, poll, render};
-use korin_reactive::RwSignal;
-use korin_runtime::Runtime;
-use korin_style::{Color, Style};
+use korin::prelude::*;
+use korin_ratatui::prelude::*;
 use ratatui::{Terminal, backend::TestBackend, prelude::Backend};
 
 #[tokio::main]
 async fn main() -> io::Result<()> {
     let mut runtime = Runtime::new();
 
-    korin_reactive::run_tokio(async || {
+    run_tokio(async || {
         let debug = std::env::args().any(|x| x == "--debug");
 
         if debug {
@@ -68,7 +61,7 @@ async fn run<B: Backend>(
     } else {
         loop {
             run_once(terminal, runtime)?;
-            korin_reactive::tick().await;
+            tick().await;
         }
     }
 
@@ -78,10 +71,7 @@ async fn run<B: Backend>(
 fn run_once<B: Backend>(terminal: &mut Terminal<B>, runtime: &mut Runtime) -> io::Result<()> {
     let size = terminal.size()?;
     runtime
-        .compute_layout(korin_layout::Size::new(
-            f32::from(size.width),
-            f32::from(size.height),
-        ))
+        .compute_layout(Size::new(f32::from(size.width), f32::from(size.height)))
         .expect("layout failed");
 
     terminal.draw(|frame| {

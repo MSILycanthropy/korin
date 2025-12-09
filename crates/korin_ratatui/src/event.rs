@@ -1,18 +1,11 @@
 use std::time::Duration;
 
-use korin_event::{KeyCode, KeyEvent, Modifiers};
+use korin_event::{Event, KeyCode, KeyEvent, Modifiers};
 use korin_runtime::Runtime;
 use ratatui::crossterm::event::{
     self, Event as RatEvent, KeyCode as RatKeyCode, KeyEvent as RatKeyEvent,
     KeyModifiers as RatModifiers,
 };
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Event {
-    Key(KeyEvent),
-    Resize(u16, u16),
-    Tick,
-}
 
 fn convert_keyevent(event: RatKeyEvent) -> KeyEvent {
     KeyEvent {

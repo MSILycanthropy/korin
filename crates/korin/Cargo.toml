@@ -5,9 +5,21 @@ edition.workspace = true
 
 [dependencies]
 korin_tree.workspace = true
-korin_layout.workspace = true
-korin_reactive.workspace = true
 korin_focus.workspace = true
+
+korin_components.workspace = true
+korin_event.workspace = true
+korin_layout.workspace = true
+korin_macros.workspace = true
+korin_reactive.workspace = true
+korin_runtime.workspace = true
+korin_style.workspace = true
+korin_view.workspace = true
+
+[dev-dependencies]
+korin_ratatui.workspace = true
+ratatui.workspace = true
+tokio = { workspace = true, features = ["full"] }
 
 [lints]
 workspace = true

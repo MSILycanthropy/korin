@@ -467,10 +467,19 @@ dependencies = [
 name = "korin"
 version = "0.1.0"
 dependencies = [
+ "korin_components",
+ "korin_event",
  "korin_focus",
  "korin_layout",
+ "korin_macros",
+ "korin_ratatui",
  "korin_reactive",
+ "korin_runtime",
+ "korin_style",
  "korin_tree",
+ "korin_view",
+ "ratatui",
+ "tokio",
 ]
 
 [[package]]
@@ -480,7 +489,6 @@ dependencies = [
  "korin_event",
  "korin_layout",
  "korin_macros",
- "korin_ratatui",
  "korin_reactive",
  "korin_runtime",
  "korin_style",
@@ -522,17 +530,13 @@ dependencies = [
 name = "korin_ratatui"
 version = "0.1.0"
 dependencies = [
- "korin_components",
  "korin_event",
  "korin_layout",
  "korin_macros",
- "korin_reactive",
  "korin_runtime",
  "korin_style",
  "korin_tree",
- "korin_view",
  "ratatui",
- "tokio",
 ]
 
 [[package]]

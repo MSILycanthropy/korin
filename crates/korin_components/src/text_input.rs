@@ -1,8 +1,8 @@
 use crate::{Container, ContainerProps};
+use korin_event::Event;
 use korin_event::KeyCode;
 use korin_layout::{Layout, full};
 use korin_macros::{component, view};
-use korin_ratatui::Event;
 use korin_reactive::{
     RwSignal,
     reactive_graph::traits::{Get, GetUntracked, Set, Update},
@@ -53,7 +53,6 @@ pub fn text_input(
 
     let on_event = move |event: &Event| {
         let Event::Key(key) = event else { return };
-
         let v = value.get_untracked();
         let pos = cursor_pos.get_untracked().min(v.len());
 

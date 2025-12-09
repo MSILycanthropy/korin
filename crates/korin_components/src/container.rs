@@ -1,16 +1,14 @@
+use korin_event::{Event, EventHandler};
 use korin_layout::Layout;
 use korin_macros::component;
-use korin_ratatui::Event;
-use korin_runtime::Style;
+use korin_runtime::StyleProp;
 use korin_runtime::{IntoView, View};
 use korin_view::{Container as PrimitiveContainer, FocusHandler};
-
-type EventHandler = Box<dyn Fn(&Event) + Send + Sync>;
 
 #[component]
 pub fn container(
     layout: Option<Layout>,
-    style: Option<Style>,
+    style: Option<StyleProp>,
     children: Option<Vec<View>>,
     focusable: Option<bool>,
     on_event: Option<EventHandler>,

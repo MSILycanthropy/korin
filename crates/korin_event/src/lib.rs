@@ -1,5 +1,14 @@
 use bitflags::bitflags;
 
+pub type EventHandler = Box<dyn Fn(&Event) + Send + Sync>;
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Event {
+    Key(KeyEvent),
+    Resize(u16, u16),
+    Tick,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct KeyEvent {
     pub code: KeyCode,
