@@ -1,0 +1,16 @@
+[package]
+name = "korin_tui"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+crossterm.workspace = true
+unicode-width.workspace = true
+
+korin_event = { workspace = true, features = ["crossterm"] }
+korin_style = { workspace = true, features = ["crossterm"] }
+korin_geometry.workspace = true
+korin_runtime.workspace = true
+
+[lints]
+workspace = true

@@ -1,7 +1,7 @@
 use bitflags::bitflags;
 
 bitflags! {
-    #[derive(Default, Clone, Copy, PartialEq, Eq)]
+    #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
     pub struct Borders: u8 {
         const NONE   = 0b0000;
         const TOP    = 0b0001;

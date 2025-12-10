@@ -14,6 +14,7 @@ pub use context::RuntimeContext;
 pub use error::{RuntimeError, RuntimeResult};
 use korin_layout::Size;
 use korin_reactive::reactive_graph::owner::{Owner, provide_context};
+pub use korin_tree::NodeId;
 use korin_view::{AnyStyle, AnyView, IntoAnyStyle, Render};
 pub use node::{Node, NodeContent};
 

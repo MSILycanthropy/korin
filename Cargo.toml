@@ -20,12 +20,13 @@ missing_errors_doc = { level = "allow", priority = 1 }
 korin = { path = "crates/korin" }
 korin_components = { path = "crates/korin_components" }
 korin_event = { path = "crates/korin_event" }
+korin_geometry = { path = "crates/korin_geometry" }
 korin_tree = { path = "crates/korin_tree" }
 korin_layout = { path = "crates/korin_layout" }
 korin_style = { path = "crates/korin_style" }
-korin_ratatui = { path = "crates/korin_ratatui" }
 korin_reactive = { path = "crates/korin_reactive" }
 korin_runtime = { path = "crates/korin_runtime" }
+korin_tui = { path = "crates/korin_tui" }
 korin_macros = { path = "crates/korin_macros" }
 korin_focus = { path = "crates/korin_focus" }
 korin_view = { path = "crates/korin_view" }
@@ -33,11 +34,12 @@ korin_view = { path = "crates/korin_view" }
 # member deps
 any_spawner = { version = "0.3", default-features = false }
 bitflags = "2.10.0"
+crossterm = { version = "0.29.0", default-features = false }
 convert_case = "0.10.0"
-ratatui = "0.29.0"
 reactive_graph = { version = "0.2.11", features = ["effects"] }
 slotmap = "1.0.7"
 unicode-width = "0.2"
+num-traits = "0.2"
 
 # macro deps
 syn = { version = "2", default-features = false }

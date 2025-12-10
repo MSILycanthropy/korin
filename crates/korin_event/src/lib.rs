@@ -76,3 +76,73 @@ bitflags! {
         const SHIFT = 0b0100;
     }
 }
+
+#[cfg(feature = "crossterm")]
+mod crossterm_impl {
+    use crate::{Event, KeyCode, KeyEvent, Modifiers};
+    use crossterm::event::{
+        Event as CtEvent, KeyCode as CtKey, KeyEvent as CtKeyEvent, KeyModifiers,
+    };
+
+    impl Event {
+        #[must_use]
+        pub fn from_crossterm(value: CtEvent) -> Option<Self> {
+            match value {
+                CtEvent::Key(key) => Some(Self::Key(key.into())),
+                CtEvent::Resize(width, height) => Some(Self::Resize(width, height)),
+                _ => None,
+            }
+        }
+    }
+
+    impl From<CtKey> for KeyCode {
+        fn from(value: CtKey) -> Self {
+            match value {
+                CtKey::Char(c) => Self::Char(c),
+                CtKey::Enter => Self::Enter,
+                CtKey::Tab => Self::Tab,
+                CtKey::BackTab => Self::BackTab,
+                CtKey::Backspace => Self::Backspace,
+                CtKey::Delete => Self::Delete,
+                CtKey::Insert => Self::Insert,
+                CtKey::Left => Self::Left,
+                CtKey::Right => Self::Right,
+                CtKey::Up => Self::Up,
+                CtKey::Down => Self::Down,
+                CtKey::Home => Self::Home,
+                CtKey::End => Self::End,
+                CtKey::PageUp => Self::PageUp,
+                CtKey::PageDown => Self::PageDown,
+                CtKey::Esc => Self::Esc,
+                CtKey::CapsLock => Self::CapsLock,
+                CtKey::NumLock => Self::NumLock,
+                CtKey::ScrollLock => Self::ScrollLock,
+                CtKey::Pause => Self::Pause,
+                CtKey::F(n) => Self::F(n),
+                _ => Self::Char('\0'),
+            }
+        }
+    }
+
+    impl From<KeyModifiers> for Modifiers {
+        fn from(value: KeyModifiers) -> Self {
+            let mut result = Self::NONE;
+            if value.contains(KeyModifiers::CONTROL) {
+                result |= Self::CTRL;
+            }
+            if value.contains(KeyModifiers::ALT) {
+                result |= Self::ALT;
+            }
+            if value.contains(KeyModifiers::SHIFT) {
+                result |= Self::SHIFT;
+            }
+            result
+        }
+    }
+
+    impl From<CtKeyEvent> for KeyEvent {
+        fn from(value: CtKeyEvent) -> Self {
+            Self::new(value.code.into(), value.modifiers.into())
+        }
+    }
+}

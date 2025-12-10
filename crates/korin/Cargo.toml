@@ -17,9 +17,8 @@ korin_style.workspace = true
 korin_view.workspace = true
 
 [dev-dependencies]
-korin_ratatui.workspace = true
-ratatui.workspace = true
 tokio = { workspace = true, features = ["full"] }
+korin_tui.workspace = true
 
 [lints]
 workspace = true

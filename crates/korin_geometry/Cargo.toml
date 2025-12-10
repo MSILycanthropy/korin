@@ -1,0 +1,15 @@
+[package]
+name = "korin_geometry"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+num-traits.workspace = true
+taffy = { workspace = true, optional = true, default-features = false }
+
+[lints]
+workspace = true
+
+[features]
+default = []
+taffy = ["dep:taffy"]

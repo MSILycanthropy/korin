@@ -3,13 +3,12 @@ use taffy::{Dimension, TrackSizingFunction};
 mod conversions;
 mod engine;
 mod error;
-mod geometry;
 mod layout;
 mod measure;
 
 pub use engine::Engine as LayoutEngine;
 pub use error::{LayoutError, LayoutResult};
-pub use geometry::{Point, Rect, Size};
+pub use korin_geometry::{Point, Rect, Size};
 pub use layout::Layout;
 
 use crate::conversions::{IntoRepeatTracks, RepeatTrack};

@@ -1,6 +1,6 @@
 use korin_style::Style;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum NodeContent {
     Container,
     Text(String),

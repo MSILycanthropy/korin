@@ -5,6 +5,12 @@ edition.workspace = true
 
 [dependencies]
 bitflags.workspace = true
+crossterm = { workspace = true, optional = true, default-features = false }
 
 [lints]
 workspace = true
+
+
+[features]
+default = []
+crossterm = ["dep:crossterm"]

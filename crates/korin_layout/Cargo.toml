@@ -5,6 +5,8 @@ edition.workspace = true
 
 [dependencies]
 korin_tree.workspace = true
+korin_geometry = { workspace = true, features = ["taffy"] }
+
 taffy.workspace = true
 thiserror.workspace = true
 unicode-width.workspace = true
