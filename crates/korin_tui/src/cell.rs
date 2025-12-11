@@ -2,7 +2,7 @@ use unicode_width::UnicodeWidthChar;
 
 use korin_style::{Color, Modifiers};
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Cell {
     pub symbol: char,
     pub foreground: Color,

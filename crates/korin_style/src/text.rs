@@ -10,7 +10,7 @@ pub enum Alignment {
 }
 
 bitflags! {
-    #[derive(Default, Clone, Copy, PartialEq, Eq)]
+    #[derive(Default, Clone, Debug, Copy, PartialEq, Eq)]
     pub struct Modifiers: u8 {
         const NONE      = 0b0000_0000;
         const BOLD      = 0b0000_0001;

@@ -134,3 +134,51 @@ mod taffy_impl {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn size_cast() {
+        let s: Size<f32> = Size::new(10.5, 20.9);
+        let casted: Size<u16> = s.cast();
+        assert_eq!(casted.width, 10);
+        assert_eq!(casted.height, 20);
+    }
+
+    #[test]
+    fn rect_position() {
+        let r = Rect::new(5, 10, 100, 200);
+        let pos = r.position();
+        assert_eq!(pos.x, 5);
+        assert_eq!(pos.y, 10);
+    }
+
+    #[test]
+    fn rect_size() {
+        let r = Rect::new(5, 10, 100, 200);
+        let size = r.size();
+        assert_eq!(size.width, 100);
+        assert_eq!(size.height, 200);
+    }
+
+    #[test]
+    fn rect_cast() {
+        let r: Rect<f32> = Rect::new(1.5, 2.5, 10.9, 20.1);
+        let casted: Rect<u16> = r.cast();
+        assert_eq!(casted.x, 1);
+        assert_eq!(casted.y, 2);
+        assert_eq!(casted.width, 10);
+        assert_eq!(casted.height, 20);
+    }
+
+    #[test]
+    fn rect_add_point() {
+        let r = Rect::new(10, 20, 100, 200);
+        let p = Point::new(5, 5);
+        let result = r + p;
+        assert_eq!(result.x, 15);
+        assert_eq!(result.y, 25);
+    }
+}

@@ -140,3 +140,178 @@ impl<Id: Copy + Eq> Default for FocusManager<Id> {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn new_manager_is_empty() {
+        let focus_manager: FocusManager<u32> = FocusManager::new();
+        assert!(focus_manager.is_empty());
+        assert!(focus_manager.focused().is_none());
+    }
+
+    #[test]
+    fn set_order_updates_focusable_items() {
+        let mut focus_manager = FocusManager::new();
+        focus_manager.set_order(vec![1, 2, 3]);
+
+        assert_eq!(focus_manager.len(), 3);
+        assert!(!focus_manager.is_empty());
+    }
+
+    #[test]
+    fn focused_returns_first_after_set_order() {
+        let mut focus_manager = FocusManager::new();
+        focus_manager.set_order(vec![10, 20, 30]);
+
+        assert_eq!(focus_manager.focused(), Some(10));
+    }
+
+    #[test]
+    fn focus_next_cycles_forward() {
+        let mut focus_manager = FocusManager::new();
+        focus_manager.set_order(vec![1, 2, 3]);
+
+        assert_eq!(focus_manager.focused(), Some(1));
+
+        focus_manager.focus_next();
+        assert_eq!(focus_manager.focused(), Some(2));
+
+        focus_manager.focus_next();
+        assert_eq!(focus_manager.focused(), Some(3));
+
+        focus_manager.focus_next();
+        assert_eq!(focus_manager.focused(), Some(1));
+    }
+
+    #[test]
+    fn focus_prev_cycles_backward() {
+        let mut focus_manager = FocusManager::new();
+        focus_manager.set_order(vec![1, 2, 3]);
+
+        assert_eq!(focus_manager.focused(), Some(1));
+
+        focus_manager.focus_prev();
+        assert_eq!(focus_manager.focused(), Some(3));
+
+        focus_manager.focus_prev();
+        assert_eq!(focus_manager.focused(), Some(2));
+
+        focus_manager.focus_prev();
+        assert_eq!(focus_manager.focused(), Some(1));
+    }
+
+    #[test]
+    fn focus_next_on_empty_returns_empty_change() {
+        let mut focus_manager: FocusManager<u32> = FocusManager::new();
+        let change = focus_manager.focus_next();
+
+        assert!(!change.relevant());
+        assert!(change.prev().is_none());
+        assert!(change.next().is_none());
+    }
+
+    #[test]
+    fn focus_prev_on_empty_returns_empty_change() {
+        let mut focus_manager: FocusManager<u32> = FocusManager::new();
+        let change = focus_manager.focus_prev();
+
+        assert!(!change.relevant());
+    }
+
+    #[test]
+    fn focus_change_relevant_when_different() {
+        let mut focus_manager = FocusManager::new();
+        focus_manager.set_order(vec![1, 2]);
+
+        let change = focus_manager.focus_next();
+        assert!(change.relevant());
+        assert_eq!(change.prev(), Some(1));
+        assert_eq!(change.next(), Some(2));
+    }
+
+    #[test]
+    fn focus_change_not_relevant_for_single_item() {
+        let mut focus_manager = FocusManager::new();
+        focus_manager.set_order(vec![1]);
+
+        let change = focus_manager.focus_next();
+        assert!(!change.relevant());
+        assert_eq!(change.prev(), Some(1));
+        assert_eq!(change.next(), Some(1));
+    }
+
+    #[test]
+    fn focus_by_id_works() {
+        let mut focus_manager = FocusManager::new();
+        focus_manager.set_order(vec![10, 20, 30]);
+
+        assert!(focus_manager.focus(30));
+        assert_eq!(focus_manager.focused(), Some(30));
+    }
+
+    #[test]
+    fn focus_by_id_fails_for_unknown() {
+        let mut focus_manager = FocusManager::new();
+        focus_manager.set_order(vec![1, 2, 3]);
+
+        assert!(!focus_manager.focus(99));
+        assert_eq!(focus_manager.focused(), Some(1));
+    }
+
+    #[test]
+    fn is_focused_works() {
+        let mut focus_manager = FocusManager::new();
+        focus_manager.set_order(vec![1, 2, 3]);
+
+        assert!(focus_manager.is_focused(1));
+        assert!(!focus_manager.is_focused(2));
+
+        focus_manager.focus_next();
+        assert!(!focus_manager.is_focused(1));
+        assert!(focus_manager.is_focused(2));
+    }
+
+    #[test]
+    fn set_order_preserves_current_focus_if_present() {
+        let mut focus_manager = FocusManager::new();
+        focus_manager.set_order(vec![1, 2, 3]);
+        focus_manager.focus(2);
+
+        focus_manager.set_order(vec![3, 2, 1]);
+        assert_eq!(focus_manager.focused(), Some(2));
+    }
+
+    #[test]
+    fn set_order_resets_remains_at_index_if_current_is_not_present() {
+        let mut focus_manager = FocusManager::new();
+        focus_manager.set_order(vec![1, 2, 3]);
+        focus_manager.focus(2);
+
+        focus_manager.set_order(vec![10, 20, 30]);
+        assert_eq!(focus_manager.focused(), Some(20));
+    }
+
+    #[test]
+    fn get_pos_returns_correct_index() {
+        let mut focus_manager = FocusManager::new();
+        focus_manager.set_order(vec![10, 20, 30]);
+
+        assert_eq!(focus_manager.get_pos(10), Some(0));
+        assert_eq!(focus_manager.get_pos(20), Some(1));
+        assert_eq!(focus_manager.get_pos(30), Some(2));
+        assert_eq!(focus_manager.get_pos(99), None);
+    }
+
+    #[test]
+    fn clear_empties_manager() {
+        let mut focus_manager = FocusManager::new();
+        focus_manager.set_order(vec![1, 2, 3]);
+
+        focus_manager.clear();
+        assert!(focus_manager.is_empty());
+        assert!(focus_manager.focused().is_none());
+    }
+}

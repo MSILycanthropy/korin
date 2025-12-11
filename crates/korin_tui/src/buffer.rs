@@ -34,6 +34,7 @@ impl Buffer {
     }
 
     pub fn resize(&mut self, size: Size) {
+        self.size = size;
         self.cells
             .resize((size.width as usize) * (size.height as usize), Cell::EMPTY);
         self.clear();
@@ -164,5 +165,167 @@ impl BufferView {
 
     const fn within_bounds(&self, position: Position) -> bool {
         position.x < self.area.width && position.y < self.area.height
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use korin_style::Color;
+
+    #[test]
+    fn new_buffer_has_correct_size() {
+        let buf = Buffer::new(10, 5);
+        assert_eq!(buf.size().width, 10);
+        assert_eq!(buf.size().height, 5);
+        assert_eq!(buf.cells().len(), 50);
+    }
+
+    #[test]
+    fn new_buffer_is_empty_cells() {
+        let buf = Buffer::new(3, 3);
+        for cell in buf.cells() {
+            assert_eq!(cell.symbol, ' ');
+        }
+    }
+
+    #[test]
+    fn get_returns_cell() {
+        let buf = Buffer::new(5, 5);
+        let cell = buf.get(Position::new(2, 2));
+        assert!(cell.is_some());
+    }
+
+    #[test]
+    fn get_out_of_bounds_returns_none() {
+        let buf = Buffer::new(5, 5);
+        assert!(buf.get(Position::new(5, 0)).is_none());
+        assert!(buf.get(Position::new(0, 5)).is_none());
+        assert!(buf.get(Position::new(10, 10)).is_none());
+    }
+
+    #[test]
+    fn set_modifies_cell() {
+        let mut buf = Buffer::new(5, 5);
+        buf.set(Position::new(1, 1), Cell::new('X'));
+
+        let cell = buf.get(Position::new(1, 1)).expect("failed");
+        assert_eq!(cell.symbol, 'X');
+    }
+
+    #[test]
+    fn set_out_of_bounds_is_noop() {
+        let mut buf = Buffer::new(5, 5);
+        buf.set(Position::new(10, 10), Cell::new('X'));
+    }
+
+    #[test]
+    fn clear_resets_all_cells() {
+        let mut buf = Buffer::new(3, 3);
+        buf.set(Position::new(0, 0), Cell::new('A'));
+        buf.set(Position::new(1, 1), Cell::new('B'));
+
+        buf.clear();
+
+        for cell in buf.cells() {
+            assert_eq!(cell.symbol, ' ');
+        }
+    }
+
+    #[test]
+    fn resize_changes_dimensions() {
+        let mut buf = Buffer::new(5, 5);
+        buf.resize(Size::new(10, 3));
+
+        assert_eq!(buf.size().width, 10);
+        assert_eq!(buf.size().height, 3);
+        assert_eq!(buf.cells().len(), 30);
+    }
+
+    #[test]
+    fn diff_detects_changes() {
+        let mut current = Buffer::new(3, 1);
+        let previous = Buffer::new(3, 1);
+
+        current.set(Position::new(1, 0), Cell::new('X'));
+
+        let changes: Vec<_> = current.diff(&previous).collect();
+        assert_eq!(changes.len(), 1);
+        assert_eq!(changes[0], (1, 0, &Cell::new('X')));
+    }
+
+    #[test]
+    fn diff_empty_when_identical() {
+        let buf1 = Buffer::new(3, 3);
+        let buf2 = Buffer::new(3, 3);
+
+        assert!(buf1.diff(&buf2).next().is_none());
+    }
+
+    #[test]
+    fn view_has_full_dimensions() {
+        let buf = Buffer::new(10, 5);
+        let view = buf.view();
+
+        assert_eq!(view.width(), 10);
+        assert_eq!(view.height(), 5);
+    }
+
+    #[test]
+    fn view_set_writes_to_buffer() {
+        let mut buf = Buffer::new(5, 5);
+        let view = buf.view();
+
+        view.set(&mut buf, 2, 2, Cell::new('O'));
+
+        assert_eq!(buf.get(Position::new(2, 2)).expect("failed").symbol, 'O');
+    }
+
+    #[test]
+    fn subview_offsets_correctly() {
+        let mut buf = Buffer::new(10, 10);
+        let view = buf.view();
+        let sub = view.subview(Rect::new(3, 3, 4, 4));
+
+        sub.set(&mut buf, 0, 0, Cell::new('X'));
+
+        assert_eq!(buf.get(Position::new(3, 3)).expect("failed").symbol, 'X');
+    }
+
+    #[test]
+    fn subview_clips_to_bounds() {
+        let mut buf = Buffer::new(10, 10);
+        let view = buf.view();
+        let sub = view.subview(Rect::new(5, 5, 3, 3));
+
+        sub.set(&mut buf, 10, 10, Cell::new('X'));
+
+        assert_eq!(buf.get(Position::new(5, 5)).expect("failed").symbol, ' ');
+    }
+
+    #[test]
+    fn fill_sets_background() {
+        let mut buf = Buffer::new(3, 3);
+        let view = buf.view();
+        let style = Style::new().background(Color::Red);
+
+        view.fill(&mut buf, &style);
+
+        for cell in buf.cells() {
+            assert_eq!(cell.background, Color::Red);
+        }
+    }
+
+    #[test]
+    fn nested_subviews() {
+        let mut buf = Buffer::new(20, 20);
+        let view = buf.view();
+        let sub1 = view.subview(Rect::new(5, 5, 10, 10));
+        let sub2 = sub1.subview(Rect::new(2, 2, 4, 4));
+
+        sub2.set(&mut buf, 1, 1, Cell::new('Z'));
+
+        // 5 + 2 + 1 = 8
+        assert_eq!(buf.get(Position::new(8, 8)).expect("failed").symbol, 'Z');
     }
 }
