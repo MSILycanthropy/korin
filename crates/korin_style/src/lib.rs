@@ -1,3 +1,5 @@
+use std::fmt;
+
 pub use crate::{
     border::{BorderStyle, Borders},
     color::Color,
@@ -17,6 +19,36 @@ pub struct Style {
     pub text_color: Color,
     pub text_alignment: Alignment,
     pub text_modifiers: Modifiers,
+}
+
+impl fmt::Debug for Style {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut s = f.debug_struct("Style");
+
+        if self.background != Color::Reset {
+            s.field("bg", &self.background);
+        }
+        if self.text_color != Color::Reset {
+            s.field("fg", &self.text_color);
+        }
+        if !self.borders.is_empty() {
+            s.field("borders", &self.borders);
+        }
+        if self.border_style != BorderStyle::Plain {
+            s.field("border_style", &self.border_style);
+        }
+        if self.border_color != Color::Reset {
+            s.field("border_color", &self.border_color);
+        }
+        if self.text_alignment != Alignment::Left {
+            s.field("align", &self.text_alignment);
+        }
+        if !self.text_modifiers.is_empty() {
+            s.field("modifiers", &self.text_modifiers);
+        }
+
+        s.finish()
+    }
 }
 
 impl Style {

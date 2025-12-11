@@ -1,9 +1,31 @@
+use std::fmt;
+
 use korin_style::Style;
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub enum NodeContent {
     Container,
     Text(String),
+}
+
+impl fmt::Debug for NodeContent {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Container => write!(f, "Container"),
+            Self::Text(s) if s.len() <= 20 => write!(f, "Text({s:?})"),
+            Self::Text(s) => write!(f, "Text({:?}...)", &s[..20]),
+        }
+    }
+}
+
+impl fmt::Display for NodeContent {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Container => write!(f, "container"),
+            Self::Text(s) if s.len() <= 20 => write!(f, "text: {s}"),
+            Self::Text(s) => write!(f, "text: {}...", &s[..20]),
+        }
+    }
 }
 
 #[derive(Clone)]

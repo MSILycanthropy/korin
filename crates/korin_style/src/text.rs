@@ -1,6 +1,6 @@
 use bitflags::bitflags;
 
-#[derive(Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Default, Clone, Copy, Debug, PartialEq, Eq)]
 
 pub enum Alignment {
     #[default]

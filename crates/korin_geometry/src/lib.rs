@@ -1,4 +1,4 @@
-use std::ops::Add;
+use std::{fmt, ops::Add};
 
 use num_traits::AsPrimitive;
 
@@ -6,6 +6,12 @@ use num_traits::AsPrimitive;
 pub struct Point<T = f32> {
     pub x: T,
     pub y: T,
+}
+
+impl<T: fmt::Display> fmt::Display for Point<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "({}, {})", self.x, self.y)
+    }
 }
 
 impl<T> Point<T> {
@@ -28,6 +34,12 @@ pub struct Size<T = f32> {
     pub height: T,
 }
 
+impl<T: fmt::Display> fmt::Display for Size<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}x{}", self.width, self.height)
+    }
+}
+
 impl<T> Size<T> {
     pub const fn new(width: T, height: T) -> Self {
         Self { width, height }
@@ -48,6 +60,16 @@ pub struct Rect<T = f32> {
     pub y: T,
     pub width: T,
     pub height: T,
+}
+
+impl<T: fmt::Display> fmt::Display for Rect<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}x{} @ ({}, {})",
+            self.width, self.height, self.x, self.y
+        )
+    }
 }
 
 impl<T> Rect<T> {
