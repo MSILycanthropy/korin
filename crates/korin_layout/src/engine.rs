@@ -68,6 +68,7 @@ impl Engine {
         let taffy_id = self.taffy.new_leaf_with_context(layout.into(), ctx)?;
 
         self.nodes.insert(node_id, taffy_id);
+        tracing::debug!(node = %node_id, "insert");
 
         Ok(taffy_id)
     }
@@ -76,23 +77,26 @@ impl Engine {
         &mut self,
         layout: Layout,
         node_id: NodeId,
-        text: String,
+        text: &str,
     ) -> LayoutResult<TaffyId> {
-        let ctx = NodeMeasure(Some(text));
+        let text_len = text.len();
+        let ctx = NodeMeasure(Some(text.into()));
         let taffy_id = self.taffy.new_leaf_with_context(layout.into(), ctx)?;
 
         self.nodes.insert(node_id, taffy_id);
+        tracing::debug!(node = %node_id, text_len, "insert_text");
 
         Ok(taffy_id)
     }
 
     pub fn remove(&mut self, id: NodeId) -> LayoutResult<TaffyId> {
         if let Some(taffy_id) = self.nodes.remove(&id) {
-            let id = self.taffy.remove(taffy_id)?;
-
-            return Ok(id);
+            let taffy_id = self.taffy.remove(taffy_id)?;
+            tracing::debug!(node = %id, "remove");
+            return Ok(taffy_id);
         }
 
+        tracing::warn!(node = %id, "remove failed: node not found");
         Err(LayoutError::NodeNotFound(id))
     }
 
@@ -101,6 +105,7 @@ impl Engine {
         let child_taffy = self.taffy_node(child)?;
 
         self.taffy.add_child(parent_taffy, child_taffy)?;
+        tracing::debug!(parent = %parent, child = %child, "append");
 
         Ok(())
     }
@@ -109,23 +114,35 @@ impl Engine {
         if let Some(&taffy_id) = self.nodes.get(&id) {
             self.taffy.set_style(taffy_id, layout.into())?;
             self.taffy.mark_dirty(taffy_id)?;
+            tracing::trace!(node = %id, "update");
+            return Ok(());
         }
+
+        tracing::warn!(node = %id, "update failed: node not found");
 
         Ok(())
     }
 
     pub fn update_text(&mut self, id: NodeId, layout: Layout, text: String) -> LayoutResult<()> {
         if let Some(&taffy_id) = self.nodes.get(&id) {
+            let log_text = text.clone();
             self.taffy.set_style(taffy_id, layout.into())?;
             self.taffy
                 .set_node_context(taffy_id, Some(NodeMeasure(Some(text))))?;
             self.taffy.mark_dirty(taffy_id)?;
+            tracing::trace!(node = %id, text = log_text, "update_text");
+
+            return Ok(());
         }
+        tracing::warn!(node = %id, "update_text failed: node not found");
 
         Ok(())
     }
 
     pub fn compute<T>(&mut self, tree: &Tree<T>, size: Size) -> LayoutResult<()> {
+        let _span =
+            tracing::debug_span!("compute", width = size.width, height = size.height).entered();
+
         let root = tree.root().ok_or(LayoutError::NoRoot)?;
         let root_taffy = self.taffy_node(root)?;
 

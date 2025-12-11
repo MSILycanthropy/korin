@@ -56,25 +56,31 @@ impl<T> Tree<T> {
 
     pub fn set_root(&mut self, id: NodeId) -> TreeResult<()> {
         if !self.nodes.contains_key(id) {
+            tracing::warn!(node = %id, "set_root failed: node not found");
             return Err(TreeError::NodeNotFound(id));
         }
 
+        tracing::debug!(node = %id, "set_root");
         self.root = Some(id);
 
         Ok(())
     }
 
     pub fn new_leaf(&mut self, data: T) -> NodeId {
-        self.nodes.insert(Node::from(data))
+        let id = self.nodes.insert(Node::from(data));
+        tracing::debug!(node = %id, "new_leaf");
+        id
     }
 
     pub fn append(&mut self, parent: NodeId, child: NodeId) -> TreeResult<()> {
-        let parent = self
-            .nodes
-            .get_mut(parent)
-            .ok_or(TreeError::NodeNotFound(parent))?;
+        let Some(parent_node) = self.nodes.get_mut(parent) else {
+            tracing::warn!(parent = %parent, child = %child, "append failed: parent not found");
+            return Err(TreeError::NodeNotFound(parent));
+        };
 
-        parent.children.push(child);
+        parent_node.children.push(child);
+
+        tracing::debug!(parent = %parent, child = %child, "append");
 
         Ok(())
     }
@@ -91,17 +97,19 @@ impl<T> Tree<T> {
             parent.children.retain(|&c| c != id);
         }
 
-        let removed = self
-            .nodes
-            .remove(id)
-            .map(|n| n.data)
-            .ok_or(TreeError::NodeNotFound(id));
+        let Some(removed) = self.nodes.remove(id).map(|n| n.data) else {
+            tracing::warn!(node = %id, "remove failed: node not found");
+            return Err(TreeError::NodeNotFound(id));
+        };
 
+        let count = descendants.len();
         for d in descendants {
             self.nodes.remove(d);
         }
 
-        removed
+        tracing::debug!(node = %id, descendants = count, "remove");
+
+        Ok(removed)
     }
 
     #[must_use]

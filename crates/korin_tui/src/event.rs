@@ -16,6 +16,8 @@ pub fn poll(timeout: Duration) -> Option<Event> {
 }
 
 pub fn dispatch(event: &Event, runtime: &Runtime) {
+    tracing::trace!(?event, "dispatch");
+
     match event {
         Event::Key(key) => {
             match key.code {
@@ -31,7 +33,10 @@ pub fn dispatch(event: &Event, runtime: &Runtime) {
             }
             dispatch_to_focused(event, runtime);
         }
-        Event::Resize(_, _) | Event::Tick => {}
+        Event::Resize(width, height) => {
+            tracing::debug!(width = width, height = height, "resize");
+        }
+        Event::Tick => {}
     }
 }
 
@@ -48,6 +53,12 @@ fn handle_focus_change(runtime: &Runtime, reverse: bool) {
         return;
     }
 
+    tracing::debug!(
+        prev = ?change.prev().map(|id| id.to_string()),
+        next = ?change.next().map(|id| id.to_string()),
+        "focus_changed"
+    );
+
     if let Some(prev) = change.prev() {
         let _ = inner.try_on_blur(prev);
     }
@@ -60,7 +71,9 @@ fn handle_focus_change(runtime: &Runtime, reverse: bool) {
 fn dispatch_to_focused(event: &Event, runtime: &Runtime) {
     let inner = runtime.inner();
 
-    let Some(focused) = inner.focus.focused() else {
+    let Some(focused) = inner.focus.focused().or_else(|| inner.root()) else {
+        tracing::debug!("dispatch_to_focused: no focused node");
+
         return;
     };
 

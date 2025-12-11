@@ -56,16 +56,20 @@ impl<Id: Copy + Eq> FocusManager<Id> {
 
     pub fn focus(&mut self, id: Id) -> bool {
         if let Some(position) = self.get_pos(id) {
+            let prev = self.index;
             self.index = position;
 
+            tracing::debug!(from = prev, to = position, "focus");
             return true;
         }
 
+        tracing::debug!("focus failed: id not in order");
         false
     }
 
     pub fn focus_next(&mut self) -> FocusChange<Id> {
         if self.order.is_empty() {
+            tracing::debug!("focus_next: empty order");
             return FocusChange::EMPTY;
         }
 
@@ -76,6 +80,7 @@ impl<Id: Copy + Eq> FocusManager<Id> {
 
     pub fn focus_prev(&mut self) -> FocusChange<Id> {
         if self.order.is_empty() {
+            tracing::debug!("focus_prev: empty order");
             return FocusChange::EMPTY;
         }
 
@@ -118,10 +123,13 @@ impl<Id: Copy + Eq> FocusManager<Id> {
 
     fn change_focus(&mut self, to: usize) -> FocusChange<Id> {
         let prev = self.focused();
+        let from = self.index;
 
         self.index = to;
 
         let next = self.focused();
+
+        tracing::debug!(from, to, "change_focus");
 
         FocusChange { prev, next }
     }

@@ -11,6 +11,7 @@ korin_event = { workspace = true, features = ["crossterm"] }
 korin_style = { workspace = true, features = ["crossterm"] }
 korin_geometry.workspace = true
 korin_runtime.workspace = true
+tracing.workspace = true
 
 [lints]
 workspace = true

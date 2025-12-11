@@ -50,6 +50,8 @@ pub struct Runtime {
 impl Runtime {
     #[must_use]
     pub fn new() -> Self {
+        tracing::debug!("runtime created");
+
         Self {
             inner: Arc::new(RwLock::new(RuntimeInner::new())),
             owner: Owner::new(),
@@ -62,6 +64,8 @@ impl Runtime {
         V: Render<RuntimeContext>,
         V::State: 'static,
     {
+        let _span = tracing::debug_span!("mount").entered();
+
         self.owner.set();
 
         provide_context(self.inner.clone());
@@ -82,6 +86,8 @@ impl Runtime {
         }
 
         drop(inner);
+
+        tracing::info!("mount complete");
 
         Ok(())
     }

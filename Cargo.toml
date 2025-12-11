@@ -40,6 +40,7 @@ reactive_graph = { version = "0.2.11", features = ["effects"] }
 slotmap = "1.0.7"
 unicode-width = "0.2"
 num-traits = "0.2"
+tracing = "0.1"
 
 # macro deps
 syn = { version = "2", default-features = false }

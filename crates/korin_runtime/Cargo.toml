@@ -12,6 +12,7 @@ korin_focus.workspace = true
 korin_reactive.workspace = true
 
 thiserror.workspace = true
+tracing.workspace = true
 
 [lints]
 workspace = true

@@ -10,6 +10,7 @@ korin_geometry = { workspace = true, features = ["taffy"] }
 taffy.workspace = true
 thiserror.workspace = true
 unicode-width.workspace = true
+tracing.workspace = true
 
 [lints]
 workspace = true

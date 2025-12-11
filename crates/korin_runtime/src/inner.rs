@@ -43,10 +43,12 @@ impl RuntimeInner {
         };
         let node_id = self.tree.new_leaf(node);
 
-        if let Some(text) = text {
+        if let Some(ref text) = text {
             self.layout.insert_text(layout, node_id, text)?;
+            tracing::debug!(node = %node_id, text = text, "create_node");
         } else {
             self.layout.insert(layout, node_id)?;
+            tracing::debug!(node = %node_id, "create_node");
         }
 
         Ok(node_id)
@@ -72,11 +74,15 @@ impl RuntimeInner {
         self.focus_callbacks.remove(&id);
         self.focusable.remove(&id);
 
+        tracing::debug!(node = %id, "remove_node");
+
         Ok(())
     }
 
     pub fn set_focusable(&mut self, id: NodeId) {
         self.focusable.insert(id);
+
+        tracing::trace!(node = %id, "set_focus");
     }
 
     pub fn set_event_handler(&mut self, id: NodeId, handler: EventHandler) {
@@ -95,6 +101,7 @@ impl RuntimeInner {
 
     pub fn try_on_blur(&self, id: NodeId) -> RuntimeResult<()> {
         let Some(callbacks) = self.focus_callbacks.get(&id) else {
+            tracing::warn!(node = %id, "try_on_blur failed: node not found");
             return Err(RuntimeError::NodeNotFound(id));
         };
 
@@ -103,12 +110,14 @@ impl RuntimeInner {
         };
 
         on_blur();
+        tracing::trace!(node = %id, "on_blur");
 
         Ok(())
     }
 
     pub fn try_on_focus(&self, id: NodeId) -> RuntimeResult<()> {
         let Some(callbacks) = self.focus_callbacks.get(&id) else {
+            tracing::warn!(node = %id, "try_on_focus failed: node not found");
             return Err(RuntimeError::NodeNotFound(id));
         };
 
@@ -117,12 +126,14 @@ impl RuntimeInner {
         };
 
         on_focus();
+        tracing::trace!(node = %id, "on_focus");
 
         Ok(())
     }
 
     pub fn try_on_event<E: 'static>(&self, id: NodeId, event: &E) -> RuntimeResult<()> {
         let Some(on_event) = self.event_handlers.get(&id) else {
+            tracing::trace!(node = %id, "try_on_event: no handler");
             return Err(RuntimeError::NoHandler);
         };
 
@@ -133,6 +144,7 @@ impl RuntimeInner {
 
     pub fn cascade_styles(&mut self, node_id: NodeId, inherited: Style) -> RuntimeResult<()> {
         let Some(node) = self.get_mut(node_id) else {
+            tracing::warn!(node = %node_id, "cascade_styles failed: node not found");
             return Err(RuntimeError::NodeNotFound(node_id));
         };
 
@@ -147,6 +159,10 @@ impl RuntimeInner {
     }
 
     pub fn compute_layout(&mut self, size: Size) -> RuntimeResult<()> {
+        let _span =
+            tracing::debug_span!("compute_layout", width = size.width, height = size.height)
+                .entered();
+
         if let Some(root) = self.root() {
             self.cascade_styles(root, Style::new())?;
         }
@@ -191,6 +207,7 @@ impl RuntimeInner {
             });
         }
 
+        tracing::debug!(focusable_count = order.len(), "update_focus_order");
         self.focus.set_order(order);
     }
 }

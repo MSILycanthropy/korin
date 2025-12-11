@@ -7,9 +7,12 @@ use korin_style::Borders;
 use crate::{Buffer, Rect, buffer::BufferView};
 
 pub fn render(buffer: &mut Buffer, runtime: &Runtime) {
+    let _span = tracing::debug_span!("render").entered();
+
     let inner = runtime.inner();
 
     let Some(root) = inner.root() else {
+        tracing::warn!("render called with no root");
         return;
     };
 
