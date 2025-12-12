@@ -101,17 +101,17 @@ impl RuntimeInner {
         stopped
     }
 
-    pub fn cascade_styles(&mut self, node_id: NodeId, inherited: Style) -> RuntimeResult<()> {
+    pub fn cascade_styles(&mut self, node_id: NodeId, inherited: &Style) -> RuntimeResult<()> {
         let Some(node) = self.get_mut(node_id) else {
             tracing::warn!(node = %node_id, "cascade_styles failed: node not found");
             return Err(RuntimeError::NodeNotFound(node_id));
         };
 
-        node.computed_style = node.style.merge(&inherited);
-        let computed = node.computed_style;
+        node.computed_style = node.style.clone().merge(inherited);
+        let computed = node.computed_style.clone();
 
         for child_id in self.tree.children(node_id) {
-            self.cascade_styles(child_id, computed)?;
+            self.cascade_styles(child_id, &computed)?;
         }
 
         Ok(())
@@ -123,7 +123,7 @@ impl RuntimeInner {
                 .entered();
 
         if let Some(root) = self.root() {
-            self.cascade_styles(root, Style::new())?;
+            self.cascade_styles(root, &Style::default())?;
         }
 
         self.layout.compute(&self.tree, size)?;

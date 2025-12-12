@@ -7,6 +7,9 @@ edition.workspace = true
 bitflags.workspace = true
 crossterm = { workspace = true, optional = true, default-features = false }
 
+korin_layout.workspace = true
+
+
 [lints]
 workspace = true
 

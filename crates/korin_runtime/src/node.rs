@@ -37,11 +37,11 @@ pub struct Node {
 
 impl Node {
     #[must_use]
-    pub const fn container(style: Style) -> Self {
+    pub fn container(style: Style) -> Self {
         Self {
             content: NodeContent::Container,
             style,
-            computed_style: Style::new(),
+            computed_style: Style::default(),
         }
     }
 
@@ -49,7 +49,7 @@ impl Node {
         Self {
             content: NodeContent::Text(text.into()),
             style,
-            computed_style: Style::new(),
+            computed_style: Style::default(),
         }
     }
 }

@@ -6,12 +6,12 @@ mod error;
 mod layout;
 mod measure;
 
+pub use crate::conversions::*;
 pub use engine::Engine as LayoutEngine;
 pub use error::{LayoutError, LayoutResult};
 pub use korin_geometry::{Point, Rect, Size};
 pub use layout::Layout;
-
-use crate::conversions::{IntoRepeatTracks, RepeatTrack};
+pub use taffy::{AlignContent, AlignItems, AlignSelf, JustifyContent, JustifyItems, JustifySelf};
 
 #[must_use]
 pub fn pct(val: impl Into<f32>) -> Dimension {

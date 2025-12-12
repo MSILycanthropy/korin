@@ -7,7 +7,7 @@ use crate::conversions::{
     IntoDimension, IntoF32, IntoLengthPercentage, IntoLengthPercentageAuto, IntoTracks,
 };
 
-#[derive(Clone, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Layout(pub Style);
 
 impl Layout {

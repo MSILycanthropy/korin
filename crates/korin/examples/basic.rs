@@ -21,8 +21,8 @@ async fn run(runtime: &mut Runtime, terminal: &mut Terminal) -> io::Result<()> {
     let password = RwSignal::new(String::new());
 
     let app = view! {
-        <Container layout={Layout::col().w(full()).h(full()).gap(1)} style={Style::new().background(Color::DarkGray)}>
-            <Container layout={Layout::row().h(3).w(full())} style={Style::new().bordered().background(Color::Blue)}>
+        <Container layout={Layout::col().w(full()).h(full()).gap(1)} style={Style::builder().background(Color::DarkGray).build()}>
+            <Container layout={Layout::row().h(3).w(full())} style={Style::builder().bordered().background(Color::Blue).build()}>
                 "Login Form"
             </Container>
             <Container layout={Layout::col().grow(1).w(full()).gap(0.5)}>
@@ -35,7 +35,7 @@ async fn run(runtime: &mut Runtime, terminal: &mut Terminal) -> io::Result<()> {
                     <TextInput value={password} placeholder={"Enter password..."} />
                 </Container>
             </Container>
-            <Container layout={Layout::row().h(3).w(full())} style={Style::new().bordered().background(Color::Magenta)}>
+            <Container layout={Layout::row().h(3).w(full())} style={Style::builder().bordered().background(Color::Magenta).build()}>
                 "Press Tab to switch fields, Ctrl+Q to quit"
             </Container>
         </Container>

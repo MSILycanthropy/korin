@@ -106,7 +106,7 @@ fn focus_order_matches_tree_order() {
 
 #[test]
 fn style_applied_to_node() {
-    let style = Style::new().background(korin_style::Color::Red);
+    let style = Style::builder().background(korin_style::Color::Red).build();
     let view = Container::<RuntimeContext>::new().style(style);
 
     let mut runtime = build_runtime(view);
@@ -118,7 +118,7 @@ fn style_applied_to_node() {
     let root = inner.root().expect("has root");
     let node = inner.get(root).expect("has node");
 
-    assert_eq!(node.computed_style.background, korin_style::Color::Red);
+    assert_eq!(node.computed_style.background(), korin_style::Color::Red);
 
     drop(inner);
 }

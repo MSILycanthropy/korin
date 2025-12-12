@@ -26,7 +26,7 @@ impl Text {
     }
 
     #[must_use]
-    pub const fn style(mut self, style: Style) -> Self {
+    pub fn style(mut self, style: Style) -> Self {
         self.style = style;
         self
     }

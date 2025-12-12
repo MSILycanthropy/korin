@@ -24,9 +24,9 @@ pub fn render(buffer: &mut Buffer, view: &BufferView, text: &str, style: &Style)
                 x,
                 y,
                 Cell::new(ch)
-                    .foreground(style.text_color)
-                    .background(style.background)
-                    .modifiers(style.text_modifiers),
+                    .foreground(style.text_color())
+                    .background(style.background())
+                    .modifiers(style.text_modifiers()),
             );
         }
     }

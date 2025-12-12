@@ -46,10 +46,11 @@ pub fn text_input(
 
     let style = move || {
         if focused.get() {
-            Style::new().bordered().border_color(Color::Cyan)
+            Style::builder().bordered().border_color(Color::Cyan)
         } else {
-            Style::new().bordered()
+            Style::builder().bordered()
         }
+        .build()
     };
 
     let on_key = move |key: &EventContext<Key>| {

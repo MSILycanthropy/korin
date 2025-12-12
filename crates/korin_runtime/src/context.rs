@@ -116,8 +116,10 @@ impl RenderContext for RuntimeContext {
         let mut runtime = self.runtime_mut();
 
         if let Some(node) = runtime.tree.get_mut(id) {
-            node.style = style;
+            node.style = style.clone();
         }
+
+        let _ = runtime.layout.update(id, style.layout().clone());
     }
 
     fn set_focusable(&mut self, id: NodeId) {

@@ -153,7 +153,7 @@ impl BufferView {
         for y in 0..self.height() {
             for x in 0..self.width() {
                 if let Some(cell) = buffer.get_mut(self.area + Position::new(x, y)) {
-                    cell.background = style.background;
+                    cell.background = style.background();
                 }
             }
         }
@@ -307,7 +307,7 @@ mod tests {
     fn fill_sets_background() {
         let mut buf = Buffer::new(3, 3);
         let view = buf.view();
-        let style = Style::new().background(Color::Red);
+        let style = Style::builder().background(Color::Red).build();
 
         view.fill(&mut buf, &style);
 

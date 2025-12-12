@@ -9,7 +9,7 @@ pub fn render(buffer: &mut Buffer, view: &BufferView, style: &Style) {
 }
 
 fn render_borders(buffer: &mut Buffer, view: &BufferView, style: &Style) {
-    if style.borders.is_empty() {
+    if style.borders().is_empty() {
         return;
     }
 
@@ -17,7 +17,7 @@ fn render_borders(buffer: &mut Buffer, view: &BufferView, style: &Style) {
         return;
     }
 
-    let symbols = match style.border_style {
+    let symbols = match style.border_style() {
         BorderStyle::Plain => &BorderSymbols::PLAIN,
         BorderStyle::Rounded => &BorderSymbols::ROUNDED,
         BorderStyle::Double => &BorderSymbols::DOUBLE,
@@ -26,50 +26,51 @@ fn render_borders(buffer: &mut Buffer, view: &BufferView, style: &Style) {
 
     let cell = |ch| {
         Cell::new(ch)
-            .foreground(style.border_color)
-            .background(style.background)
+            .foreground(style.border_color())
+            .background(style.background())
     };
 
     let x1 = view.width() - 1;
     let y1 = view.height() - 1;
+    let borders = style.borders();
 
-    if style.borders.contains(Borders::TOP) {
+    if borders.contains(Borders::TOP) {
         for x in 1..x1 {
             view.set(buffer, x, 0, cell(symbols.h));
         }
     }
 
-    if style.borders.contains(Borders::BOTTOM) {
+    if borders.contains(Borders::BOTTOM) {
         for x in 1..x1 {
             view.set(buffer, x, y1, cell(symbols.h));
         }
     }
 
-    if style.borders.contains(Borders::LEFT) {
+    if borders.contains(Borders::LEFT) {
         for y in 1..y1 {
             view.set(buffer, 0, y, cell(symbols.v));
         }
     }
 
-    if style.borders.contains(Borders::RIGHT) {
+    if borders.contains(Borders::RIGHT) {
         for y in 1..y1 {
             view.set(buffer, x1, y, cell(symbols.v));
         }
     }
 
-    if style.borders.contains(Borders::TOP | Borders::LEFT) {
+    if borders.contains(Borders::TOP | Borders::LEFT) {
         view.set(buffer, 0, 0, cell(symbols.tl));
     }
 
-    if style.borders.contains(Borders::TOP | Borders::RIGHT) {
+    if borders.contains(Borders::TOP | Borders::RIGHT) {
         view.set(buffer, x1, 0, cell(symbols.tr));
     }
 
-    if style.borders.contains(Borders::BOTTOM | Borders::LEFT) {
+    if borders.contains(Borders::BOTTOM | Borders::LEFT) {
         view.set(buffer, 0, y1, cell(symbols.bl));
     }
 
-    if style.borders.contains(Borders::BOTTOM | Borders::RIGHT) {
+    if borders.contains(Borders::BOTTOM | Borders::RIGHT) {
         view.set(buffer, x1, y1, cell(symbols.br));
     }
 }
