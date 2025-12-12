@@ -14,7 +14,7 @@ pub fn implmentation(input: TokenStream) -> TokenStream {
 #[derive(Debug)]
 enum Node {
     Element(Element),
-    Fragment(Vec<Node>),
+    Fragment(Vec<Self>),
     Expr(TokenStream2),
 }
 

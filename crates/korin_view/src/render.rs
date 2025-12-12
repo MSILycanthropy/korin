@@ -1,12 +1,10 @@
+use korin_event::Listeners;
 use korin_layout::Layout;
 use korin_reactive::reactive_graph::effect::RenderEffect;
 use korin_style::Style;
 use korin_tree::NodeId;
 
-use crate::{
-    EventHandler, FocusHandler,
-    text::{Text, TextState},
-};
+use crate::text::{Text, TextState};
 
 pub trait RenderContext {
     fn create_container(&mut self, layout: Layout, style: Style) -> Option<NodeId>;
@@ -18,13 +16,7 @@ pub trait RenderContext {
     fn update_style(&mut self, id: NodeId, style: Style);
 
     fn set_focusable(&mut self, id: NodeId);
-    fn set_event_handler(&mut self, id: NodeId, handler: EventHandler);
-    fn set_focus_callbacks(
-        &mut self,
-        id: NodeId,
-        on_focus: Option<FocusHandler>,
-        on_blur: Option<FocusHandler>,
-    );
+    fn set_listeners(&mut self, id: NodeId, listeners: Listeners);
 
     #[must_use]
     fn with_parent(&self, parent: NodeId) -> Self;

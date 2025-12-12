@@ -1,5 +1,6 @@
 use crate::{Container, ContainerProps};
-use korin_event::Event;
+use korin_event::EventContext;
+use korin_event::Key;
 use korin_event::KeyCode;
 use korin_layout::{Layout, full};
 use korin_macros::{component, view};
@@ -51,8 +52,7 @@ pub fn text_input(
         }
     };
 
-    let on_event = move |event: &Event| {
-        let Event::Key(key) = event else { return };
+    let on_key = move |key: &EventContext<Key>| {
         let v = value.get_untracked();
         let pos = cursor_pos.get_untracked().min(v.len());
 
@@ -97,14 +97,22 @@ pub fn text_input(
         }
     };
 
+    let on_focus = move |_: &EventContext<korin_event::Focus>| {
+        focused.set(true);
+    };
+
+    let on_blur = move |_: &EventContext<korin_event::Blur>| {
+        focused.set(false);
+    };
+
     view! {
        <Container
             layout={Layout::new().w(full()).h(3.0)}
             style={style}
             focusable={true}
-            on:event={on_event}
-            on:focus={move || focused.set(true)}
-            on:blur={move || focused.set(false)}
+            on:key={on_key}
+            on:focus={on_focus}
+            on:blur={on_blur}
         >
             {display}
         </Container>

@@ -1,5 +1,5 @@
 pub use korin_components::{Container, ContainerProps, TextInput, TextInputProps};
-pub use korin_event::{Event, EventHandler, KeyCode, KeyEvent, Modifiers as KeyModifiers};
+pub use korin_event::{Blur, Focus, Key, KeyCode, KeyEvent, Modifiers as KeyModifiers, Resize};
 pub use korin_layout::{
     Layout, Size, auto, fr, full, max_content, min_content, minmax, pct, repeat, repeat_auto_fill,
     repeat_auto_fit,

@@ -1,9 +1,10 @@
 use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
+use korin_event::Listeners;
 use korin_layout::Layout;
 use korin_style::Style;
 use korin_tree::NodeId;
-use korin_view::{EventHandler, FocusHandler, RenderContext};
+use korin_view::RenderContext;
 
 use crate::{Node, NodeContent, RuntimeResult, inner::RuntimeInner};
 
@@ -123,18 +124,8 @@ impl RenderContext for RuntimeContext {
         self.runtime_mut().set_focusable(id);
     }
 
-    fn set_event_handler(&mut self, id: NodeId, handler: EventHandler) {
-        self.runtime_mut().set_event_handler(id, handler);
-    }
-
-    fn set_focus_callbacks(
-        &mut self,
-        id: NodeId,
-        on_focus: Option<FocusHandler>,
-        on_blur: Option<FocusHandler>,
-    ) {
-        self.runtime_mut()
-            .set_focus_callbacks(id, on_focus, on_blur);
+    fn set_listeners(&mut self, id: NodeId, listeners: Listeners) {
+        self.runtime_mut().event_listeners.insert(id, listeners);
     }
 
     fn with_parent(&self, parent: NodeId) -> Self {

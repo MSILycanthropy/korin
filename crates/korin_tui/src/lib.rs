@@ -13,10 +13,9 @@ pub mod crossterm {
 
 pub use buffer::Buffer;
 pub use cell::Cell;
-pub use terminal::Terminal;
-
-pub use event::{dispatch, poll};
+pub use event::{Event, dispatch, poll};
 pub use renderer::render;
+pub use terminal::Terminal;
 
 pub type Rect = korin_geometry::Rect<u16>;
 pub type Size = korin_geometry::Size<u16>;

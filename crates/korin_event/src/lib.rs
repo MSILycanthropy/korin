@@ -1,13 +1,14 @@
 use bitflags::bitflags;
 
-pub type EventHandler = Box<dyn Fn(&Event) + Send + Sync>;
+mod context;
+mod event;
+mod events;
+mod listeners;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Event {
-    Key(KeyEvent),
-    Resize(u16, u16),
-    Tick,
-}
+pub use context::EventContext;
+pub use event::Event;
+pub use events::{Blur, Focus, Key, Resize};
+pub use listeners::Listeners;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct KeyEvent {
@@ -79,21 +80,8 @@ bitflags! {
 
 #[cfg(feature = "crossterm")]
 mod crossterm_impl {
-    use crate::{Event, KeyCode, KeyEvent, Modifiers};
-    use crossterm::event::{
-        Event as CtEvent, KeyCode as CtKey, KeyEvent as CtKeyEvent, KeyModifiers,
-    };
-
-    impl Event {
-        #[must_use]
-        pub fn from_crossterm(value: CtEvent) -> Option<Self> {
-            match value {
-                CtEvent::Key(key) => Some(Self::Key(key.into())),
-                CtEvent::Resize(width, height) => Some(Self::Resize(width, height)),
-                _ => None,
-            }
-        }
-    }
+    use crate::{Key, KeyCode, KeyEvent, Modifiers};
+    use crossterm::event::{KeyCode as CtKey, KeyEvent as CtKeyEvent, KeyModifiers};
 
     impl From<CtKey> for KeyCode {
         fn from(value: CtKey) -> Self {
@@ -140,9 +128,11 @@ mod crossterm_impl {
         }
     }
 
-    impl From<CtKeyEvent> for KeyEvent {
+    impl From<CtKeyEvent> for Key {
         fn from(value: CtKeyEvent) -> Self {
-            Self::new(value.code.into(), value.modifiers.into())
+            let key_event = KeyEvent::new(value.code.into(), value.modifiers.into());
+
+            Self(key_event)
         }
     }
 }

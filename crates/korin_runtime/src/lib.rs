@@ -12,6 +12,7 @@ use inner::RuntimeInner;
 
 pub use context::RuntimeContext;
 pub use error::{RuntimeError, RuntimeResult};
+use korin_event::{Event, Focus};
 use korin_layout::Size;
 use korin_reactive::reactive_graph::owner::{Owner, provide_context};
 pub use korin_tree::NodeId;
@@ -82,7 +83,7 @@ impl Runtime {
             inner.focus.focus_next();
             inner.focus.focused()
         }) {
-            let _ = inner.try_on_focus(first);
+            inner.emit(first, &Focus);
         }
 
         drop(inner);
@@ -90,6 +91,30 @@ impl Runtime {
         tracing::info!("mount complete");
 
         Ok(())
+    }
+
+    pub fn dispatch<E: Event>(&self, event: &E) {
+        let inner = self.inner();
+
+        let Some(target) = inner.focused() else {
+            return;
+        };
+
+        let mut path = vec![target];
+
+        if E::bubbles() {
+            path.extend(inner.tree.ancestors(target));
+        }
+
+        drop(inner);
+
+        for node in path {
+            let inner = self.inner();
+
+            if inner.emit(node, event) {
+                break;
+            }
+        }
     }
 
     pub fn compute_layout(&mut self, size: Size) -> RuntimeResult<()> {

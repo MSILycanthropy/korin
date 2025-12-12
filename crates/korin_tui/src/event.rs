@@ -1,8 +1,25 @@
 use std::time::Duration;
 
-use crossterm::event;
-use korin_event::{Event, KeyCode};
+use crossterm::event::{self, Event as CtEvent};
+use korin_event::{Blur, Focus, Key, KeyCode, Resize};
 use korin_runtime::Runtime;
+
+#[derive(Debug)]
+pub enum Event {
+    Key(Key),
+    Resize(Resize<u16>),
+    Tick,
+}
+
+impl Event {
+    fn from_crossterm(ct_event: CtEvent) -> Option<Self> {
+        match ct_event {
+            CtEvent::Key(key) => Some(Self::Key(key.into())),
+            CtEvent::Resize(width, height) => Some(Self::Resize((width, height).into())),
+            _ => None,
+        }
+    }
+}
 
 #[must_use]
 pub fn poll(timeout: Duration) -> Option<Event> {
@@ -31,10 +48,11 @@ pub fn dispatch(event: &Event, runtime: &Runtime) {
                 }
                 _ => {}
             }
-            dispatch_to_focused(event, runtime);
+            runtime.dispatch(key);
         }
-        Event::Resize(width, height) => {
-            tracing::debug!(width = width, height = height, "resize");
+        Event::Resize(resize) => {
+            tracing::debug!(width = resize.width, height = resize.height, "resize");
+            runtime.dispatch(resize);
         }
         Event::Tick => {}
     }
@@ -60,22 +78,10 @@ fn handle_focus_change(runtime: &Runtime, reverse: bool) {
     );
 
     if let Some(prev) = change.prev() {
-        let _ = inner.try_on_blur(prev);
+        inner.emit(prev, &Blur);
     }
 
     if let Some(next) = change.next() {
-        let _ = inner.try_on_focus(next);
+        inner.emit(next, &Focus);
     }
-}
-
-fn dispatch_to_focused(event: &Event, runtime: &Runtime) {
-    let inner = runtime.inner();
-
-    let Some(focused) = inner.focus.focused().or_else(|| inner.root()) else {
-        tracing::debug!("dispatch_to_focused: no focused node");
-
-        return;
-    };
-
-    let _ = inner.try_on_event(focused, event);
 }

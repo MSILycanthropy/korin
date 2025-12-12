@@ -65,8 +65,8 @@ fn run_once(terminal: &mut Terminal, runtime: &mut Runtime) -> io::Result<()> {
             std::process::exit(0)
         }
 
-        if let Event::Resize(w, h) = event {
-            terminal.resize(w, h);
+        if let Event::Resize(resize) = event {
+            terminal.resize(resize.width, resize.height);
         }
 
         dispatch(&event, runtime);

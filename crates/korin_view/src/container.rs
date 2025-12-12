@@ -1,10 +1,10 @@
+use korin_event::{Event, EventContext, Listeners};
 use korin_layout::Layout;
 use korin_style::Style;
 use korin_tree::NodeId;
 
 use crate::{
     Render,
-    event::{EventHandler, FocusHandler},
     render::RenderContext,
     style::{AnyStyle, AnyStyleState, IntoStyle, StyleWrapper},
     view::{AnyState, AnyView, IntoView},
@@ -15,9 +15,7 @@ pub struct Container<Ctx: RenderContext + Clone + 'static> {
     style: Option<AnyStyle<Ctx>>,
     children: Vec<AnyView<Ctx>>,
     focusable: bool,
-    on_event: Option<EventHandler>,
-    on_focus: Option<FocusHandler>,
-    on_blur: Option<FocusHandler>,
+    listeners: Listeners,
 }
 
 impl<Ctx: RenderContext + Clone> Container<Ctx> {
@@ -28,9 +26,7 @@ impl<Ctx: RenderContext + Clone> Container<Ctx> {
             style: None,
             children: Vec::new(),
             focusable: false,
-            on_event: None,
-            on_focus: None,
-            on_blur: None,
+            listeners: Listeners::new(),
         }
     }
 
@@ -74,23 +70,8 @@ impl<Ctx: RenderContext + Clone> Container<Ctx> {
         self
     }
 
-    #[must_use]
-    pub fn on_event<E: 'static>(mut self, handler: impl Fn(&E) + Send + Sync + 'static) -> Self {
-        self.on_event = Some(EventHandler::new(handler));
-        self.focusable = true;
-        self
-    }
-
-    #[must_use]
-    pub fn on_focus(mut self, handler: impl Fn() + Send + Sync + 'static) -> Self {
-        self.on_focus = Some(Box::new(handler));
-        self
-    }
-
-    #[must_use]
-    pub fn on_blur(mut self, handler: impl Fn() + Send + Sync + 'static) -> Self {
-        self.on_blur = Some(Box::new(handler));
-        self
+    pub fn on<E: Event>(&mut self, handler: impl Fn(&EventContext<E>) + Send + Sync + 'static) {
+        self.listeners.add(handler);
     }
 }
 
@@ -120,13 +101,7 @@ impl<Ctx: RenderContext + Clone> Render<Ctx> for Container<Ctx> {
             ctx.set_focusable(id);
         }
 
-        if let Some(handler) = self.on_event {
-            ctx.set_event_handler(id, handler);
-        }
-
-        if self.on_focus.is_some() || self.on_blur.is_some() {
-            ctx.set_focus_callbacks(id, self.on_focus, self.on_blur);
-        }
+        ctx.set_listeners(id, self.listeners);
 
         let mut child_ctx = ctx.with_parent(id);
         let children: Vec<AnyState> = self

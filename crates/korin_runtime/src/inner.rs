@@ -1,25 +1,19 @@
 use std::collections::{HashMap, HashSet};
 
+use korin_event::{Event, EventContext, Listeners};
 use korin_focus::FocusManager;
 use korin_layout::{Layout, LayoutEngine, Rect, Size};
 use korin_style::Style;
 use korin_tree::{NodeId, Tree};
-use korin_view::{EventHandler, FocusHandler};
 
 use crate::{NodeContent, RuntimeError, error::RuntimeResult, node::Node};
-
-pub struct FocusCallbacks {
-    pub on_focus: Option<FocusHandler>,
-    pub on_blur: Option<FocusHandler>,
-}
 
 pub struct RuntimeInner {
     pub tree: Tree<Node>,
     pub layout: LayoutEngine,
     pub focus: FocusManager<NodeId>,
 
-    pub event_handlers: HashMap<NodeId, EventHandler>,
-    pub focus_callbacks: HashMap<NodeId, FocusCallbacks>,
+    pub event_listeners: HashMap<NodeId, Listeners>,
     pub focusable: HashSet<NodeId>,
 }
 
@@ -29,8 +23,7 @@ impl RuntimeInner {
             tree: Tree::new(),
             layout: LayoutEngine::new(),
             focus: FocusManager::new(),
-            event_handlers: HashMap::new(),
-            focus_callbacks: HashMap::new(),
+            event_listeners: HashMap::new(),
             focusable: HashSet::new(),
         }
     }
@@ -70,8 +63,7 @@ impl RuntimeInner {
     pub fn remove_node(&mut self, id: NodeId) -> RuntimeResult<()> {
         self.tree.remove(id)?;
         self.layout.remove(id)?;
-        self.event_handlers.remove(&id);
-        self.focus_callbacks.remove(&id);
+        self.event_listeners.remove(&id);
         self.focusable.remove(&id);
 
         tracing::debug!(node = %id, "remove_node");
@@ -85,61 +77,28 @@ impl RuntimeInner {
         tracing::trace!(node = %id, "set_focus");
     }
 
-    pub fn set_event_handler(&mut self, id: NodeId, handler: EventHandler) {
-        self.event_handlers.insert(id, handler);
+    pub fn event_listeners_mut(&mut self, id: NodeId) -> &mut Listeners {
+        self.event_listeners.entry(id).or_default()
     }
 
-    pub fn set_focus_callbacks(
+    pub fn add_listener<E: Event>(
         &mut self,
         id: NodeId,
-        on_focus: Option<FocusHandler>,
-        on_blur: Option<FocusHandler>,
+        handler: impl Fn(&EventContext<E>) + Send + Sync + 'static,
     ) {
-        self.focus_callbacks
-            .insert(id, FocusCallbacks { on_focus, on_blur });
+        self.event_listeners_mut(id).add(handler);
+        tracing::trace!(node = %id, event = std::any::type_name::<E>(), "add_listener");
     }
 
-    pub fn try_on_blur(&self, id: NodeId) -> RuntimeResult<()> {
-        let Some(callbacks) = self.focus_callbacks.get(&id) else {
-            tracing::warn!(node = %id, "try_on_blur failed: node not found");
-            return Err(RuntimeError::NodeNotFound(id));
+    pub fn emit<E: Event>(&self, id: NodeId, event: &E) -> bool {
+        let Some(listeners) = self.event_listeners.get(&id) else {
+            return false;
         };
 
-        let Some(ref on_blur) = callbacks.on_blur else {
-            return Err(RuntimeError::NoHandler);
-        };
+        let stopped = listeners.emit(event);
+        tracing::trace!(node = %id, event = std::any::type_name::<E>(), stopped, "emit");
 
-        on_blur();
-        tracing::trace!(node = %id, "on_blur");
-
-        Ok(())
-    }
-
-    pub fn try_on_focus(&self, id: NodeId) -> RuntimeResult<()> {
-        let Some(callbacks) = self.focus_callbacks.get(&id) else {
-            tracing::warn!(node = %id, "try_on_focus failed: node not found");
-            return Err(RuntimeError::NodeNotFound(id));
-        };
-
-        let Some(ref on_focus) = callbacks.on_focus else {
-            return Err(RuntimeError::NoHandler);
-        };
-
-        on_focus();
-        tracing::trace!(node = %id, "on_focus");
-
-        Ok(())
-    }
-
-    pub fn try_on_event<E: 'static>(&self, id: NodeId, event: &E) -> RuntimeResult<()> {
-        let Some(on_event) = self.event_handlers.get(&id) else {
-            tracing::trace!(node = %id, "try_on_event: no handler");
-            return Err(RuntimeError::NoHandler);
-        };
-
-        on_event.call::<E>(event);
-
-        Ok(())
+        stopped
     }
 
     pub fn cascade_styles(&mut self, node_id: NodeId, inherited: Style) -> RuntimeResult<()> {

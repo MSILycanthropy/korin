@@ -409,6 +409,7 @@ dependencies = [
 name = "korin_runtime"
 version = "0.1.0"
 dependencies = [
+ "korin_event",
  "korin_focus",
  "korin_layout",
  "korin_reactive",
@@ -453,6 +454,7 @@ dependencies = [
 name = "korin_view"
 version = "0.1.0"
 dependencies = [
+ "korin_event",
  "korin_layout",
  "korin_reactive",
  "korin_style",
