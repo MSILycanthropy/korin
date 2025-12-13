@@ -1,6 +1,6 @@
 use korin_layout::{
-    AlignContent, AlignItems, AlignSelf, IntoDimension, IntoF32, IntoLengthPercentage,
-    IntoLengthPercentageAuto, IntoTracks, JustifyContent, Layout, Overflow,
+    AlignContent, AlignItems, AlignSelf, Display, IntoDimension, IntoF32, IntoLengthPercentage,
+    IntoLengthPercentageAuto, IntoTracks, JustifyContent, Layout, Overflow, Position,
 };
 
 use crate::appearance::Appearance;
@@ -484,6 +484,42 @@ impl StyleBuilder {
     #[must_use]
     pub fn overflow_y(mut self, overflow: Overflow) -> Self {
         self.layout = self.layout.overflow_y(overflow);
+        self
+    }
+
+    #[must_use]
+    pub fn top(mut self, v: impl IntoLengthPercentageAuto) -> Self {
+        self.layout = self.layout.top(v);
+        self
+    }
+
+    #[must_use]
+    pub fn bottom(mut self, v: impl IntoLengthPercentageAuto) -> Self {
+        self.layout = self.layout.bottom(v);
+        self
+    }
+
+    #[must_use]
+    pub fn left(mut self, v: impl IntoLengthPercentageAuto) -> Self {
+        self.layout = self.layout.left(v);
+        self
+    }
+
+    #[must_use]
+    pub fn right(mut self, v: impl IntoLengthPercentageAuto) -> Self {
+        self.layout = self.layout.right(v);
+        self
+    }
+
+    #[must_use]
+    pub fn position(mut self, position: Position) -> Self {
+        self.layout = self.layout.position(position);
+        self
+    }
+
+    #[must_use]
+    pub fn display(mut self, display: Display) -> Self {
+        self.layout = self.layout.display(display);
         self
     }
 

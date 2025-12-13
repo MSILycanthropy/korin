@@ -55,8 +55,6 @@ fn measure_text(text: &str, available_width: f32) -> Size<f32> {
         }
     }
 
-    dbg!(max_line_width);
-
     Size {
         width: max_line_width,
         height: total_height.max(1.0),

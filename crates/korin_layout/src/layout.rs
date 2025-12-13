@@ -1,6 +1,6 @@
 use taffy::{
     AlignContent, AlignItems, AlignSelf, Display, FlexDirection, FlexWrap, GridPlacement,
-    JustifyContent, Overflow, Rect, Size, Style,
+    JustifyContent, LengthPercentageAuto, Overflow, Position, Rect, Size, Style,
 };
 
 use crate::conversions::{
@@ -14,6 +14,12 @@ impl Layout {
     #[must_use]
     pub fn new() -> Self {
         Self(Style::default())
+    }
+
+    #[must_use]
+    pub const fn display(mut self, display: Display) -> Self {
+        self.0.display = display;
+        self
     }
 
     #[must_use]
@@ -349,6 +355,42 @@ impl Layout {
     #[must_use]
     pub const fn overflow_y(mut self, overflow: Overflow) -> Self {
         self.0.overflow.y = overflow;
+        self
+    }
+
+    #[must_use]
+    pub const fn position(mut self, position: Position) -> Self {
+        self.0.position = position;
+        self
+    }
+
+    #[must_use]
+    pub const fn inset(mut self, inset: Rect<LengthPercentageAuto>) -> Self {
+        self.0.inset = inset;
+        self
+    }
+
+    #[must_use]
+    pub fn top(mut self, v: impl IntoLengthPercentageAuto) -> Self {
+        self.0.inset.top = v.into_length_percentage_auto();
+        self
+    }
+
+    #[must_use]
+    pub fn bottom(mut self, v: impl IntoLengthPercentageAuto) -> Self {
+        self.0.inset.bottom = v.into_length_percentage_auto();
+        self
+    }
+
+    #[must_use]
+    pub fn left(mut self, v: impl IntoLengthPercentageAuto) -> Self {
+        self.0.inset.left = v.into_length_percentage_auto();
+        self
+    }
+
+    #[must_use]
+    pub fn right(mut self, v: impl IntoLengthPercentageAuto) -> Self {
+        self.0.inset.right = v.into_length_percentage_auto();
         self
     }
 

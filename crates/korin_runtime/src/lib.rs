@@ -205,7 +205,7 @@ impl Runtime {
         render
     }
 
-    fn compute_layout(&self, size: Size) -> RuntimeResult<()> {
+    pub fn compute_layout(&self, size: Size) -> RuntimeResult<()> {
         self.inner_mut().compute_layout(size)
     }
 

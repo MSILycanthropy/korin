@@ -12,7 +12,8 @@ pub use error::{LayoutError, LayoutResult};
 pub use korin_geometry::{Point, Rect, Size};
 pub use layout::Layout;
 pub use taffy::{
-    AlignContent, AlignItems, AlignSelf, JustifyContent, JustifyItems, JustifySelf, Overflow,
+    AlignContent, AlignItems, AlignSelf, Display, JustifyContent, JustifyItems, JustifySelf,
+    Overflow, Position,
 };
 
 #[must_use]
