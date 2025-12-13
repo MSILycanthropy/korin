@@ -18,9 +18,8 @@ impl Buffer {
 
     #[must_use]
     pub const fn view(&self) -> BufferView {
-        BufferView {
-            area: Rect::new(0, 0, self.size.width, self.size.height),
-        }
+        let area = Rect::new(0, 0, self.size.width, self.size.height);
+        BufferView { area, clip: area }
     }
 
     #[must_use]
@@ -113,11 +112,16 @@ impl Buffer {
 
 pub struct BufferView {
     area: Rect,
+    clip: Rect,
 }
 
 impl BufferView {
     pub const fn area(&self) -> Rect {
         self.area
+    }
+
+    pub const fn clip(&self) -> Rect {
+        self.clip
     }
 
     pub const fn width(&self) -> u16 {
@@ -129,30 +133,31 @@ impl BufferView {
     }
 
     pub fn set(&self, buffer: &mut Buffer, x: u16, y: u16, cell: Cell) {
-        let position = Position::new(x, y);
+        let abs_x = self.area.x + x;
+        let abs_y = self.area.y + y;
 
-        if !self.within_bounds(position) {
+        if !self.within_clip(abs_x, abs_y) {
             return;
         }
 
-        buffer.set(self.area + position, cell);
+        buffer.set(Position::new(abs_x, abs_y), cell);
     }
 
-    pub const fn subview(&self, area: Rect) -> Self {
-        Self {
-            area: Rect::new(
-                self.area.x + area.x,
-                self.area.y + area.y,
-                area.width,
-                area.height,
-            ),
-        }
+    pub const fn subview(area: Rect, clip: Rect) -> Self {
+        Self { area, clip }
     }
 
     pub fn fill(&self, buffer: &mut Buffer, style: &Style) {
         for y in 0..self.height() {
             for x in 0..self.width() {
-                if let Some(cell) = buffer.get_mut(self.area + Position::new(x, y)) {
+                let abs_x = self.area.x + x;
+                let abs_y = self.area.y + y;
+
+                if !self.within_clip(abs_x, abs_y) {
+                    continue;
+                }
+
+                if let Some(cell) = buffer.get_mut(Position::new(abs_x, abs_y)) {
                     cell.background = style.background();
                 }
             }
@@ -163,8 +168,11 @@ impl BufferView {
         self.width() == 0 && self.height() == 0
     }
 
-    const fn within_bounds(&self, position: Position) -> bool {
-        position.x < self.area.width && position.y < self.area.height
+    const fn within_clip(&self, abs_x: u16, abs_y: u16) -> bool {
+        abs_x >= self.clip.x
+            && abs_x < self.clip.x + self.clip.width
+            && abs_y >= self.clip.y
+            && abs_y < self.clip.y + self.clip.height
     }
 }
 
@@ -284,8 +292,7 @@ mod tests {
     #[test]
     fn subview_offsets_correctly() {
         let mut buf = Buffer::new(10, 10);
-        let view = buf.view();
-        let sub = view.subview(Rect::new(3, 3, 4, 4));
+        let sub = BufferView::subview(Rect::new(3, 3, 4, 4), Rect::new(3, 3, 4, 4));
 
         sub.set(&mut buf, 0, 0, Cell::new('X'));
 
@@ -295,8 +302,8 @@ mod tests {
     #[test]
     fn subview_clips_to_bounds() {
         let mut buf = Buffer::new(10, 10);
-        let view = buf.view();
-        let sub = view.subview(Rect::new(5, 5, 3, 3));
+        let clip = Rect::new(5, 5, 3, 3);
+        let sub = BufferView::subview(Rect::new(5, 5, 3, 3), clip);
 
         sub.set(&mut buf, 10, 10, Cell::new('X'));
 
@@ -317,15 +324,45 @@ mod tests {
     }
 
     #[test]
-    fn nested_subviews() {
+    fn clip_restricts_rendering() {
         let mut buf = Buffer::new(20, 20);
-        let view = buf.view();
-        let sub1 = view.subview(Rect::new(5, 5, 10, 10));
-        let sub2 = sub1.subview(Rect::new(2, 2, 4, 4));
+        let area = Rect::new(5, 5, 10, 10);
+        let clip = Rect::new(5, 5, 3, 3); // smaller than area
+        let sub = BufferView::subview(area, clip);
 
-        sub2.set(&mut buf, 1, 1, Cell::new('Z'));
+        // inside clip
+        sub.set(&mut buf, 0, 0, Cell::new('A'));
+        assert_eq!(buf.get(Position::new(5, 5)).expect("failed").symbol, 'A');
 
-        // 5 + 2 + 1 = 8
-        assert_eq!(buf.get(Position::new(8, 8)).expect("failed").symbol, 'Z');
+        // outside clip but inside area
+        sub.set(&mut buf, 5, 5, Cell::new('B'));
+        assert_eq!(buf.get(Position::new(10, 10)).expect("failed").symbol, ' ');
+    }
+
+    #[test]
+    fn fill_respects_clip() {
+        let mut buf = Buffer::new(10, 10);
+        let area = Rect::new(0, 0, 10, 10);
+        let clip = Rect::new(2, 2, 3, 3);
+        let sub = BufferView::subview(area, clip);
+        let style = Style::builder().background(Color::Red).build();
+
+        sub.fill(&mut buf, &style);
+
+        // inside clip - should be red
+        assert_eq!(
+            buf.get(Position::new(3, 3)).expect("failed").background,
+            Color::Red
+        );
+
+        // outside clip - should be default
+        assert_eq!(
+            buf.get(Position::new(0, 0)).expect("failed").background,
+            Color::Reset
+        );
+        assert_eq!(
+            buf.get(Position::new(8, 8)).expect("failed").background,
+            Color::Reset
+        );
     }
 }

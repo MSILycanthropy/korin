@@ -23,7 +23,10 @@ impl fmt::Display for NodeContent {
         match self {
             Self::Container => write!(f, "container"),
             Self::Text(s) if s.len() <= 20 => write!(f, "text: {s}"),
-            Self::Text(s) => write!(f, "text: {}...", &s[..20]),
+            Self::Text(s) => {
+                let truncated: String = s.chars().take(20).collect();
+                write!(f, "text: {truncated}...")
+            }
         }
     }
 }

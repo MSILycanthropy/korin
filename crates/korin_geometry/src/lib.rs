@@ -122,6 +122,48 @@ impl<T: Copy> Rect<T> {
     }
 }
 
+impl Rect<f32> {
+    #[must_use]
+    pub fn intersect(&self, other: &Self) -> Self {
+        Self::new(
+            self.x.max(other.x),
+            self.y.max(other.y),
+            self.intersect_width(other),
+            self.intersect_height(other),
+        )
+    }
+
+    #[must_use]
+    pub fn intersect_x(&self, other: &Self) -> Self {
+        Self::new(
+            self.x.max(other.x),
+            other.y,
+            self.intersect_width(other),
+            other.height,
+        )
+    }
+
+    #[must_use]
+    pub fn intersect_y(&self, other: &Self) -> Self {
+        Self::new(
+            other.x,
+            self.y.max(other.y),
+            other.width,
+            self.intersect_height(other),
+        )
+    }
+
+    fn intersect_width(&self, other: &Self) -> f32 {
+        let x2 = (self.x + self.width).min(other.x + other.width);
+        (x2 - self.x.max(other.x)).max(0.0)
+    }
+
+    fn intersect_height(&self, other: &Self) -> f32 {
+        let y2 = (self.y + self.height).min(other.y + other.height);
+        (y2 - self.y.max(other.y)).max(0.0)
+    }
+}
+
 #[cfg(feature = "taffy")]
 mod taffy_impl {
     use crate::{Rect, Size};

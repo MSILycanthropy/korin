@@ -1,6 +1,6 @@
 use taffy::{
     AlignContent, AlignItems, AlignSelf, Display, FlexDirection, FlexWrap, GridPlacement,
-    JustifyContent, Rect, Size, Style,
+    JustifyContent, Overflow, Rect, Size, Style,
 };
 
 use crate::conversions::{
@@ -328,6 +328,27 @@ impl Layout {
             start: self.0.grid_row.start,
             end: GridPlacement::Span(v),
         };
+        self
+    }
+
+    #[must_use]
+    pub const fn overflow(mut self, overflow: Overflow) -> Self {
+        self.0.overflow = taffy::Point {
+            x: overflow,
+            y: overflow,
+        };
+        self
+    }
+
+    #[must_use]
+    pub const fn overflow_x(mut self, overflow: Overflow) -> Self {
+        self.0.overflow.x = overflow;
+        self
+    }
+
+    #[must_use]
+    pub const fn overflow_y(mut self, overflow: Overflow) -> Self {
+        self.0.overflow.y = overflow;
         self
     }
 

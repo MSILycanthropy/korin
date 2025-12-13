@@ -13,7 +13,7 @@ use korin_geometry::Rect;
 use korin_runtime::Runtime;
 use korin_style::{Borders, Color, Modifiers};
 
-use crate::{Buffer, Size, renderer::render_node};
+use crate::{Buffer, Size, buffer::BufferView, renderer::render_node};
 
 pub struct Terminal<W: Write = Stdout> {
     writer: W,
@@ -51,7 +51,6 @@ where
         let _span = tracing::debug_span!("render").entered();
 
         let size = self.size()?;
-        let view = self.current.view();
 
         runtime
             .render(
@@ -71,8 +70,10 @@ where
                         rect.height.saturating_sub(top + bottom),
                     )
                 },
-                |node, rect| {
-                    let node_view = view.subview(rect);
+                |node, rect, clip| {
+                    eprintln!("{}: rect={:?} clip={:?}", node.content, rect, clip);
+
+                    let node_view = BufferView::subview(rect, clip);
                     render_node(&mut self.current, &node_view, node);
                 },
             )

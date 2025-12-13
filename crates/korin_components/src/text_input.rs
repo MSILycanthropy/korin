@@ -31,10 +31,11 @@ pub fn text_input(
             if v.is_empty() {
                 "█".to_string()
             } else {
-                let mut display = String::with_capacity(v.len() + 1);
-                display.push_str(&v[..pos]);
+                let byte_pos = v.char_indices().nth(pos).map_or(v.len(), |(i, _)| i);
+                let mut display = String::with_capacity(v.len() + 3);
+                display.push_str(&v[..byte_pos]);
                 display.push('█');
-                display.push_str(&v[pos..]);
+                display.push_str(&v[byte_pos..]);
                 display
             }
         } else if v.is_empty() {

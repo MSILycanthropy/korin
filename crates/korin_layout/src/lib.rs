@@ -11,7 +11,9 @@ pub use engine::Engine as LayoutEngine;
 pub use error::{LayoutError, LayoutResult};
 pub use korin_geometry::{Point, Rect, Size};
 pub use layout::Layout;
-pub use taffy::{AlignContent, AlignItems, AlignSelf, JustifyContent, JustifyItems, JustifySelf};
+pub use taffy::{
+    AlignContent, AlignItems, AlignSelf, JustifyContent, JustifyItems, JustifySelf, Overflow,
+};
 
 #[must_use]
 pub fn pct(val: impl Into<f32>) -> Dimension {

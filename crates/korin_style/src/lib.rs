@@ -1,6 +1,6 @@
 use korin_layout::{
     AlignContent, AlignItems, AlignSelf, IntoDimension, IntoF32, IntoLengthPercentage,
-    IntoLengthPercentageAuto, IntoTracks, JustifyContent, Layout,
+    IntoLengthPercentageAuto, IntoTracks, JustifyContent, Layout, Overflow,
 };
 
 use crate::appearance::Appearance;
@@ -75,6 +75,16 @@ impl Style {
     #[must_use]
     pub const fn z_index(&self) -> i32 {
         self.appearance.z_index
+    }
+
+    #[must_use]
+    pub const fn overflow_x(&self) -> Overflow {
+        self.layout.0.overflow.x
+    }
+
+    #[must_use]
+    pub const fn overflow_y(&self) -> Overflow {
+        self.layout.0.overflow.y
     }
 
     #[must_use]
@@ -456,6 +466,24 @@ impl StyleBuilder {
     #[must_use]
     pub const fn z_index(mut self, z: i32) -> Self {
         self.appearance = self.appearance.z_index(z);
+        self
+    }
+
+    #[must_use]
+    pub fn overflow(mut self, overflow: Overflow) -> Self {
+        self.layout = self.layout.overflow(overflow);
+        self
+    }
+
+    #[must_use]
+    pub fn overflow_x(mut self, overflow: Overflow) -> Self {
+        self.layout = self.layout.overflow_x(overflow);
+        self
+    }
+
+    #[must_use]
+    pub fn overflow_y(mut self, overflow: Overflow) -> Self {
+        self.layout = self.layout.overflow_y(overflow);
         self
     }
 
