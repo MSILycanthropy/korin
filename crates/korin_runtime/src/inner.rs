@@ -1,6 +1,6 @@
-use korin_event::{Event, EventContext, Listeners};
+use korin_event::{Blur, Event, EventContext, Focus, Listeners};
 use korin_focus::FocusManager;
-use korin_layout::{Layout, LayoutEngine, LayoutInfo, Overflow, Rect, Size};
+use korin_layout::{Layout, LayoutEngine, LayoutInfo, Overflow, Point, Rect, Size};
 use korin_style::{Borders, Style};
 use korin_tree::{NodeId, Tree};
 use slotmap::SecondaryMap;
@@ -140,10 +140,150 @@ impl RuntimeInner {
                 border_bottom: f32::from(borders.contains(Borders::BOTTOM)),
                 clip_x: node.computed_style.overflow_x() != Overflow::Visible,
                 clip_y: node.computed_style.overflow_y() != Overflow::Visible,
+                scroll_x: node.scroll_offset.x,
+                scroll_y: node.scroll_offset.y,
             }
         })?;
 
         Ok(())
+    }
+
+    #[must_use]
+    pub fn hit_test(&self, point: Point) -> Option<NodeId> {
+        self.layout
+            .hit_test(&self.tree, point, |node| node.computed_style.z_index())
+    }
+
+    #[must_use]
+    pub fn find_scrollable_ancestor(&self, id: NodeId) -> Option<NodeId> {
+        let mut current = Some(id);
+
+        while let Some(node_id) = current {
+            if self.is_scrollable(node_id) {
+                return Some(node_id);
+            }
+
+            current = self.tree.parent(node_id);
+        }
+
+        None
+    }
+
+    #[must_use]
+    pub fn find_focusable_ancestor(&self, id: NodeId) -> Option<NodeId> {
+        let mut current = Some(id);
+
+        while let Some(node_id) = current {
+            if self.focusable.contains_key(node_id) {
+                return Some(node_id);
+            }
+
+            current = self.tree.parent(node_id);
+        }
+
+        None
+    }
+
+    #[must_use]
+    pub fn is_scrollable(&self, id: NodeId) -> bool {
+        let Some(node) = self.get(id) else {
+            return false;
+        };
+
+        let overflow_x = node.computed_style.overflow_x();
+        let overflow_y = node.computed_style.overflow_y();
+
+        if overflow_x == Overflow::Scroll || overflow_y == Overflow::Scroll {
+            return true;
+        }
+
+        false
+    }
+
+    pub(crate) fn scroll(&mut self, position: Point, delta: Point) {
+        let Some(hit) = self
+            .layout
+            .hit_test(&self.tree, position, |n| n.computed_style.z_index())
+        else {
+            return;
+        };
+
+        let Some(scrollable) = self.find_scrollable_ancestor(hit) else {
+            return;
+        };
+
+        let max = self.layout.max_scroll(scrollable).unwrap_or_default();
+
+        let Some(node) = self.get_mut(scrollable) else {
+            return;
+        };
+
+        node.scroll_offset.x = (node.scroll_offset.x + delta.x).clamp(0.0, max.x);
+        node.scroll_offset.y = (node.scroll_offset.y + delta.y).clamp(0.0, max.y);
+
+        tracing::debug!(
+            node = hit.to_string(),
+            delta = ?delta,
+            scroll_offset = ?node.scroll_offset,
+            "scroll"
+        );
+    }
+
+    pub(crate) fn move_focus(&mut self, reverse: bool) {
+        let change = if reverse {
+            self.focus.focus_prev()
+        } else {
+            self.focus.focus_next()
+        };
+
+        if !change.relevant() {
+            return;
+        }
+
+        tracing::debug!(
+            prev = ?change.prev().map(|id| id.to_string()),
+            next = ?change.next().map(|id| id.to_string()),
+            "focus_changed"
+        );
+
+        if let Some(prev) = change.prev() {
+            self.emit(prev, &Blur);
+        }
+
+        if let Some(next) = change.next() {
+            self.emit(next, &Focus);
+        }
+    }
+
+    pub(crate) fn mouse_down(&mut self, position: Point) {
+        let Some(hit) = self
+            .layout
+            .hit_test(&self.tree, position, |n| n.computed_style.z_index())
+        else {
+            return;
+        };
+
+        let Some(focusable) = self.find_focusable_ancestor(hit) else {
+            return;
+        };
+
+        let current = self.focus.focused();
+        if current == Some(focusable) {
+            return;
+        }
+
+        if let Some(prev) = current {
+            self.emit(prev, &Blur);
+        }
+
+        tracing::debug!(
+            prev = ?current.map(|id| id.to_string()),
+            next = ?focusable.to_string(),
+            "focus_changed"
+        );
+
+        self.focus.focus(focusable);
+        self.emit(focusable, &Focus);
     }
 
     pub fn rect(&self, id: NodeId) -> Option<Rect> {

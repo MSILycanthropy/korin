@@ -77,8 +77,14 @@ impl<T> Tree<T> {
             tracing::warn!(parent = %parent, child = %child, "append failed: parent not found");
             return Err(TreeError::NodeNotFound(parent));
         };
-
         parent_node.children.push(child);
+
+        let Some(child_node) = self.nodes.get_mut(child) else {
+            tracing::warn!(parent = %parent, child = %child, "append failed: child not found");
+            return Err(TreeError::NodeNotFound(parent));
+        };
+
+        child_node.parent = Some(parent);
         tracing::debug!(parent = %parent, child = %child, "append");
 
         Ok(())
@@ -131,6 +137,11 @@ impl<T> Tree<T> {
             .get(id)
             .map(|n| n.children.clone())
             .unwrap_or_default()
+    }
+
+    #[must_use]
+    pub fn parent(&self, id: NodeId) -> Option<NodeId> {
+        self.nodes.get(id).and_then(|n| n.parent)
     }
 
     #[must_use]

@@ -21,7 +21,7 @@ async fn run(runtime: &mut Runtime, terminal: &mut Terminal) -> io::Result<()> {
     let password = RwSignal::new(String::new());
 
     let app = view! {
-        <Container style={Style::builder().col().w(full()).h(full()).gap(1).background(Color::DarkGray).build()}>
+        <Container style={Style::builder().col().w(full()).h(full()).gap(1).background(Color::DarkGray).overflow(Overflow::Scroll).build()}>
             <Container style={Style::builder().h(3).w(full()).bordered().background(Color::Blue).build()}>
                 "Login Form"
             </Container>

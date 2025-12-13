@@ -2,6 +2,7 @@ use std::io::{self, Stdout, Write};
 
 use crossterm::{
     cursor::{Hide, MoveTo, Show},
+    event::{DisableMouseCapture, EnableMouseCapture},
     execute, queue,
     style::{Attribute, Print, SetAttribute, SetBackgroundColor, SetForegroundColor},
     terminal::{
@@ -42,7 +43,8 @@ where
             EnterAlternateScreen,
             DisableLineWrap,
             Hide,
-            Clear(ClearType::All)
+            Clear(ClearType::All),
+            EnableMouseCapture,
         )
     }
 
@@ -60,7 +62,13 @@ where
     }
 
     pub fn restore(&mut self) -> io::Result<()> {
-        execute!(self.writer, Show, EnableLineWrap, LeaveAlternateScreen)?;
+        execute!(
+            self.writer,
+            Show,
+            EnableLineWrap,
+            DisableMouseCapture,
+            LeaveAlternateScreen
+        )?;
         terminal::disable_raw_mode()
     }
 

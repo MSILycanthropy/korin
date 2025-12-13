@@ -8,6 +8,10 @@ bitflags.workspace = true
 crossterm = { workspace = true, optional = true, default-features = false, features = [
   "events",
 ] }
+num-traits.workspace = true
+
+korin_geometry.workspace = true
+korin_macros.workspace = true
 
 [lints]
 workspace = true

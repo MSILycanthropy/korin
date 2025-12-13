@@ -18,6 +18,14 @@ impl<T> Point<T> {
     pub const fn new(x: T, y: T) -> Self {
         Self { x, y }
     }
+
+    pub fn cast<N>(self) -> Point<N>
+    where
+        T: AsPrimitive<N>,
+        N: Copy + 'static,
+    {
+        Point::new(self.x.as_(), self.y.as_())
+    }
 }
 
 impl Point<f32> {
@@ -151,6 +159,14 @@ impl Rect<f32> {
             other.width,
             self.intersect_height(other),
         )
+    }
+
+    #[must_use]
+    pub fn contains(&self, point: Point) -> bool {
+        point.x >= self.x
+            && point.x < self.x + self.width
+            && point.y >= self.y
+            && point.y < self.y + self.height
     }
 
     fn intersect_width(&self, other: &Self) -> f32 {

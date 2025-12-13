@@ -357,6 +357,9 @@ version = "0.1.0"
 dependencies = [
  "bitflags",
  "crossterm",
+ "korin_geometry",
+ "korin_macros",
+ "num-traits",
 ]
 
 [[package]]

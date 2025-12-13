@@ -79,12 +79,12 @@ impl Style {
 
     #[must_use]
     pub const fn overflow_x(&self) -> Overflow {
-        self.layout.0.overflow.x
+        self.layout.style.overflow.x
     }
 
     #[must_use]
     pub const fn overflow_y(&self) -> Overflow {
-        self.layout.0.overflow.y
+        self.layout.style.overflow.y
     }
 
     #[must_use]

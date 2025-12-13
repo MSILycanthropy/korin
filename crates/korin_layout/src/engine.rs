@@ -55,6 +55,8 @@ pub struct LayoutInfo {
     pub border_bottom: f32,
     pub clip_x: bool,
     pub clip_y: bool,
+    pub scroll_x: f32,
+    pub scroll_y: f32,
 }
 
 pub struct Engine {
@@ -173,6 +175,17 @@ impl Engine {
         Ok(())
     }
 
+    pub fn hit_test<T>(
+        &self,
+        tree: &Tree<T>,
+        point: Point<f32>,
+        z_index: impl Fn(&T) -> i32,
+    ) -> Option<NodeId> {
+        let root = tree.root()?;
+
+        self.hit_test_node(tree, root, point, &z_index)
+    }
+
     #[must_use]
     pub fn rect(&self, id: NodeId) -> Option<Rect> {
         let taffy_id = self.nodes.get(id)?;
@@ -236,17 +249,55 @@ impl Engine {
             (false, true) => node_inner.intersect_y(&parent_clip),
             (false, false) => parent_clip,
         };
+
+        let child_origin = Point::new(node_inner.x - info.scroll_x, node_inner.y - info.scroll_y);
+
         for child_id in tree.children(node_id) {
-            self.compute_absolute_rects(
-                tree,
-                child_id,
-                node_inner.position(),
-                child_clip,
-                info_fn,
-            )?;
+            self.compute_absolute_rects(tree, child_id, child_origin, child_clip, info_fn)?;
         }
 
         Ok(())
+    }
+
+    fn hit_test_node<T>(
+        &self,
+        tree: &Tree<T>,
+        node_id: NodeId,
+        point: Point<f32>,
+        z_index: &impl Fn(&T) -> i32,
+    ) -> Option<NodeId> {
+        let clip = self.clip_rect(node_id)?;
+
+        if !clip.contains(point) {
+            return None;
+        }
+
+        let mut children = tree.children(node_id);
+        children.sort_by_key(|&id| tree.get(id).map_or(0, |n| -z_index(n)));
+
+        for child_id in children {
+            if let Some(hit) = self.hit_test_node(tree, child_id, point, z_index) {
+                return Some(hit);
+            }
+        }
+
+        let rect = self.absolute_rect(node_id)?;
+        if rect.contains(point) {
+            Some(node_id)
+        } else {
+            None
+        }
+    }
+
+    #[must_use]
+    pub fn max_scroll(&self, id: NodeId) -> Option<Point<f32>> {
+        let taffy_id = self.nodes.get(id)?;
+        let layout = self.taffy.layout(*taffy_id).ok()?;
+
+        let max_x = (layout.content_size.width - layout.size.width).max(0.0);
+        let max_y = (layout.content_size.height - layout.size.height).max(0.0);
+
+        Some(Point::new(max_x, max_y))
     }
 
     fn taffy_node(&self, id: NodeId) -> LayoutResult<TaffyId> {
@@ -260,5 +311,294 @@ impl Engine {
 impl Default for Engine {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use korin_tree::Tree;
+    use taffy::Position;
+
+    fn default_info() -> LayoutInfo {
+        LayoutInfo {
+            border_left: 0.0,
+            border_top: 0.0,
+            border_right: 0.0,
+            border_bottom: 0.0,
+            clip_x: false,
+            clip_y: false,
+            scroll_x: 0.0,
+            scroll_y: 0.0,
+        }
+    }
+
+    fn bordered_info() -> LayoutInfo {
+        LayoutInfo {
+            border_left: 1.0,
+            border_top: 1.0,
+            border_right: 1.0,
+            border_bottom: 1.0,
+            clip_x: false,
+            clip_y: false,
+            scroll_x: 0.0,
+            scroll_y: 0.0,
+        }
+    }
+
+    fn clipping_info() -> LayoutInfo {
+        LayoutInfo {
+            border_left: 0.0,
+            border_top: 0.0,
+            border_right: 0.0,
+            border_bottom: 0.0,
+            clip_x: true,
+            clip_y: true,
+            scroll_x: 0.0,
+            scroll_y: 0.0,
+        }
+    }
+
+    #[test]
+    fn compute_absolute_rects_single_node() {
+        let mut tree: Tree<i32> = Tree::new();
+        let mut engine = Engine::new();
+
+        let root = tree.new_leaf(0);
+        tree.set_root(root).expect("failed");
+        engine
+            .insert(Layout::new().w(100).h(50), root)
+            .expect("failed");
+
+        engine
+            .compute(&tree, Size::new(100.0, 50.0), |_| default_info())
+            .expect("failed");
+
+        let rect = engine.absolute_rect(root).expect("failed");
+        assert!((rect.x - 0.0).abs() < f32::EPSILON);
+        assert!((rect.y - 0.0).abs() < f32::EPSILON);
+        assert!((rect.width - 100.0).abs() < f32::EPSILON);
+        assert!((rect.height - 50.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn compute_absolute_rects_nested() {
+        let mut tree: Tree<i32> = Tree::new();
+        let mut engine = Engine::new();
+
+        let root = tree.new_leaf(0);
+        let child = tree.new_leaf(0);
+        tree.set_root(root).expect("failed");
+        tree.append(root, child).expect("failed");
+
+        engine
+            .insert(Layout::new().w(100).h(100).p(10), root)
+            .expect("failed");
+        engine
+            .insert(Layout::new().w(50).h(50), child)
+            .expect("failed");
+        engine.append(root, child).expect("failed");
+
+        engine
+            .compute(&tree, Size::new(100.0, 100.0), |_| default_info())
+            .expect("failed");
+
+        let root_rect = engine.absolute_rect(root).expect("failed");
+        assert!((root_rect.x - 0.0).abs() < f32::EPSILON);
+        assert!((root_rect.y - 0.0).abs() < f32::EPSILON);
+
+        let child_rect = engine.absolute_rect(child).expect("failed");
+        assert!((child_rect.x - 10.0).abs() < f32::EPSILON);
+        assert!((child_rect.y - 10.0).abs() < f32::EPSILON);
+        assert!((child_rect.width - 50.0).abs() < f32::EPSILON);
+        assert!((child_rect.height - 50.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn clip_rects_with_borders() {
+        let mut tree: Tree<i32> = Tree::new();
+        let mut engine = Engine::new();
+
+        let root = tree.new_leaf(0);
+        let child = tree.new_leaf(0);
+        tree.set_root(root).expect("failed");
+        tree.append(root, child).expect("failed");
+
+        engine
+            .insert(Layout::new().w(100).h(100), root)
+            .expect("failed");
+        engine
+            .insert(Layout::new().w(50).h(50), child)
+            .expect("failed");
+        engine.append(root, child).expect("failed");
+
+        engine
+            .compute(&tree, Size::new(100.0, 100.0), |_| bordered_info())
+            .expect("failed");
+
+        let child_rect = engine.absolute_rect(child).expect("failed");
+
+        assert!((child_rect.x - 1.0).abs() < f32::EPSILON);
+        assert!((child_rect.y - 1.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn clip_rects_with_overflow() {
+        let mut tree: Tree<i32> = Tree::new();
+        let mut engine = Engine::new();
+
+        let root = tree.new_leaf(0);
+        let child = tree.new_leaf(0);
+        tree.set_root(root).expect("failed");
+        tree.append(root, child).expect("failed");
+
+        engine
+            .insert(Layout::new().w(50).h(50), root)
+            .expect("failed");
+        engine
+            .insert(Layout::new().w(100).h(100), child)
+            .expect("failed");
+        engine.append(root, child).expect("failed");
+
+        engine
+            .compute(&tree, Size::new(50.0, 50.0), |_| clipping_info())
+            .expect("failed");
+
+        let child_clip = engine.clip_rect(child).expect("failed");
+
+        assert!((child_clip.width - 50.0).abs() < f32::EPSILON);
+        assert!((child_clip.height - 50.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn hit_test_single_node() {
+        let mut tree: Tree<i32> = Tree::new();
+        let mut engine = Engine::new();
+
+        let root = tree.new_leaf(0);
+        tree.set_root(root).expect("failed");
+        engine
+            .insert(Layout::new().w(100).h(100), root)
+            .expect("failed");
+
+        engine
+            .compute(&tree, Size::new(100.0, 100.0), |_| default_info())
+            .expect("failed");
+
+        let hit = engine.hit_test(&tree, Point::new(50.0, 50.0), |_| 0);
+        assert_eq!(hit, Some(root));
+
+        let miss = engine.hit_test(&tree, Point::new(150.0, 50.0), |_| 0);
+        assert_eq!(miss, None);
+    }
+
+    #[test]
+    fn hit_test_nested_returns_deepest() {
+        let mut tree: Tree<i32> = Tree::new();
+        let mut engine = Engine::new();
+
+        let root = tree.new_leaf(0);
+        let child = tree.new_leaf(0);
+        tree.set_root(root).expect("failed");
+        tree.append(root, child).expect("failed");
+
+        engine
+            .insert(Layout::new().w(100).h(100), root)
+            .expect("failed");
+        engine
+            .insert(Layout::new().w(50).h(50), child)
+            .expect("failed");
+        engine.append(root, child).expect("failed");
+
+        engine
+            .compute(&tree, Size::new(100.0, 100.0), |_| default_info())
+            .expect("failed");
+
+        let hit_child = engine.hit_test(&tree, Point::new(25.0, 25.0), |_| 0);
+        assert_eq!(hit_child, Some(child));
+
+        let hit_root = engine.hit_test(&tree, Point::new(75.0, 75.0), |_| 0);
+        assert_eq!(hit_root, Some(root));
+    }
+
+    #[test]
+    fn hit_test_respects_z_index() {
+        let mut tree: Tree<i32> = Tree::new();
+        let mut engine = Engine::new();
+
+        let root = tree.new_leaf(0);
+        let child_low = tree.new_leaf(1); // z-index 1
+        let child_high = tree.new_leaf(10); // z-index 10
+        tree.set_root(root).expect("failed");
+        tree.append(root, child_low).expect("failed");
+        tree.append(root, child_high).expect("failed");
+
+        engine
+            .insert(
+                Layout::new().w(100).h(100).position(Position::Relative),
+                root,
+            )
+            .expect("failed");
+        engine
+            .insert(
+                Layout::new()
+                    .w(50)
+                    .h(50)
+                    .position(Position::Absolute)
+                    .top(0)
+                    .left(0),
+                child_low,
+            )
+            .expect("failed");
+        engine
+            .insert(
+                Layout::new()
+                    .w(50)
+                    .h(50)
+                    .position(Position::Absolute)
+                    .top(0)
+                    .left(0),
+                child_high,
+            )
+            .expect("failed");
+        engine.append(root, child_low).expect("failed");
+        engine.append(root, child_high).expect("failed");
+        engine
+            .compute(&tree, Size::new(100.0, 100.0), |_| default_info())
+            .expect("failed");
+
+        let hit = engine.hit_test(&tree, Point::new(25.0, 25.0), |&z| z);
+        assert_eq!(hit, Some(child_high));
+    }
+
+    #[test]
+    fn hit_test_respects_clip() {
+        let mut tree: Tree<i32> = Tree::new();
+        let mut engine = Engine::new();
+
+        let root = tree.new_leaf(0);
+        let child = tree.new_leaf(0);
+        tree.set_root(root).expect("failed");
+        tree.append(root, child).expect("failed");
+
+        engine
+            .insert(Layout::new().w(50).h(50), root)
+            .expect("failed");
+        engine
+            .insert(Layout::new().w(100).h(100), child)
+            .expect("failed");
+        engine.append(root, child).expect("failed");
+
+        engine
+            .compute(&tree, Size::new(50.0, 50.0), |_| clipping_info())
+            .expect("failed");
+
+        // Inside clipped area - hits child
+        let hit_inside = engine.hit_test(&tree, Point::new(25.0, 25.0), |_| 0);
+        assert_eq!(hit_inside, Some(child));
+
+        // Outside clip (but inside child's actual rect) - misses
+        let hit_outside = engine.hit_test(&tree, Point::new(75.0, 75.0), |_| 0);
+        assert_eq!(hit_outside, None);
     }
 }

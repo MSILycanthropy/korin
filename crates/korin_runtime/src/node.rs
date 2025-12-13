@@ -1,5 +1,6 @@
 use std::fmt;
 
+use korin_layout::Point;
 use korin_style::Style;
 
 #[derive(Clone)]
@@ -36,6 +37,7 @@ pub struct Node {
     pub content: NodeContent,
     pub style: Style,
     pub computed_style: Style,
+    pub scroll_offset: Point,
 }
 
 impl Node {
@@ -45,6 +47,7 @@ impl Node {
             content: NodeContent::Container,
             style: Style::default(),
             computed_style: Style::default(),
+            scroll_offset: Point::default(),
         }
     }
 
@@ -53,6 +56,7 @@ impl Node {
             content: NodeContent::Text(text.into()),
             style: Style::default(),
             computed_style: Style::default(),
+            scroll_offset: Point::default(),
         }
     }
 }

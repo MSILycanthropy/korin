@@ -13,7 +13,7 @@ use inner::RuntimeInner;
 pub use context::RuntimeContext;
 pub use error::{RuntimeError, RuntimeResult};
 use korin_event::{Event, Focus};
-use korin_layout::{Rect, Size};
+use korin_layout::{Point, Rect, Size};
 use korin_reactive::reactive_graph::owner::{Owner, provide_context};
 pub use korin_tree::NodeId;
 use korin_view::{AnyStyle, AnyView, IntoAnyStyle, Render};
@@ -169,6 +169,34 @@ impl Runtime {
 
     pub fn compute_layout(&self, size: Size) -> RuntimeResult<()> {
         self.inner_mut().compute_layout(size)
+    }
+
+    pub fn mouse_down<T>(&self, position: Point<T>)
+    where
+        T: AsPrimitive<f32>,
+    {
+        let position = position.cast::<f32>();
+        let mut inner = self.inner_mut();
+
+        inner.mouse_down(position);
+    }
+
+    pub fn scroll<P, D>(&self, position: Point<P>, delta: Point<D>)
+    where
+        P: AsPrimitive<f32>,
+        D: AsPrimitive<f32>,
+    {
+        let position = position.cast();
+        let delta = delta.cast();
+        let mut inner = self.inner_mut();
+
+        inner.scroll(position, delta);
+    }
+
+    pub fn move_focus(&self, reverse: bool) {
+        let mut inner = self.inner_mut();
+
+        inner.move_focus(reverse);
     }
 
     /// Returns the [`RuntimeInner`] of this [`Runtime`].
