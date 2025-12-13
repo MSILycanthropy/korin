@@ -7,6 +7,7 @@ edition.workspace = true
 korin_tree.workspace = true
 korin_geometry = { workspace = true, features = ["taffy"] }
 
+slotmap.workspace = true
 taffy.workspace = true
 thiserror.workspace = true
 unicode-width.workspace = true

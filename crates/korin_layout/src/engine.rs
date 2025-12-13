@@ -1,9 +1,7 @@
-use std::{
-    collections::HashMap,
-    ops::{Deref, DerefMut},
-};
+use std::ops::{Deref, DerefMut};
 
 use korin_tree::{NodeId, Tree};
+use slotmap::SecondaryMap;
 use taffy::{NodeId as TaffyId, TaffyTree};
 
 use crate::{Layout, LayoutResult, Rect, Size, error::LayoutError, measure::taffy_measure};
@@ -51,7 +49,7 @@ impl<T: Send + Sync> DerefMut for LayoutTree<T> {
 
 pub struct Engine {
     taffy: LayoutTree<NodeMeasure>,
-    nodes: HashMap<NodeId, TaffyId>,
+    nodes: SecondaryMap<NodeId, TaffyId>,
 }
 
 impl Engine {
@@ -59,7 +57,7 @@ impl Engine {
     pub fn new() -> Self {
         Self {
             taffy: LayoutTree::new(),
-            nodes: HashMap::new(),
+            nodes: SecondaryMap::new(),
         }
     }
 
@@ -90,7 +88,7 @@ impl Engine {
     }
 
     pub fn remove(&mut self, id: NodeId) -> LayoutResult<TaffyId> {
-        if let Some(taffy_id) = self.nodes.remove(&id) {
+        if let Some(taffy_id) = self.nodes.remove(id) {
             let taffy_id = self.taffy.remove(taffy_id)?;
             tracing::debug!(node = %id, "remove");
             return Ok(taffy_id);
@@ -111,7 +109,7 @@ impl Engine {
     }
 
     pub fn update(&mut self, id: NodeId, layout: Layout) -> LayoutResult<()> {
-        if let Some(&taffy_id) = self.nodes.get(&id) {
+        if let Some(&taffy_id) = self.nodes.get(id) {
             self.taffy.set_style(taffy_id, layout.into())?;
             self.taffy.mark_dirty(taffy_id)?;
             tracing::trace!(node = %id, "update");
@@ -124,7 +122,7 @@ impl Engine {
     }
 
     pub fn update_text(&mut self, id: NodeId, text: String) -> LayoutResult<()> {
-        if let Some(&taffy_id) = self.nodes.get(&id) {
+        if let Some(&taffy_id) = self.nodes.get(id) {
             let log_text = text.clone();
             self.taffy
                 .set_node_context(taffy_id, Some(NodeMeasure(Some(text))))?;
@@ -153,7 +151,7 @@ impl Engine {
 
     #[must_use]
     pub fn rect(&self, id: NodeId) -> Option<Rect> {
-        let taffy_id = self.nodes.get(&id)?;
+        let taffy_id = self.nodes.get(id)?;
         let layout = self.taffy.layout(*taffy_id).ok()?;
 
         Some(layout.into())
@@ -161,7 +159,7 @@ impl Engine {
 
     fn taffy_node(&self, id: NodeId) -> LayoutResult<TaffyId> {
         self.nodes
-            .get(&id)
+            .get(id)
             .ok_or(LayoutError::NodeNotFound(id))
             .copied()
     }

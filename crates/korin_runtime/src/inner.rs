@@ -1,19 +1,20 @@
-use std::collections::{HashMap, HashSet};
-
 use korin_event::{Event, EventContext, Listeners};
 use korin_focus::FocusManager;
 use korin_layout::{Layout, LayoutEngine, Rect, Size};
 use korin_style::Style;
 use korin_tree::{NodeId, Tree};
+use slotmap::SecondaryMap;
 
 use crate::{NodeContent, RuntimeError, error::RuntimeResult, node::Node};
+
+type SlotSet<T> = SecondaryMap<T, ()>;
 
 pub struct RuntimeInner {
     pub tree: Tree<Node>,
     pub layout: LayoutEngine,
     pub focus: FocusManager<NodeId>,
-    pub event_listeners: HashMap<NodeId, Listeners>,
-    pub focusable: HashSet<NodeId>,
+    pub event_listeners: SecondaryMap<NodeId, Listeners>,
+    pub focusable: SlotSet<NodeId>,
 }
 
 impl RuntimeInner {
@@ -22,8 +23,8 @@ impl RuntimeInner {
             tree: Tree::new(),
             layout: LayoutEngine::new(),
             focus: FocusManager::new(),
-            event_listeners: HashMap::new(),
-            focusable: HashSet::new(),
+            event_listeners: SecondaryMap::new(),
+            focusable: SlotSet::new(),
         }
     }
 
@@ -62,8 +63,8 @@ impl RuntimeInner {
     pub fn remove_node(&mut self, id: NodeId) -> RuntimeResult<()> {
         self.tree.remove(id)?;
         self.layout.remove(id)?;
-        self.event_listeners.remove(&id);
-        self.focusable.remove(&id);
+        self.event_listeners.remove(id);
+        self.focusable.remove(id);
 
         tracing::debug!(node = %id, "remove_node");
 
@@ -71,13 +72,17 @@ impl RuntimeInner {
     }
 
     pub fn set_focusable(&mut self, id: NodeId) {
-        self.focusable.insert(id);
+        self.focusable.insert(id, ());
 
         tracing::trace!(node = %id, "set_focus");
     }
 
     pub fn event_listeners_mut(&mut self, id: NodeId) -> &mut Listeners {
-        self.event_listeners.entry(id).or_default()
+        if !self.event_listeners.contains_key(id) {
+            self.event_listeners.insert(id, Listeners::new());
+        }
+
+        &mut self.event_listeners[id]
     }
 
     pub fn add_listener<E: Event>(
@@ -90,7 +95,7 @@ impl RuntimeInner {
     }
 
     pub fn emit<E: Event>(&self, id: NodeId, event: &E) -> bool {
-        let Some(listeners) = self.event_listeners.get(&id) else {
+        let Some(listeners) = self.event_listeners.get(id) else {
             return false;
         };
 
@@ -159,7 +164,7 @@ impl RuntimeInner {
 
         if let Some(root) = self.root() {
             self.tree.traverse(root, |id, _| {
-                if self.focusable.contains(&id) {
+                if self.focusable.contains_key(id) {
                     order.push(id);
                 }
             });

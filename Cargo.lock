@@ -380,6 +380,7 @@ version = "0.1.0"
 dependencies = [
  "korin_geometry",
  "korin_tree",
+ "slotmap",
  "taffy",
  "thiserror",
  "tracing",
@@ -417,6 +418,7 @@ dependencies = [
  "korin_tree",
  "korin_view",
  "num-traits",
+ "slotmap",
  "thiserror",
  "tracing",
 ]

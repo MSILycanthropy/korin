@@ -12,6 +12,7 @@ korin_view.workspace = true
 korin_focus.workspace = true
 korin_reactive.workspace = true
 
+slotmap.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
 num-traits.workspace = true
