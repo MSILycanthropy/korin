@@ -3,8 +3,6 @@ use korin_style::Style;
 use crate::{Buffer, Cell, buffer::BufferView};
 
 pub fn render(buffer: &mut Buffer, view: &BufferView, text: &str, style: &Style) {
-    eprintln!("rendering text: {:?} (len={})", text, text.len());
-
     for (y, line) in text.lines().enumerate() {
         let y = u16::try_from(y).unwrap_or(u16::MAX);
 

@@ -1,7 +1,7 @@
 use korin_event::{Event, EventContext, Listeners};
 use korin_focus::FocusManager;
-use korin_layout::{Layout, LayoutEngine, Rect, Size};
-use korin_style::Style;
+use korin_layout::{Layout, LayoutEngine, LayoutInfo, Overflow, Rect, Size};
+use korin_style::{Borders, Style};
 use korin_tree::{NodeId, Tree};
 use slotmap::SecondaryMap;
 
@@ -130,7 +130,18 @@ impl RuntimeInner {
             self.cascade_styles(root, &Style::default())?;
         }
 
-        self.layout.compute(&self.tree, size)?;
+        self.layout.compute(&self.tree, size, |node: &Node| {
+            let borders = node.computed_style.borders();
+
+            LayoutInfo {
+                border_left: f32::from(borders.contains(Borders::LEFT)),
+                border_top: f32::from(borders.contains(Borders::TOP)),
+                border_right: f32::from(borders.contains(Borders::RIGHT)),
+                border_bottom: f32::from(borders.contains(Borders::BOTTOM)),
+                clip_x: node.computed_style.overflow_x() != Overflow::Visible,
+                clip_y: node.computed_style.overflow_y() != Overflow::Visible,
+            }
+        })?;
 
         Ok(())
     }

@@ -1,5 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
+use korin_geometry::Point;
 use korin_tree::{NodeId, Tree};
 use slotmap::SecondaryMap;
 use taffy::{NodeId as TaffyId, TaffyTree};
@@ -47,9 +48,20 @@ impl<T: Send + Sync> DerefMut for LayoutTree<T> {
     }
 }
 
+pub struct LayoutInfo {
+    pub border_left: f32,
+    pub border_top: f32,
+    pub border_right: f32,
+    pub border_bottom: f32,
+    pub clip_x: bool,
+    pub clip_y: bool,
+}
+
 pub struct Engine {
     taffy: LayoutTree<NodeMeasure>,
     nodes: SecondaryMap<NodeId, TaffyId>,
+    computed_rects: SecondaryMap<NodeId, Rect>,
+    clip_rects: SecondaryMap<NodeId, Rect>,
 }
 
 impl Engine {
@@ -58,6 +70,8 @@ impl Engine {
         Self {
             taffy: LayoutTree::new(),
             nodes: SecondaryMap::new(),
+            computed_rects: SecondaryMap::new(),
+            clip_rects: SecondaryMap::new(),
         }
     }
 
@@ -113,6 +127,7 @@ impl Engine {
             self.taffy.set_style(taffy_id, layout.into())?;
             self.taffy.mark_dirty(taffy_id)?;
             tracing::trace!(node = %id, "update");
+
             return Ok(());
         }
 
@@ -136,7 +151,10 @@ impl Engine {
         Ok(())
     }
 
-    pub fn compute<T>(&mut self, tree: &Tree<T>, size: Size) -> LayoutResult<()> {
+    pub fn compute<T, F>(&mut self, tree: &Tree<T>, size: Size, info_fn: F) -> LayoutResult<()>
+    where
+        F: Fn(&T) -> LayoutInfo,
+    {
         let _span =
             tracing::debug_span!("compute", width = size.width, height = size.height).entered();
 
@@ -145,6 +163,12 @@ impl Engine {
 
         self.taffy
             .compute_layout_with_measure(root_taffy, size.into(), taffy_measure)?;
+
+        self.computed_rects.clear();
+        self.clip_rects.clear();
+
+        let viewport = Rect::new(0.0, 0.0, size.width, size.height);
+        self.compute_absolute_rects(tree, root, Point::default(), viewport, &info_fn)?;
 
         Ok(())
     }
@@ -155,6 +179,74 @@ impl Engine {
         let layout = self.taffy.layout(*taffy_id).ok()?;
 
         Some(layout.into())
+    }
+
+    #[must_use]
+    pub fn absolute_rect(&self, id: NodeId) -> Option<Rect> {
+        self.computed_rects.get(id).copied()
+    }
+
+    #[must_use]
+    pub fn clip_rect(&self, id: NodeId) -> Option<Rect> {
+        self.clip_rects.get(id).copied()
+    }
+
+    fn compute_absolute_rects<T, F>(
+        &mut self,
+        tree: &Tree<T>,
+        node_id: NodeId,
+        parent_position: Point,
+        parent_clip: Rect,
+        info_fn: &F,
+    ) -> LayoutResult<()>
+    where
+        F: Fn(&T) -> LayoutInfo,
+    {
+        let Some(node_data) = tree.get(node_id) else {
+            return Ok(());
+        };
+
+        let rect = self
+            .rect(node_id)
+            .ok_or(LayoutError::NodeNotFound(node_id))?;
+        let info = info_fn(node_data);
+
+        let abs_rect = Rect::new(
+            parent_position.x + rect.x,
+            parent_position.y + rect.y,
+            rect.width,
+            rect.height,
+        );
+
+        let clipped = abs_rect.intersect(&parent_clip);
+
+        self.computed_rects.insert(node_id, abs_rect);
+        self.clip_rects.insert(node_id, clipped);
+
+        let node_inner = Rect::new(
+            abs_rect.x + info.border_left,
+            abs_rect.y + info.border_top,
+            abs_rect.width - info.border_left - info.border_right,
+            abs_rect.height - info.border_top - info.border_bottom,
+        );
+
+        let child_clip = match (info.clip_x, info.clip_y) {
+            (true, true) => node_inner.intersect(&parent_clip),
+            (true, false) => node_inner.intersect_x(&parent_clip),
+            (false, true) => node_inner.intersect_y(&parent_clip),
+            (false, false) => parent_clip,
+        };
+        for child_id in tree.children(node_id) {
+            self.compute_absolute_rects(
+                tree,
+                child_id,
+                node_inner.position(),
+                child_clip,
+                info_fn,
+            )?;
+        }
+
+        Ok(())
     }
 
     fn taffy_node(&self, id: NodeId) -> LayoutResult<TaffyId> {

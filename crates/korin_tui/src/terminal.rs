@@ -9,9 +9,8 @@ use crossterm::{
         LeaveAlternateScreen,
     },
 };
-use korin_geometry::Rect;
 use korin_runtime::Runtime;
-use korin_style::{Borders, Color, Modifiers};
+use korin_style::{Color, Modifiers};
 
 use crate::{Buffer, Size, buffer::BufferView, renderer::render_node};
 
@@ -53,30 +52,10 @@ where
         let size = self.size()?;
 
         runtime
-            .render(
-                size,
-                |node, rect| {
-                    let borders = node.computed_style.borders();
-
-                    let left = u16::from(borders.contains(Borders::LEFT));
-                    let top = u16::from(borders.contains(Borders::TOP));
-                    let right = u16::from(borders.contains(Borders::RIGHT));
-                    let bottom = u16::from(borders.contains(Borders::BOTTOM));
-
-                    Rect::new(
-                        rect.x + left,
-                        rect.y + top,
-                        rect.width.saturating_sub(left + right),
-                        rect.height.saturating_sub(top + bottom),
-                    )
-                },
-                |node, rect, clip| {
-                    eprintln!("{}: rect={:?} clip={:?}", node.content, rect, clip);
-
-                    let node_view = BufferView::subview(rect, clip);
-                    render_node(&mut self.current, &node_view, node);
-                },
-            )
+            .render(size, |node, rect, clip| {
+                let node_view = BufferView::subview(rect, clip);
+                render_node(&mut self.current, &node_view, node);
+            })
             .map_err(|e| io::Error::other(e.to_string()))
     }
 

@@ -13,7 +13,7 @@ use inner::RuntimeInner;
 pub use context::RuntimeContext;
 pub use error::{RuntimeError, RuntimeResult};
 use korin_event::{Event, Focus};
-use korin_layout::{Overflow, Rect, Size};
+use korin_layout::{Rect, Size};
 use korin_reactive::reactive_graph::owner::{Owner, provide_context};
 pub use korin_tree::NodeId;
 use korin_view::{AnyStyle, AnyView, IntoAnyStyle, Render};
@@ -118,47 +118,27 @@ impl Runtime {
         }
     }
 
-    pub fn render<T, I, R>(&mut self, size: Size<T>, inner_rect: I, render: R) -> RuntimeResult<()>
+    pub fn render<T, R>(&mut self, size: Size<T>, render: R) -> RuntimeResult<()>
     where
         T: AsPrimitive<f32>,
         f32: AsPrimitive<T>,
-        I: Fn(&Node, Rect<T>) -> Rect<T>,
         R: FnMut(&Node, Rect<T>, Rect<T>),
     {
         let size = size.cast::<f32>();
         self.compute_layout(size)?;
 
-        let inner = self.inner();
-
-        let Some(root) = inner.root() else {
+        let Some(root) = self.inner().root() else {
             return Err(RuntimeError::NoRoot);
         };
 
-        let Some(root_rect) = inner.rect(root) else {
-            return Err(RuntimeError::NoRoot);
-        };
-
-        drop(inner);
-
-        let clip = Rect::new(0.0, 0.0, size.width, size.height);
-
-        self.render_node(root, root_rect, clip, &inner_rect, render);
-
+        self.render_node(root, render);
         Ok(())
     }
 
-    fn render_node<T, I, R>(
-        &self,
-        node_id: NodeId,
-        parent_inner: Rect,
-        parent_clip: Rect,
-        inner_rect: &I,
-        mut render: R,
-    ) -> R
+    fn render_node<T, R>(&self, node_id: NodeId, mut render: R) -> R
     where
         T: AsPrimitive<f32>,
         f32: AsPrimitive<T>,
-        I: Fn(&Node, Rect<T>) -> Rect<T>,
         R: FnMut(&Node, Rect<T>, Rect<T>),
     {
         let inner = self.inner();
@@ -166,40 +146,22 @@ impl Runtime {
         let Some(node) = inner.get(node_id) else {
             return render;
         };
-        let Some(layout_rect) = inner.rect(node_id) else {
+        let Some(rect) = inner.layout.absolute_rect(node_id) else {
             return render;
         };
-
-        let rect = Rect::new(
-            parent_inner.x + layout_rect.x,
-            parent_inner.y + layout_rect.y,
-            layout_rect.width,
-            layout_rect.height,
-        );
-
-        let clipped_rect = rect.intersect(&parent_clip);
-
-        let node_inner = inner_rect(node, rect.cast()).cast();
-
-        let clip_x = node.computed_style.overflow_x() != Overflow::Visible;
-        let clip_y = node.computed_style.overflow_y() != Overflow::Visible;
-
-        let child_clip = match (clip_x, clip_y) {
-            (true, true) => node_inner.intersect(&parent_clip),
-            (true, false) => node_inner.intersect_x(&parent_clip),
-            (false, true) => node_inner.intersect_y(&parent_clip),
-            (false, false) => parent_clip,
+        let Some(clip) = inner.layout.clip_rect(node_id) else {
+            return render;
         };
 
         let mut children = inner.children(node_id);
         children.sort_by_key(|&id| inner.get(id).map_or(0, |n| n.computed_style.z_index()));
 
-        render(node, rect.cast(), clipped_rect.cast());
+        render(node, rect.cast(), clip.cast());
 
         drop(inner);
 
         for child_id in children {
-            render = self.render_node(child_id, node_inner, child_clip, inner_rect, render);
+            render = self.render_node(child_id, render);
         }
 
         render
