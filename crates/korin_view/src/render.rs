@@ -1,5 +1,4 @@
 use korin_event::Listeners;
-use korin_layout::Layout;
 use korin_reactive::reactive_graph::effect::RenderEffect;
 use korin_style::Style;
 use korin_tree::NodeId;
@@ -7,12 +6,13 @@ use korin_tree::NodeId;
 use crate::text::{Text, TextState};
 
 pub trait RenderContext {
-    fn create_container(&mut self, layout: Layout, style: Style) -> Option<NodeId>;
-    fn update_container(&mut self, id: NodeId, layout: Layout, style: Style);
+    fn create_container(&mut self) -> Option<NodeId>;
+    fn update_container(&mut self, id: NodeId);
 
-    fn create_text(&mut self, content: String, layout: Layout, style: Style) -> Option<NodeId>;
-    fn update_text(&mut self, id: NodeId, content: String, layout: Layout, style: Style);
+    fn create_text(&mut self, content: String) -> Option<NodeId>;
+    fn update_text(&mut self, id: NodeId, content: String);
 
+    fn create_style(&mut self, id: NodeId, style: Style);
     fn update_style(&mut self, id: NodeId, style: Style);
 
     fn set_focusable(&mut self, id: NodeId);

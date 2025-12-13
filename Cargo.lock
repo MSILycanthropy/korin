@@ -416,6 +416,7 @@ dependencies = [
  "korin_style",
  "korin_tree",
  "korin_view",
+ "num-traits",
  "thiserror",
  "tracing",
 ]
@@ -456,7 +457,6 @@ name = "korin_view"
 version = "0.1.0"
 dependencies = [
  "korin_event",
- "korin_layout",
  "korin_reactive",
  "korin_style",
  "korin_tree",

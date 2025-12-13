@@ -2,7 +2,7 @@ use crate::{Container, ContainerProps};
 use korin_event::EventContext;
 use korin_event::Key;
 use korin_event::KeyCode;
-use korin_layout::{Layout, full};
+use korin_layout::full;
 use korin_macros::{component, view};
 use korin_reactive::{
     RwSignal,
@@ -50,6 +50,8 @@ pub fn text_input(
         } else {
             Style::builder().bordered()
         }
+        .w(full())
+        .h(3.0)
         .build()
     };
 
@@ -108,7 +110,6 @@ pub fn text_input(
 
     view! {
        <Container
-            layout={Layout::new().w(full()).h(3.0)}
             style={style}
             focusable={true}
             on:key={on_key}

@@ -1,6 +1,4 @@
 use korin_event::{Event, EventContext, Listeners};
-use korin_layout::Layout;
-use korin_style::Style;
 use korin_tree::NodeId;
 
 use crate::{
@@ -11,7 +9,6 @@ use crate::{
 };
 
 pub struct Container<Ctx: RenderContext + Clone + 'static> {
-    layout: Layout,
     style: Option<AnyStyle<Ctx>>,
     children: Vec<AnyView<Ctx>>,
     focusable: bool,
@@ -22,18 +19,11 @@ impl<Ctx: RenderContext + Clone> Container<Ctx> {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            layout: Layout::default(),
             style: None,
             children: Vec::new(),
             focusable: false,
             listeners: Listeners::new(),
         }
-    }
-
-    #[must_use]
-    pub fn layout(mut self, layout: Layout) -> Self {
-        self.layout = layout;
-        self
     }
 
     #[must_use]
@@ -91,9 +81,7 @@ impl<Ctx: RenderContext + Clone> Render<Ctx> for Container<Ctx> {
     type State = ContainerState;
 
     fn build(self, ctx: &mut Ctx) -> Self::State {
-        let id = ctx
-            .create_container(self.layout, Style::default())
-            .expect("failed to create container");
+        let id = ctx.create_container().expect("failed to create container");
 
         let style_state = self.style.map(|s| s.inner.build(id, ctx));
 
@@ -118,7 +106,7 @@ impl<Ctx: RenderContext + Clone> Render<Ctx> for Container<Ctx> {
     }
 
     fn rebuild(self, state: &mut Self::State, ctx: &mut Ctx) {
-        ctx.update_container(state.node_id, self.layout, Style::default());
+        ctx.update_container(state.node_id);
 
         if let (Some(style), Some(style_state)) = (self.style, &mut state.style_state) {
             style.inner.rebuild(state.node_id, style_state, ctx);

@@ -6,7 +6,6 @@ edition.workspace = true
 [dependencies]
 korin_event.workspace = true
 korin_tree.workspace = true
-korin_layout.workspace = true
 korin_style.workspace = true
 korin_reactive.workspace = true
 

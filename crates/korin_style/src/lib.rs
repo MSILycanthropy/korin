@@ -73,6 +73,11 @@ impl Style {
     }
 
     #[must_use]
+    pub const fn z_index(&self) -> i32 {
+        self.appearance.z_index
+    }
+
+    #[must_use]
     pub fn merge(mut self, parent: &Self) -> Self {
         self.appearance = self.appearance.merge(&parent.appearance);
         self
@@ -445,6 +450,12 @@ impl StyleBuilder {
     #[must_use]
     pub fn row_span(mut self, v: u16) -> Self {
         self.layout = self.layout.row_span(v);
+        self
+    }
+
+    #[must_use]
+    pub const fn z_index(mut self, z: i32) -> Self {
+        self.appearance = self.appearance.z_index(z);
         self
     }
 

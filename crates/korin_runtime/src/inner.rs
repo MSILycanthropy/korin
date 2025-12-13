@@ -12,7 +12,6 @@ pub struct RuntimeInner {
     pub tree: Tree<Node>,
     pub layout: LayoutEngine,
     pub focus: FocusManager<NodeId>,
-
     pub event_listeners: HashMap<NodeId, Listeners>,
     pub focusable: HashSet<NodeId>,
 }

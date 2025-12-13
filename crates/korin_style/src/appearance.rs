@@ -11,6 +11,7 @@ pub struct Appearance {
     pub text_color: Color,
     pub text_alignment: Alignment,
     pub text_modifiers: Modifiers,
+    pub z_index: i32,
 }
 
 impl fmt::Debug for Appearance {
@@ -18,25 +19,35 @@ impl fmt::Debug for Appearance {
         let mut s = f.debug_struct("Appearance");
 
         if self.background != Color::Reset {
-            s.field("bg", &self.background);
+            s.field("background", &self.background);
         }
+
         if self.text_color != Color::Reset {
-            s.field("fg", &self.text_color);
+            s.field("foreground", &self.text_color);
         }
+
         if !self.borders.is_empty() {
             s.field("borders", &self.borders);
         }
+
         if self.border_style != BorderStyle::Plain {
             s.field("border_style", &self.border_style);
         }
+
         if self.border_color != Color::Reset {
             s.field("border_color", &self.border_color);
         }
+
         if self.text_alignment != Alignment::Left {
             s.field("align", &self.text_alignment);
         }
+
         if !self.text_modifiers.is_empty() {
             s.field("modifiers", &self.text_modifiers);
+        }
+
+        if self.z_index != 0 {
+            s.field("z", &self.z_index);
         }
 
         s.finish()
@@ -54,6 +65,7 @@ impl Appearance {
             border_color: Color::Reset,
             text_alignment: Alignment::Left,
             text_modifiers: Modifiers::empty(),
+            z_index: 0,
         }
     }
 
@@ -152,6 +164,12 @@ impl Appearance {
             self.background = parent.background;
         }
 
+        self
+    }
+
+    #[must_use]
+    pub const fn z_index(mut self, z: i32) -> Self {
+        self.z_index = z;
         self
     }
 }

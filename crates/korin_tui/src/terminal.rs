@@ -9,10 +9,11 @@ use crossterm::{
         LeaveAlternateScreen,
     },
 };
+use korin_geometry::Rect;
 use korin_runtime::Runtime;
-use korin_style::{Color, Modifiers};
+use korin_style::{Borders, Color, Modifiers};
 
-use crate::{Buffer, Size, render};
+use crate::{Buffer, Size, renderer::render_node};
 
 pub struct Terminal<W: Write = Stdout> {
     writer: W,
@@ -46,8 +47,36 @@ where
         )
     }
 
-    pub fn render(&mut self, runtime: &Runtime) {
-        render(&mut self.current, runtime);
+    pub fn render(&mut self, runtime: &mut Runtime) -> io::Result<()> {
+        let _span = tracing::debug_span!("render").entered();
+
+        let size = self.size()?;
+        let view = self.current.view();
+
+        runtime
+            .render(
+                size,
+                |node, rect| {
+                    let borders = node.computed_style.borders();
+
+                    let left = u16::from(borders.contains(Borders::LEFT));
+                    let top = u16::from(borders.contains(Borders::TOP));
+                    let right = u16::from(borders.contains(Borders::RIGHT));
+                    let bottom = u16::from(borders.contains(Borders::BOTTOM));
+
+                    Rect::new(
+                        rect.x + left,
+                        rect.y + top,
+                        rect.width.saturating_sub(left + right),
+                        rect.height.saturating_sub(top + bottom),
+                    )
+                },
+                |node, rect| {
+                    let node_view = view.subview(rect);
+                    render_node(&mut self.current, &node_view, node);
+                },
+            )
+            .map_err(|e| io::Error::other(e.to_string()))
     }
 
     pub fn restore(&mut self) -> io::Result<()> {

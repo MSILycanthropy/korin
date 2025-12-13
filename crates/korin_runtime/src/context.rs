@@ -59,9 +59,12 @@ impl RuntimeContext {
 }
 
 impl RenderContext for RuntimeContext {
-    fn create_container(&mut self, layout: Layout, style: Style) -> Option<NodeId> {
-        let node = Node::container(style);
-        let node = self.runtime_mut().create_node(node, layout).ok()?;
+    fn create_container(&mut self) -> Option<NodeId> {
+        let node = Node::container();
+        let node = self
+            .runtime_mut()
+            .create_node(node, Layout::default())
+            .ok()?;
 
         if let Some(parent) = self.parent {
             self.runtime_mut().append_child(parent, node).ok()?;
@@ -72,22 +75,14 @@ impl RenderContext for RuntimeContext {
         Some(node)
     }
 
-    fn update_container(&mut self, id: NodeId, layout: Layout, style: Style) {
-        let mut runtime = self.runtime_mut();
+    fn update_container(&mut self, _: NodeId) {}
 
-        if let Some(node) = runtime.tree.get_mut(id) {
-            node.style = style;
-        }
-
-        runtime
-            .layout
-            .update(id, layout)
-            .expect("updating container failed");
-    }
-
-    fn create_text(&mut self, content: String, layout: Layout, style: Style) -> Option<NodeId> {
-        let node = Node::text(content, style);
-        let node = self.runtime_mut().create_node(node, layout).ok()?;
+    fn create_text(&mut self, content: String) -> Option<NodeId> {
+        let node = Node::text(content);
+        let node = self
+            .runtime_mut()
+            .create_node(node, Layout::default())
+            .ok()?;
 
         if let Some(parent) = self.parent {
             self.runtime_mut().append_child(parent, node).ok()?;
@@ -98,18 +93,25 @@ impl RenderContext for RuntimeContext {
         Some(node)
     }
 
-    fn update_text(&mut self, id: NodeId, content: String, layout: Layout, style: Style) {
+    fn update_text(&mut self, id: NodeId, content: String) {
         let mut runtime = self.runtime_mut();
 
         if let Some(node) = runtime.tree.get_mut(id) {
             node.content = NodeContent::Text(content.clone());
-            node.style = style;
         }
 
         runtime
             .layout
-            .update_text(id, layout, content)
+            .update_text(id, content)
             .expect("updating text failed");
+    }
+
+    fn create_style(&mut self, id: NodeId, style: Style) {
+        let mut runtime = self.runtime_mut();
+
+        if let Some(node) = runtime.tree.get_mut(id) {
+            node.style = style;
+        }
     }
 
     fn update_style(&mut self, id: NodeId, style: Style) {

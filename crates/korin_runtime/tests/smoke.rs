@@ -1,5 +1,5 @@
-use korin_layout::{Layout, Size};
-use korin_runtime::{Runtime, RuntimeContext};
+use korin_layout::{Rect, Size};
+use korin_runtime::{Node, Runtime, RuntimeContext};
 use korin_style::Style;
 use korin_view::{Container, Render, Text};
 
@@ -11,6 +11,10 @@ where
     let mut runtime = Runtime::new();
     runtime.mount(view).expect("mount failed");
     runtime
+}
+
+const fn passthrough(_node: &Node, rect: Rect) -> Rect {
+    rect
 }
 
 #[test]
@@ -47,31 +51,51 @@ fn mount_nested_containers() {
     assert_eq!(level1.len(), 1);
 
     let level2 = inner.children(level1[0]);
-    assert_eq!(level2.len(), 1);
 
     drop(inner);
+
+    assert_eq!(level2.len(), 1);
 }
 
 #[test]
-fn compute_layout_works() {
+fn render_computes_layout() {
     let view = Container::<RuntimeContext>::new()
-        .layout(Layout::col())
+        .style(Style::builder().col().build())
         .child(Text::new("Line 1"))
         .child(Text::new("Line 2"));
 
     let mut runtime = build_runtime(view);
+
+    let mut rendered_count = 0;
     runtime
-        .compute_layout(Size::new(80.0, 24.0))
-        .expect("layout failed");
+        .render(Size::new(80.0, 24.0), passthrough, |_, rect| {
+            rendered_count += 1;
+            assert!(rect.width > 0.0 || rect.height > 0.0);
+        })
+        .expect("render failed");
 
-    let inner = runtime.inner();
-    let root = inner.root().expect("has root");
-    let rect = inner.rect(root).expect("has rect");
+    assert_eq!(rendered_count, 3);
+}
 
-    drop(inner);
+#[test]
+fn render_visits_nodes_in_paint_order() {
+    let view = Container::<RuntimeContext>::new()
+        .child(Text::new("First"))
+        .child(Text::new("Second"));
 
-    assert!(rect.width > 0.0);
-    assert!(rect.height > 0.0);
+    let mut runtime = build_runtime(view);
+
+    let mut visited = Vec::new();
+    runtime
+        .render(Size::new(80.0, 24.0), passthrough, |node, _| {
+            visited.push(format!("{}", node.content));
+        })
+        .expect("render failed");
+
+    assert_eq!(visited.len(), 3);
+    assert_eq!(visited[0], "container");
+    assert_eq!(visited[1], "text: First");
+    assert_eq!(visited[2], "text: Second");
 }
 
 #[test]
@@ -97,7 +121,7 @@ fn focus_order_matches_tree_order() {
     let root = inner.root().expect("has root");
     let children = inner.children(root);
 
-    let first_focused = inner.focus.focused();
+    let first_focused = inner.focused();
 
     drop(inner);
 
@@ -111,8 +135,8 @@ fn style_applied_to_node() {
 
     let mut runtime = build_runtime(view);
     runtime
-        .compute_layout(Size::new(80.0, 24.0))
-        .expect("layout failed");
+        .render(Size::new(80.0, 24.0), passthrough, |_, _| {})
+        .expect("render failed");
 
     let inner = runtime.inner();
     let root = inner.root().expect("has root");
@@ -121,4 +145,59 @@ fn style_applied_to_node() {
     assert_eq!(node.computed_style.background(), korin_style::Color::Red);
 
     drop(inner);
+}
+
+#[test]
+fn z_index_affects_paint_order() {
+    let view = Container::<RuntimeContext>::new()
+        .child(
+            Container::<RuntimeContext>::new()
+                .style(Style::builder().z_index(10).build())
+                .child(Text::new("High Z")),
+        )
+        .child(
+            Container::<RuntimeContext>::new()
+                .style(Style::builder().z_index(0).build())
+                .child(Text::new("Low Z")),
+        );
+
+    let mut runtime = build_runtime(view);
+
+    let mut visited = Vec::new();
+    runtime
+        .render(Size::new(80.0, 24.0), passthrough, |node, _| {
+            visited.push(format!("{}", node.content));
+        })
+        .expect("render failed");
+
+    assert_eq!(visited[0], "container");
+    assert_eq!(visited[1], "container");
+    assert_eq!(visited[2], "text: Low Z");
+    assert_eq!(visited[3], "container");
+    assert_eq!(visited[4], "text: High Z");
+}
+
+#[test]
+fn layout_in_style_works() {
+    use korin_layout::full;
+
+    let view = Container::<RuntimeContext>::new()
+        .style(Style::builder().col().w(full()).h(full()).build());
+
+    let mut runtime = build_runtime(view);
+
+    let mut root_rect = None;
+    runtime
+        .render(Size::new(100.0, 50.0), passthrough, |_, rect| {
+            if root_rect.is_none() {
+                root_rect = Some(rect);
+            }
+        })
+        .expect("render failed");
+
+    let rect = root_rect.expect("root rendered");
+    let epsilon = 1e-15;
+
+    assert!(rect.width - 100.0 < epsilon);
+    assert!(rect.height - 50.0 < epsilon);
 }

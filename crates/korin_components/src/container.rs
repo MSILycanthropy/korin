@@ -1,5 +1,4 @@
 use korin_event::{Blur, EventContext, Focus, Key};
-use korin_layout::Layout;
 use korin_macros::component;
 use korin_runtime::StyleProp;
 use korin_runtime::{IntoView, View};
@@ -11,7 +10,6 @@ pub type BlurHandler = Box<dyn Fn(&EventContext<Blur>) + Send + Sync>;
 
 #[component]
 pub fn container(
-    layout: Option<Layout>,
     style: Option<StyleProp>,
     children: Option<Vec<View>>,
     focusable: Option<bool>,
@@ -20,10 +18,6 @@ pub fn container(
     on_blur: Option<BlurHandler>,
 ) -> impl IntoView {
     let mut c = PrimitiveContainer::new();
-
-    if let Some(layout) = layout {
-        c = c.layout(layout);
-    }
 
     if let Some(style) = style {
         c = c.style(style);

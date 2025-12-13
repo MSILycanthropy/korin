@@ -28,7 +28,7 @@ impl fmt::Display for NodeContent {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Node {
     pub content: NodeContent,
     pub style: Style,
@@ -37,18 +37,18 @@ pub struct Node {
 
 impl Node {
     #[must_use]
-    pub fn container(style: Style) -> Self {
+    pub fn container() -> Self {
         Self {
             content: NodeContent::Container,
-            style,
+            style: Style::default(),
             computed_style: Style::default(),
         }
     }
 
-    pub fn text(text: impl Into<String>, style: Style) -> Self {
+    pub fn text(text: impl Into<String>) -> Self {
         Self {
             content: NodeContent::Text(text.into()),
-            style,
+            style: Style::default(),
             computed_style: Style::default(),
         }
     }

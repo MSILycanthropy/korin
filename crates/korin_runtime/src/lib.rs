@@ -13,11 +13,12 @@ use inner::RuntimeInner;
 pub use context::RuntimeContext;
 pub use error::{RuntimeError, RuntimeResult};
 use korin_event::{Event, Focus};
-use korin_layout::Size;
+use korin_layout::{Rect, Size};
 use korin_reactive::reactive_graph::owner::{Owner, provide_context};
 pub use korin_tree::NodeId;
 use korin_view::{AnyStyle, AnyView, IntoAnyStyle, Render};
 pub use node::{Node, NodeContent};
+use num_traits::AsPrimitive;
 
 pub type View = AnyView<RuntimeContext>;
 pub type StyleProp = AnyStyle<RuntimeContext>;
@@ -117,7 +118,79 @@ impl Runtime {
         }
     }
 
-    pub fn compute_layout(&mut self, size: Size) -> RuntimeResult<()> {
+    pub fn render<T, I, R>(&mut self, size: Size<T>, inner_rect: I, render: R) -> RuntimeResult<()>
+    where
+        T: AsPrimitive<f32>,
+        f32: AsPrimitive<T>,
+        I: Fn(&Node, Rect<T>) -> Rect<T>,
+        R: FnMut(&Node, Rect<T>),
+    {
+        let size = size.cast::<f32>();
+        self.compute_layout(size)?;
+
+        let inner = self.inner();
+
+        let Some(root) = inner.root() else {
+            return Err(RuntimeError::NoRoot);
+        };
+
+        let Some(root_rect) = inner.rect(root) else {
+            return Err(RuntimeError::NoRoot);
+        };
+
+        drop(inner);
+
+        self.render_node(root, root_rect, &inner_rect, render);
+
+        Ok(())
+    }
+
+    fn render_node<T, I, R>(
+        &self,
+        node_id: NodeId,
+        parent_inner: Rect,
+        inner_rect: &I,
+        mut render: R,
+    ) -> R
+    where
+        T: AsPrimitive<f32>,
+        f32: AsPrimitive<T>,
+        I: Fn(&Node, Rect<T>) -> Rect<T>,
+        R: FnMut(&Node, Rect<T>),
+    {
+        let inner = self.inner();
+
+        let Some(node) = inner.get(node_id) else {
+            return render;
+        };
+        let Some(layout_rect) = inner.rect(node_id) else {
+            return render;
+        };
+
+        let rect = Rect::new(
+            parent_inner.x + layout_rect.x,
+            parent_inner.y + layout_rect.y,
+            layout_rect.width,
+            layout_rect.height,
+        );
+
+        let node_inner = inner_rect(node, rect.cast()).cast();
+
+        let mut children = inner.children(node_id);
+        children.sort_by_key(|&id| inner.get(id).map_or(0, |n| n.computed_style.z_index()));
+
+        render(node, rect.cast());
+
+        drop(inner);
+
+        for child_id in children {
+            render = self.render_node(child_id, node_inner, inner_rect, render);
+        }
+
+        render
+    }
+
+    fn compute_layout(&self, size: Size) -> RuntimeResult<()> {
         self.inner_mut().compute_layout(size)
     }
 

@@ -21,21 +21,21 @@ async fn run(runtime: &mut Runtime, terminal: &mut Terminal) -> io::Result<()> {
     let password = RwSignal::new(String::new());
 
     let app = view! {
-        <Container layout={Layout::col().w(full()).h(full()).gap(1)} style={Style::builder().background(Color::DarkGray).build()}>
-            <Container layout={Layout::row().h(3).w(full())} style={Style::builder().bordered().background(Color::Blue).build()}>
+        <Container style={Style::builder().col().w(full()).h(full()).gap(1).background(Color::DarkGray).build()}>
+            <Container style={Style::builder().h(3).w(full()).bordered().background(Color::Blue).build()}>
                 "Login Form"
             </Container>
-            <Container layout={Layout::col().grow(1).w(full()).gap(0.5)}>
-                <Container layout={Layout::col().gap(1)}>
+            <Container style={Style::builder().col().grow(1).w(full()).gap(0.5).build()}>
+                <Container style={Style::builder().col().gap(1).build()}>
                     "Username:"
                     <TextInput value={username} placeholder={"Enter username..."} />
                 </Container>
-                <Container layout={Layout::col().gap(0.5)}>
+                <Container style={Style::builder().col().gap(0.5).build()}>
                     "Password:"
                     <TextInput value={password} placeholder={"Enter password..."} />
                 </Container>
             </Container>
-            <Container layout={Layout::row().h(3).w(full())} style={Style::builder().bordered().background(Color::Magenta).build()}>
+            <Container style={Style::builder().bordered().background(Color::Magenta).h(3).w(full()).build()}>
                 "Press Tab to switch fields, Ctrl+Q to quit"
             </Container>
         </Container>
@@ -50,10 +50,7 @@ async fn run(runtime: &mut Runtime, terminal: &mut Terminal) -> io::Result<()> {
 }
 
 fn run_once(terminal: &mut Terminal, runtime: &mut Runtime) -> io::Result<()> {
-    let size = terminal.size()?;
-    runtime.compute_layout(size.cast()).expect("layout failed");
-
-    terminal.render(runtime);
+    terminal.render(runtime)?;
     terminal.flush()?;
 
     if let Some(event) = poll(Duration::from_millis(16)) {
