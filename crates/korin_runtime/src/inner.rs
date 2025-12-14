@@ -145,7 +145,19 @@ impl RuntimeInner {
             }
         })?;
 
+        if let Some(root) = self.root() {
+            self.populate_content_sizes(root);
+        }
+
         Ok(())
+    }
+
+    fn populate_content_sizes(&mut self, node_id: NodeId) {
+        self.tree.traverse_mut(node_id, |id, node| {
+            if let Some(size) = self.layout.content_size(id) {
+                node.content_size = size;
+            }
+        });
     }
 
     #[must_use]

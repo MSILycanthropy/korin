@@ -175,6 +175,17 @@ impl Engine {
         Ok(())
     }
 
+    #[must_use]
+    pub fn content_size(&self, id: NodeId) -> Option<Size<f32>> {
+        let taffy_id = self.nodes.get(id)?;
+        let layout = self.taffy.layout(*taffy_id).ok()?;
+
+        Some(Size::new(
+            layout.content_size.width,
+            layout.content_size.height,
+        ))
+    }
+
     pub fn hit_test<T>(
         &self,
         tree: &Tree<T>,

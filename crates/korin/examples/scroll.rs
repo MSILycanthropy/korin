@@ -33,42 +33,68 @@ async fn run(runtime: &mut Runtime, terminal: &mut Terminal) -> io::Result<()> {
                 .bordered()
                 .build()
             }>
-                "Scroll Demo - use mouse wheel inside the box below"
+                "Scroll Demo - use mouse wheel inside the boxes below"
             </Container>
 
             <Container style={Style::builder()
-                .w(40)
-                .h(10)
-                .bordered()
-                .overflow(Overflow::Scroll)
-                .background(Color::Blue)
+                .row()
+                .gap(2)
                 .build()
             }>
+                // Vertical scroll
                 <Container style={Style::builder()
-                    .col()
-                    .gap(0)
+                    .w(40)
+                    .h(10)
+                    .bordered()
+                    .overflow(Overflow::Scroll)
+                    .background(Color::Blue)
                     .build()
                 }>
-                    "Line 1"
-                    "Line 2"
-                    "Line 3"
-                    "Line 4"
-                    "Line 5"
-                    "Line 6"
-                    "Line 7"
-                    "Line 8"
-                    "Line 9"
-                    "Line 10"
-                    "Line 11"
-                    "Line 12"
-                    "Line 13"
-                    "Line 14"
-                    "Line 15"
-                    "Line 16"
-                    "Line 17"
-                    "Line 18"
-                    "Line 19"
-                    "Line 20"
+                    <Container style={Style::builder()
+                        .col()
+                        .build()
+                    }>
+                        "Line 1"
+                        "Line 2"
+                        "Line 3"
+                        "Line 4"
+                        "Line 5"
+                        "Line 6"
+                        "Line 7"
+                        "Line 8"
+                        "Line 9"
+                        "Line 10"
+                        "Line 11"
+                        "Line 12"
+                        "Line 13"
+                        "Line 14"
+                        "Line 15"
+                        "Line 16"
+                        "Line 17"
+                        "Line 18"
+                        "Line 19"
+                        "Line 20"
+                    </Container>
+                </Container>
+
+                // Horizontal scroll
+                <Container style={Style::builder()
+                    .w(30)
+                    .h(5)
+                    .bordered()
+                    .overflow(Overflow::Scroll)
+                    .background(Color::Green)
+                    .build()
+                }>
+                    <Container style={Style::builder()
+                        .col()
+                        .build()
+                    }>
+                        "This is a very long line of text that should overflow horizontally"
+                        "Another super duper extra long line that keeps going and going"
+                        "Short"
+                        "Yet another extremely lengthy line to test horizontal scrolling"
+                    </Container>
                 </Container>
             </Container>
         </Container>
