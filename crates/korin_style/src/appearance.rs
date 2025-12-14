@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::{Alignment, BorderStyle, Borders, Color, Modifiers};
+use crate::{Alignment, BorderStyle, Borders, Color, Modifiers, WhiteSpace};
 
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
 pub struct Appearance {
@@ -12,6 +12,7 @@ pub struct Appearance {
     pub text_alignment: Alignment,
     pub text_modifiers: Modifiers,
     pub z_index: i32,
+    pub white_space: WhiteSpace,
 }
 
 impl fmt::Debug for Appearance {
@@ -50,6 +51,8 @@ impl fmt::Debug for Appearance {
             s.field("z", &self.z_index);
         }
 
+        s.field("whitepsace", &self.white_space);
+
         s.finish()
     }
 }
@@ -66,6 +69,7 @@ impl Appearance {
             text_alignment: Alignment::Left,
             text_modifiers: Modifiers::empty(),
             z_index: 0,
+            white_space: WhiteSpace::Normal,
         }
     }
 
@@ -162,6 +166,10 @@ impl Appearance {
 
         if self.background == Color::Reset {
             self.background = parent.background;
+        }
+
+        if parent.white_space == WhiteSpace::NoWrap {
+            self.white_space = parent.white_space;
         }
 
         self

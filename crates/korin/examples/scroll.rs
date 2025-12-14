@@ -77,7 +77,6 @@ async fn run(runtime: &mut Runtime, terminal: &mut Terminal) -> io::Result<()> {
                     </Container>
                 </Container>
 
-                // Horizontal scroll
                 <Container style={Style::builder()
                     .w(30)
                     .h(5)

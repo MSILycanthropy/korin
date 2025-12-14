@@ -8,7 +8,10 @@ use taffy::{NodeId as TaffyId, TaffyTree};
 use crate::{Layout, LayoutResult, Rect, Size, error::LayoutError, measure::taffy_measure};
 
 #[derive(Default, Clone)]
-pub struct NodeMeasure(pub Option<String>);
+pub struct NodeMeasure {
+    pub text: Option<String>,
+    pub wrap: bool,
+}
 
 #[expect(unsafe_code, reason = "TaffyTree is safe as long as calc is not used")]
 /// SAFETY: Taffy Tree becomes thread unsafe when you use the calc feature, which we do not implement
@@ -57,6 +60,8 @@ pub struct LayoutInfo {
     pub clip_y: bool,
     pub scroll_x: f32,
     pub scroll_y: f32,
+    pub scrollbar_width: f32,
+    pub scrollbar_height: f32,
 }
 
 pub struct Engine {
@@ -78,7 +83,10 @@ impl Engine {
     }
 
     pub fn insert(&mut self, layout: Layout, node_id: NodeId) -> LayoutResult<TaffyId> {
-        let ctx = NodeMeasure(None);
+        let ctx = NodeMeasure {
+            text: None,
+            wrap: true,
+        };
         let taffy_id = self.taffy.new_leaf_with_context(layout.into(), ctx)?;
 
         self.nodes.insert(node_id, taffy_id);
@@ -92,9 +100,13 @@ impl Engine {
         layout: Layout,
         node_id: NodeId,
         text: &str,
+        wrap: bool,
     ) -> LayoutResult<TaffyId> {
         let text_len = text.len();
-        let ctx = NodeMeasure(Some(text.into()));
+        let ctx = NodeMeasure {
+            text: Some(text.into()),
+            wrap,
+        };
         let taffy_id = self.taffy.new_leaf_with_context(layout.into(), ctx)?;
 
         self.nodes.insert(node_id, taffy_id);
@@ -138,11 +150,16 @@ impl Engine {
         Ok(())
     }
 
-    pub fn update_text(&mut self, id: NodeId, text: String) -> LayoutResult<()> {
+    pub fn update_text(&mut self, id: NodeId, text: String, wrap: bool) -> LayoutResult<()> {
         if let Some(&taffy_id) = self.nodes.get(id) {
             let log_text = text.clone();
-            self.taffy
-                .set_node_context(taffy_id, Some(NodeMeasure(Some(text))))?;
+            self.taffy.set_node_context(
+                taffy_id,
+                Some(NodeMeasure {
+                    text: Some(text),
+                    wrap,
+                }),
+            )?;
             self.taffy.mark_dirty(taffy_id)?;
             tracing::trace!(node = %id, text = log_text, "update_text");
 
@@ -250,8 +267,8 @@ impl Engine {
         let node_inner = Rect::new(
             abs_rect.x + info.border_left,
             abs_rect.y + info.border_top,
-            abs_rect.width - info.border_left - info.border_right,
-            abs_rect.height - info.border_top - info.border_bottom,
+            abs_rect.width - info.border_left - info.border_right - info.scrollbar_width,
+            abs_rect.height - info.border_top - info.border_bottom - info.scrollbar_height,
         );
 
         let child_clip = match (info.clip_x, info.clip_y) {
@@ -341,6 +358,8 @@ mod tests {
             clip_y: false,
             scroll_x: 0.0,
             scroll_y: 0.0,
+            scrollbar_width: 0.0,
+            scrollbar_height: 0.0,
         }
     }
 
@@ -354,6 +373,8 @@ mod tests {
             clip_y: false,
             scroll_x: 0.0,
             scroll_y: 0.0,
+            scrollbar_width: 0.0,
+            scrollbar_height: 0.0,
         }
     }
 
@@ -367,6 +388,8 @@ mod tests {
             clip_y: true,
             scroll_x: 0.0,
             scroll_y: 0.0,
+            scrollbar_width: 0.0,
+            scrollbar_height: 0.0,
         }
     }
 

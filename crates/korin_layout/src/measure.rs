@@ -14,12 +14,12 @@ pub fn taffy_measure(
         return taffy::Size::ZERO;
     };
 
-    let Some(text) = &ctx.0 else {
+    let Some(text) = &ctx.text else {
         return taffy::Size::ZERO;
     };
 
     if let Some(width) = known_size.width {
-        return measure_text(text, width);
+        return measure_text(text, width, ctx.wrap);
     }
 
     let available_width = match available_space.width {
@@ -28,11 +28,17 @@ pub fn taffy_measure(
         AvailableSpace::MaxContent => f32::MAX,
     };
 
-    measure_text(text, available_width)
+    measure_text(text, available_width, ctx.wrap)
 }
 
 #[allow(clippy::cast_precision_loss, clippy::cast_sign_loss)]
-fn measure_text(text: &str, available_width: f32) -> Size<f32> {
+fn measure_text(text: &str, available_width: f32, wrap: bool) -> Size<f32> {
+    if !wrap {
+        let width = text.lines().map(|l| l.width() as f32).fold(0.0, f32::max);
+        let height = text.lines().count().max(1) as f32;
+        return Size { width, height };
+    }
+
     let max_width = available_width.max(1.0);
     let mut total_height = 0.0;
     let mut max_line_width: f32 = 0.0;

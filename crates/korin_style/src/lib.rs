@@ -15,6 +15,13 @@ mod border;
 mod color;
 mod text;
 
+#[derive(Default, Clone, Copy, Debug, PartialEq, Eq)]
+pub enum WhiteSpace {
+    #[default]
+    Normal,
+    NoWrap,
+}
+
 #[derive(Clone, Debug, Default)]
 pub struct Style {
     appearance: Appearance,
@@ -85,6 +92,11 @@ impl Style {
     #[must_use]
     pub const fn overflow_y(&self) -> Overflow {
         self.layout.style.overflow.y
+    }
+
+    #[must_use]
+    pub const fn white_space(&self) -> WhiteSpace {
+        self.appearance.white_space
     }
 
     #[must_use]
@@ -207,6 +219,13 @@ impl StyleBuilder {
     #[must_use]
     pub const fn text_right(self) -> Self {
         self.text_alignment(Alignment::Right)
+    }
+
+    #[must_use]
+    pub const fn white_space(mut self, white_space: WhiteSpace) -> Self {
+        self.appearance.white_space = white_space;
+
+        self
     }
 
     // === Layout delegates ===

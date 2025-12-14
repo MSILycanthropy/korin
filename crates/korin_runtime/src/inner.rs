@@ -1,7 +1,7 @@
 use korin_event::{Blur, Event, EventContext, Focus, Listeners};
 use korin_focus::FocusManager;
 use korin_layout::{Layout, LayoutEngine, LayoutInfo, Overflow, Point, Rect, Size};
-use korin_style::{Borders, Style};
+use korin_style::{Borders, Style, WhiteSpace};
 use korin_tree::{NodeId, Tree};
 use slotmap::SecondaryMap;
 
@@ -34,10 +34,11 @@ impl RuntimeInner {
         } else {
             None
         };
+        let wrap = node.computed_style.white_space() == WhiteSpace::Normal;
         let node_id = self.tree.new_leaf(node);
 
         if let Some(ref text) = text {
-            self.layout.insert_text(layout, node_id, text)?;
+            self.layout.insert_text(layout, node_id, text, wrap)?;
             tracing::debug!(node = %node_id, text = text, "create_node");
         } else {
             self.layout.insert(layout, node_id)?;
@@ -142,6 +143,8 @@ impl RuntimeInner {
                 clip_y: node.computed_style.overflow_y() != Overflow::Visible,
                 scroll_x: node.scroll_offset.x,
                 scroll_y: node.scroll_offset.y,
+                scrollbar_width: f32::from(node.computed_style.overflow_y() == Overflow::Scroll),
+                scrollbar_height: 0.0, // TODO: horizontal scrolling
             }
         })?;
 

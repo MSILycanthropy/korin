@@ -2,7 +2,7 @@ use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use korin_event::Listeners;
 use korin_layout::Layout;
-use korin_style::Style;
+use korin_style::{Style, WhiteSpace};
 use korin_tree::NodeId;
 use korin_view::RenderContext;
 
@@ -96,13 +96,15 @@ impl RenderContext for RuntimeContext {
     fn update_text(&mut self, id: NodeId, content: String) {
         let mut runtime = self.runtime_mut();
 
+        let mut wrap = true;
         if let Some(node) = runtime.tree.get_mut(id) {
+            wrap = node.computed_style.white_space() == WhiteSpace::Normal;
             node.content = NodeContent::Text(content.clone());
         }
 
         runtime
             .layout
-            .update_text(id, content)
+            .update_text(id, content, wrap)
             .expect("updating text failed");
     }
 

@@ -342,23 +342,38 @@ impl Layout {
     }
 
     #[must_use]
-    pub const fn overflow(mut self, overflow: Overflow) -> Self {
+    pub fn overflow(mut self, overflow: Overflow) -> Self {
         self.style.overflow = taffy::Point {
             x: overflow,
             y: overflow,
         };
+
+        if overflow == Overflow::Scroll {
+            self.style.scrollbar_width = 1.0;
+        }
+
         self
     }
 
     #[must_use]
-    pub const fn overflow_x(mut self, overflow: Overflow) -> Self {
+    pub fn overflow_x(mut self, overflow: Overflow) -> Self {
         self.style.overflow.x = overflow;
+
+        if overflow == Overflow::Scroll {
+            self.style.scrollbar_width = 1.0;
+        }
+
         self
     }
 
     #[must_use]
-    pub const fn overflow_y(mut self, overflow: Overflow) -> Self {
+    pub fn overflow_y(mut self, overflow: Overflow) -> Self {
         self.style.overflow.y = overflow;
+
+        if overflow == Overflow::Scroll {
+            self.style.scrollbar_width = 1.0;
+        }
+
         self
     }
 
@@ -406,7 +421,7 @@ impl Layout {
 
 impl From<Layout> for Style {
     fn from(value: Layout) -> Self {
-        value.style
+        value.build()
     }
 }
 
