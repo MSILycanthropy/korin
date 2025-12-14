@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use crossterm::event::{self, Event as CtEvent, MouseEvent};
-use korin_event::{Key, KeyCode, MouseDown, Resize, Scroll};
+use korin_event::{Key, KeyCode, MouseDown, MouseMove, Resize, Scroll};
 use korin_runtime::Runtime;
 
 #[derive(Debug)]
@@ -65,6 +65,10 @@ pub fn dispatch(event: &Event, runtime: &Runtime) {
 
             if let Ok(scroll) = Scroll::try_from(*raw) {
                 runtime.scroll(scroll.position, scroll.delta);
+            }
+
+            if let Ok(moved) = MouseMove::try_from(*raw) {
+                runtime.mouse_move(moved.position);
             }
         }
         Event::Tick => {}

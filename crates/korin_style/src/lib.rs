@@ -7,12 +7,14 @@ use crate::appearance::Appearance;
 pub use crate::{
     border::{BorderStyle, Borders},
     color::Color,
+    psuedo::PseudoState,
     text::{Alignment, Modifiers},
 };
 
 mod appearance;
 mod border;
 mod color;
+mod psuedo;
 mod text;
 
 #[derive(Default, Clone, Copy, Debug, PartialEq, Eq)]
@@ -26,6 +28,10 @@ pub enum WhiteSpace {
 pub struct Style {
     appearance: Appearance,
     layout: Layout,
+    on_focus: Option<Box<Self>>,
+    on_hover: Option<Box<Self>>,
+    on_active: Option<Box<Self>>,
+    on_disabled: Option<Box<Self>>,
 }
 
 impl Style {
@@ -100,9 +106,47 @@ impl Style {
     }
 
     #[must_use]
-    pub fn merge(mut self, parent: &Self) -> Self {
-        self.appearance = self.appearance.merge(&parent.appearance);
+    pub fn inherit(mut self, parent: &Self) -> Self {
+        self.appearance = self.appearance.inherit(&parent.appearance);
         self
+    }
+
+    #[must_use]
+    pub fn resolve(&self, state: PseudoState) -> Self {
+        let mut appearance = self.appearance.clone();
+
+        if state.is_disabled()
+            && let Some(s) = &self.on_disabled
+        {
+            appearance = s.appearance.merge(&appearance);
+        }
+
+        if state.is_hovered()
+            && !state.is_disabled()
+            && let Some(ref s) = self.on_hover
+        {
+            appearance = s.appearance.merge(&appearance);
+        }
+
+        if state.is_active()
+            && !state.is_disabled()
+            && let Some(ref s) = self.on_active
+        {
+            appearance = s.appearance.merge(&appearance);
+        }
+
+        if state.is_focused()
+            && !state.is_disabled()
+            && let Some(ref s) = self.on_focus
+        {
+            appearance = s.appearance.merge(&appearance);
+        }
+
+        Self {
+            appearance,
+            layout: self.layout.clone(),
+            ..Default::default()
+        }
     }
 }
 
@@ -110,6 +154,10 @@ impl Style {
 pub struct StyleBuilder {
     appearance: Appearance,
     layout: Layout,
+    on_focus: Option<Box<Style>>,
+    on_hover: Option<Box<Style>>,
+    on_active: Option<Box<Style>>,
+    on_disabled: Option<Box<Style>>,
 }
 
 impl StyleBuilder {
@@ -118,6 +166,10 @@ impl StyleBuilder {
         Style {
             appearance: self.appearance,
             layout: self.layout,
+            on_active: self.on_active,
+            on_hover: self.on_hover,
+            on_disabled: self.on_disabled,
+            on_focus: self.on_focus,
         }
     }
 
@@ -142,43 +194,43 @@ impl StyleBuilder {
 
     #[must_use]
     pub const fn text_color(mut self, color: Color) -> Self {
-        self.appearance = self.appearance.text_color(color);
+        self.appearance.text_color = color;
         self
     }
 
     #[must_use]
     pub const fn background(mut self, color: Color) -> Self {
-        self.appearance = self.appearance.background(color);
+        self.appearance.background = color;
         self
     }
 
     #[must_use]
     pub const fn borders(mut self, borders: Borders) -> Self {
-        self.appearance = self.appearance.borders(borders);
+        self.appearance.borders = borders;
         self
     }
 
     #[must_use]
     pub const fn border_style(mut self, style: BorderStyle) -> Self {
-        self.appearance = self.appearance.border_style(style);
+        self.appearance.border_style = style;
         self
     }
 
     #[must_use]
     pub const fn border_color(mut self, color: Color) -> Self {
-        self.appearance = self.appearance.border_color(color);
+        self.appearance.border_color = color;
         self
     }
 
     #[must_use]
     pub const fn text_alignment(mut self, alignment: Alignment) -> Self {
-        self.appearance = self.appearance.text_alignment(alignment);
+        self.appearance.text_alignment = alignment;
         self
     }
 
     #[must_use]
     pub const fn text_modifiers(mut self, modifiers: Modifiers) -> Self {
-        self.appearance = self.appearance.text_modifiers(modifiers);
+        self.appearance.text_modifiers = modifiers;
         self
     }
 
@@ -484,7 +536,7 @@ impl StyleBuilder {
 
     #[must_use]
     pub const fn z_index(mut self, z: i32) -> Self {
-        self.appearance = self.appearance.z_index(z);
+        self.appearance.z_index = z;
         self
     }
 
@@ -543,8 +595,26 @@ impl StyleBuilder {
     }
 
     #[must_use]
-    pub fn merge(mut self, parent: &Self) -> Self {
-        self.appearance = self.appearance.merge(&parent.appearance);
+    pub fn on_focus(mut self, style: Self) -> Self {
+        self.on_focus = Some(Box::new(style.build()));
+        self
+    }
+
+    #[must_use]
+    pub fn on_hover(mut self, style: Self) -> Self {
+        self.on_hover = Some(Box::new(style.build()));
+        self
+    }
+
+    #[must_use]
+    pub fn on_active(mut self, style: Self) -> Self {
+        self.on_active = Some(Box::new(style.build()));
+        self
+    }
+
+    #[must_use]
+    pub fn on_disabled(mut self, style: Self) -> Self {
+        self.on_disabled = Some(Box::new(style.build()));
         self
     }
 }
@@ -554,6 +624,7 @@ impl From<Layout> for Style {
         Self {
             layout,
             appearance: Appearance::default(),
+            ..Default::default()
         }
     }
 }
@@ -563,6 +634,7 @@ impl From<Appearance> for Style {
         Self {
             appearance,
             layout: Layout::default(),
+            ..Default::default()
         }
     }
 }

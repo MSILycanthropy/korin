@@ -15,6 +15,7 @@ pub use error::{RuntimeError, RuntimeResult};
 use korin_event::{Event, Focus};
 use korin_layout::{Point, Rect, Size};
 use korin_reactive::reactive_graph::owner::{Owner, provide_context};
+use korin_style::PseudoState;
 pub use korin_tree::NodeId;
 use korin_view::{AnyStyle, AnyView, IntoAnyStyle, Render};
 pub use node::{Node, NodeContent};
@@ -84,6 +85,10 @@ impl Runtime {
             inner.focus.focus_next();
             inner.focus.focused()
         }) {
+            if let Some(node) = inner.get_mut(first) {
+                node.pseudo_state.insert(PseudoState::FOCUS);
+            }
+
             inner.emit(first, &Focus);
         }
 
@@ -176,9 +181,15 @@ impl Runtime {
         T: AsPrimitive<f32>,
     {
         let position = position.cast::<f32>();
-        let mut inner = self.inner_mut();
 
-        inner.mouse_down(position);
+        self.inner_mut().mouse_down(position);
+    }
+
+    pub fn mouse_move<T>(&self, position: Point<T>)
+    where
+        T: AsPrimitive<f32>,
+    {
+        self.inner_mut().mouse_move(position.cast());
     }
 
     pub fn scroll<P, D>(&self, position: Point<P>, delta: Point<D>)
@@ -188,15 +199,12 @@ impl Runtime {
     {
         let position = position.cast();
         let delta = delta.cast();
-        let mut inner = self.inner_mut();
 
-        inner.scroll(position, delta);
+        self.inner_mut().scroll(position, delta);
     }
 
     pub fn move_focus(&self, reverse: bool) {
-        let mut inner = self.inner_mut();
-
-        inner.move_focus(reverse);
+        self.inner_mut().move_focus(reverse);
     }
 
     /// Returns the [`RuntimeInner`] of this [`Runtime`].

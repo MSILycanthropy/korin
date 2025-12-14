@@ -46,14 +46,13 @@ pub fn text_input(
     };
 
     let style = move || {
-        if focused.get() {
-            Style::builder().bordered().border_color(Color::Cyan)
-        } else {
-            Style::builder().bordered()
-        }
-        .w(full())
-        .h(3.0)
-        .build()
+        Style::builder()
+            .bordered()
+            .w(full())
+            .h(3.0)
+            .on_focus(Style::builder().border_color(Color::Cyan))
+            .on_hover(Style::builder().border_color(Color::Green))
+            .build()
     };
 
     let on_key = move |key: &EventContext<Key>| {

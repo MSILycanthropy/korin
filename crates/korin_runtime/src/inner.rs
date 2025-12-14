@@ -1,7 +1,7 @@
 use korin_event::{Blur, Event, EventContext, Focus, Listeners};
 use korin_focus::FocusManager;
 use korin_layout::{Layout, LayoutEngine, LayoutInfo, Overflow, Point, Rect, Size};
-use korin_style::{Borders, Style, WhiteSpace};
+use korin_style::{Borders, PseudoState, Style, WhiteSpace};
 use korin_tree::{NodeId, Tree};
 use slotmap::SecondaryMap;
 
@@ -15,6 +15,7 @@ pub struct RuntimeInner {
     pub focus: FocusManager<NodeId>,
     pub event_listeners: SecondaryMap<NodeId, Listeners>,
     pub focusable: SlotSet<NodeId>,
+    pub hovered: Option<NodeId>,
 }
 
 impl RuntimeInner {
@@ -25,6 +26,7 @@ impl RuntimeInner {
             focus: FocusManager::new(),
             event_listeners: SecondaryMap::new(),
             focusable: SlotSet::new(),
+            hovered: None,
         }
     }
 
@@ -112,7 +114,8 @@ impl RuntimeInner {
             return Err(RuntimeError::NodeNotFound(node_id));
         };
 
-        node.computed_style = node.style.clone().merge(inherited);
+        let resolved = node.style.resolve(node.pseudo_state);
+        node.computed_style = resolved.inherit(inherited);
         let computed = node.computed_style.clone();
 
         for child_id in self.tree.children(node_id) {
@@ -262,10 +265,18 @@ impl RuntimeInner {
         );
 
         if let Some(prev) = change.prev() {
+            if let Some(node) = self.get_mut(prev) {
+                node.pseudo_state.remove(PseudoState::FOCUS);
+            }
+
             self.emit(prev, &Blur);
         }
 
         if let Some(next) = change.next() {
+            if let Some(node) = self.get_mut(next) {
+                node.pseudo_state.insert(PseudoState::FOCUS);
+            }
+
             self.emit(next, &Focus);
         }
     }
@@ -288,6 +299,9 @@ impl RuntimeInner {
         }
 
         if let Some(prev) = current {
+            if let Some(node) = self.get_mut(prev) {
+                node.pseudo_state.remove(PseudoState::FOCUS);
+            }
             self.emit(prev, &Blur);
         }
 
@@ -297,8 +311,33 @@ impl RuntimeInner {
             "focus_changed"
         );
 
+        if let Some(node) = self.get_mut(focusable) {
+            node.pseudo_state.insert(PseudoState::FOCUS);
+        }
         self.focus.focus(focusable);
         self.emit(focusable, &Focus);
+    }
+
+    pub(crate) fn mouse_move(&mut self, position: Point) {
+        let hit = self.hit_test(position);
+
+        if hit == self.hovered {
+            return;
+        }
+
+        if let Some(prev) = self.hovered
+            && let Some(node) = self.get_mut(prev)
+        {
+            node.pseudo_state.remove(PseudoState::HOVER);
+        }
+
+        if let Some(next) = hit
+            && let Some(node) = self.get_mut(next)
+        {
+            node.pseudo_state.insert(PseudoState::HOVER);
+        }
+
+        self.hovered = hit;
     }
 
     pub fn rect(&self, id: NodeId) -> Option<Rect> {

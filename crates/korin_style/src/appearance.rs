@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::{Alignment, BorderStyle, Borders, Color, Modifiers, WhiteSpace};
 
-#[derive(Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Clone, Default, PartialEq, Eq)]
 pub struct Appearance {
     pub background: Color,
     pub borders: Borders,
@@ -74,84 +74,7 @@ impl Appearance {
     }
 
     #[must_use]
-    pub const fn text_color(mut self, color: Color) -> Self {
-        self.text_color = color;
-        self
-    }
-
-    #[must_use]
-    pub const fn background(mut self, color: Color) -> Self {
-        self.background = color;
-        self
-    }
-
-    #[must_use]
-    pub const fn borders(mut self, borders: Borders) -> Self {
-        self.borders = borders;
-        self
-    }
-
-    #[must_use]
-    pub const fn border_style(mut self, style: BorderStyle) -> Self {
-        self.border_style = style;
-        self
-    }
-
-    #[must_use]
-    pub const fn border_color(mut self, color: Color) -> Self {
-        self.border_color = color;
-        self
-    }
-
-    #[must_use]
-    pub const fn text_alignment(mut self, alignment: Alignment) -> Self {
-        self.text_alignment = alignment;
-        self
-    }
-
-    #[must_use]
-    pub const fn text_modifiers(mut self, modifiers: Modifiers) -> Self {
-        self.text_modifiers = modifiers;
-        self
-    }
-
-    #[must_use]
-    pub const fn bordered(self) -> Self {
-        self.borders(Borders::ALL)
-    }
-
-    #[must_use]
-    pub const fn text_bold(self) -> Self {
-        self.text_modifiers(self.text_modifiers.union(Modifiers::BOLD))
-    }
-
-    #[must_use]
-    pub const fn text_italic(self) -> Self {
-        self.text_modifiers(self.text_modifiers.union(Modifiers::ITALIC))
-    }
-
-    #[must_use]
-    pub const fn text_underline(self) -> Self {
-        self.text_modifiers(self.text_modifiers.union(Modifiers::UNDERLINE))
-    }
-
-    #[must_use]
-    pub const fn text_dim(self) -> Self {
-        self.text_modifiers(self.text_modifiers.union(Modifiers::DIM))
-    }
-
-    #[must_use]
-    pub const fn text_centered(self) -> Self {
-        self.text_alignment(Alignment::Center)
-    }
-
-    #[must_use]
-    pub const fn text_right(self) -> Self {
-        self.text_alignment(Alignment::Right)
-    }
-
-    #[must_use]
-    pub fn merge(mut self, parent: &Self) -> Self {
+    pub fn inherit(mut self, parent: &Self) -> Self {
         if self.text_color == Color::Reset {
             self.text_color = parent.text_color;
         }
@@ -176,8 +99,22 @@ impl Appearance {
     }
 
     #[must_use]
-    pub const fn z_index(mut self, z: i32) -> Self {
-        self.z_index = z;
-        self
+    pub fn merge(&self, base: &Self) -> Self {
+        Self {
+            text_color: pick(self.text_color, base.text_color),
+            background: pick(self.background, base.background),
+            borders: pick(self.borders, base.borders),
+            border_style: pick(self.border_style, base.border_style),
+            border_color: pick(self.border_color, base.border_color),
+            text_alignment: pick(self.text_alignment, base.text_alignment),
+            text_modifiers: pick(self.text_modifiers, base.text_modifiers),
+            z_index: pick(self.z_index, base.z_index),
+            white_space: pick(self.white_space, base.white_space),
+        }
     }
+}
+
+#[allow(clippy::needless_pass_by_value)]
+fn pick<T: PartialEq + Default>(value: T, base: T) -> T {
+    if value == T::default() { base } else { value }
 }

@@ -1,7 +1,7 @@
 use std::fmt;
 
 use korin_layout::{Point, Size};
-use korin_style::Style;
+use korin_style::{PseudoState, Style};
 
 #[derive(Clone)]
 pub enum NodeContent {
@@ -39,27 +39,32 @@ pub struct Node {
     pub computed_style: Style,
     pub scroll_offset: Point,
     pub content_size: Size,
+    pub pseudo_state: PseudoState,
 }
 
 impl Node {
     #[must_use]
     pub fn container() -> Self {
+        Self::default()
+    }
+
+    pub fn text(text: impl Into<String>) -> Self {
+        Self {
+            content: NodeContent::Text(text.into()),
+            ..Default::default()
+        }
+    }
+}
+
+impl Default for Node {
+    fn default() -> Self {
         Self {
             content: NodeContent::Container,
             style: Style::default(),
             computed_style: Style::default(),
             scroll_offset: Point::default(),
             content_size: Size::default(),
-        }
-    }
-
-    pub fn text(text: impl Into<String>) -> Self {
-        Self {
-            content: NodeContent::Text(text.into()),
-            style: Style::default(),
-            computed_style: Style::default(),
-            scroll_offset: Point::default(),
-            content_size: Size::default(),
+            pseudo_state: PseudoState::NONE,
         }
     }
 }
