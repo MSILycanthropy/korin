@@ -218,6 +218,41 @@ impl RuntimeInner {
         false
     }
 
+    pub fn focus_node(&mut self, id: NodeId) -> bool {
+        if !self.focusable.contains_key(id) {
+            return false;
+        }
+
+        let prev = self.focus.focused();
+
+        if prev == Some(id) {
+            return true;
+        }
+
+        tracing::debug!(
+            prev = ?prev.map(|id| id.to_string()),
+            next = ?id.to_string(),
+            "focus_changed"
+        );
+
+        if let Some(prev_id) = prev {
+            if let Some(node) = self.get_mut(prev_id) {
+                node.pseudo_state.remove(PseudoState::FOCUS);
+            }
+            self.emit(prev_id, &Blur);
+        }
+
+        self.focus.focus(id);
+
+        if let Some(node) = self.get_mut(id) {
+            node.pseudo_state.insert(PseudoState::FOCUS);
+        }
+
+        self.emit(id, &Focus);
+
+        true
+    }
+
     pub(crate) fn scroll(&mut self, position: Point, delta: Point) {
         let Some(hit) = self
             .layout
@@ -249,35 +284,17 @@ impl RuntimeInner {
 
     pub(crate) fn move_focus(&mut self, reverse: bool) {
         let change = if reverse {
-            self.focus.focus_prev()
+            self.focus.prev()
         } else {
-            self.focus.focus_next()
+            self.focus.next()
         };
 
         if !change.relevant() {
             return;
         }
 
-        tracing::debug!(
-            prev = ?change.prev().map(|id| id.to_string()),
-            next = ?change.next().map(|id| id.to_string()),
-            "focus_changed"
-        );
-
-        if let Some(prev) = change.prev() {
-            if let Some(node) = self.get_mut(prev) {
-                node.pseudo_state.remove(PseudoState::FOCUS);
-            }
-
-            self.emit(prev, &Blur);
-        }
-
         if let Some(next) = change.next() {
-            if let Some(node) = self.get_mut(next) {
-                node.pseudo_state.insert(PseudoState::FOCUS);
-            }
-
-            self.emit(next, &Focus);
+            self.focus_node(next);
         }
     }
 
@@ -293,29 +310,11 @@ impl RuntimeInner {
             return;
         };
 
-        let current = self.focus.focused();
-        if current == Some(focusable) {
-            return;
-        }
-
-        if let Some(prev) = current {
-            if let Some(node) = self.get_mut(prev) {
-                node.pseudo_state.remove(PseudoState::FOCUS);
-            }
-            self.emit(prev, &Blur);
-        }
-
-        tracing::debug!(
-            prev = ?current.map(|id| id.to_string()),
-            next = ?focusable.to_string(),
-            "focus_changed"
-        );
+        self.focus_node(focusable);
 
         if let Some(node) = self.get_mut(focusable) {
             node.pseudo_state.insert(PseudoState::FOCUS);
         }
-        self.focus.focus(focusable);
-        self.emit(focusable, &Focus);
     }
 
     pub(crate) fn mouse_move(&mut self, position: Point) {

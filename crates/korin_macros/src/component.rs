@@ -55,6 +55,7 @@ struct Prop {
     name: Ident,
     ty: Box<Type>,
     is_optional: bool,
+    required_option: bool,
 }
 
 fn extract_props(input: &ItemFn) -> syn::Result<Vec<Prop>> {
@@ -84,10 +85,24 @@ fn extract_prop(pat_type: &PatType) -> syn::Result<Prop> {
     let ty = pat_type.ty.clone();
     let is_optional = is_option_type(&ty);
 
+    let required_option = pat_type.attrs.iter().any(|attr| {
+        attr.path().is_ident("prop")
+            && attr
+                .parse_nested_meta(|meta| {
+                    if meta.path.is_ident("required_option") {
+                        Ok(())
+                    } else {
+                        Err(meta.error("unknown prop attribute"))
+                    }
+                })
+                .is_ok()
+    });
+
     Ok(Prop {
         name,
         ty,
         is_optional,
+        required_option,
     })
 }
 
@@ -159,6 +174,13 @@ fn generate_builder_struct(
                 quote! {
                     pub fn #name(mut self, value: impl Into<String>) -> Self {
                         self.#name = Some(value.into());
+                        self
+                    }
+                }
+            } else if p.required_option {
+                quote! {
+                    pub fn #name(mut self, value: impl Into<Option<#inner_ty>>) -> Self {
+                        self.#name = value.into();
                         self
                     }
                 }
@@ -255,10 +277,18 @@ fn generate_component_struct(
 
 fn generate_impl_fn(names: &ComponentNames, input: &ItemFn, ret_type: &Type) -> TokenStream2 {
     let impl_fn_ident = &names.impl_fn_ident;
-    let inputs = &input.sig.inputs;
     let body = &input.block;
 
+    let inputs = input.sig.inputs.iter().map(|arg| match arg {
+        FnArg::Typed(pt) => {
+            let mut pt = pt.clone();
+            pt.attrs.retain(|a| !a.path().is_ident("prop"));
+            FnArg::Typed(pt)
+        }
+        other @ FnArg::Receiver(_) => other.clone(),
+    });
+
     quote! {
-        fn #impl_fn_ident(#inputs) -> #ret_type #body
+        fn #impl_fn_ident(#(#inputs),*) -> #ret_type #body
     }
 }

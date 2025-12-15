@@ -1,4 +1,5 @@
 use korin_event::{Event, EventContext, Listeners};
+use korin_reactive::Ref;
 use korin_tree::NodeId;
 
 use crate::{
@@ -13,6 +14,7 @@ pub struct Container<Ctx: RenderContext + Clone + 'static> {
     children: Vec<AnyView<Ctx>>,
     focusable: bool,
     listeners: Listeners,
+    node_ref: Option<Ref<NodeId>>,
 }
 
 impl<Ctx: RenderContext + Clone> Container<Ctx> {
@@ -23,6 +25,7 @@ impl<Ctx: RenderContext + Clone> Container<Ctx> {
             children: Vec::new(),
             focusable: false,
             listeners: Listeners::new(),
+            node_ref: None,
         }
     }
 
@@ -40,6 +43,12 @@ impl<Ctx: RenderContext + Clone> Container<Ctx> {
     #[must_use]
     pub const fn focusable(mut self, focusable: bool) -> Self {
         self.focusable = focusable;
+        self
+    }
+
+    #[must_use]
+    pub fn node_ref(mut self, r: impl Into<Ref<NodeId>>) -> Self {
+        self.node_ref = Some(r.into());
         self
     }
 
@@ -82,6 +91,10 @@ impl<Ctx: RenderContext + Clone> Render<Ctx> for Container<Ctx> {
 
     fn build(self, ctx: &mut Ctx) -> Self::State {
         let id = ctx.create_container().expect("failed to create container");
+
+        if let Some(ref r) = self.node_ref {
+            r.set(id);
+        }
 
         let style_state = self.style.map(|s| s.inner.build(id, ctx));
 

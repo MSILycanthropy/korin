@@ -1,7 +1,7 @@
 use korin_event::{Blur, EventContext, Focus, Key};
 use korin_macros::component;
-use korin_runtime::StyleProp;
 use korin_runtime::{IntoView, View};
+use korin_runtime::{NodeRef, StyleProp};
 use korin_view::Container as PrimitiveContainer;
 
 pub type KeyHandler = Box<dyn Fn(&EventContext<Key>) + Send + Sync>;
@@ -13,6 +13,7 @@ pub fn container(
     style: Option<StyleProp>,
     children: Option<Vec<View>>,
     focusable: Option<bool>,
+    #[prop(required_option)] node_ref: Option<NodeRef>,
     on_key: Option<KeyHandler>,
     on_focus: Option<FocusHandler>,
     on_blur: Option<BlurHandler>,
@@ -31,6 +32,10 @@ pub fn container(
         for child in children {
             c = c.child(child);
         }
+    }
+
+    if let Some(node_ref) = node_ref {
+        c = c.node_ref(node_ref);
     }
 
     if let Some(handler) = on_blur {

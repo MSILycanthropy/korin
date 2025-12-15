@@ -2,6 +2,7 @@ mod context;
 mod error;
 mod inner;
 mod node;
+mod node_ref;
 
 use std::{
     any::Any,
@@ -19,6 +20,7 @@ use korin_style::PseudoState;
 pub use korin_tree::NodeId;
 use korin_view::{AnyStyle, AnyView, IntoAnyStyle, Render};
 pub use node::{Node, NodeContent};
+pub use node_ref::NodeRef;
 use num_traits::AsPrimitive;
 
 pub type View = AnyView<RuntimeContext>;
@@ -82,7 +84,7 @@ impl Runtime {
         inner.update_focus_order();
 
         if let Some(first) = inner.focus.focused().or_else(|| {
-            inner.focus.focus_next();
+            inner.move_focus(false);
             inner.focus.focused()
         }) {
             if let Some(node) = inner.get_mut(first) {

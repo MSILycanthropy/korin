@@ -10,6 +10,7 @@ async fn main() -> io::Result<()> {
     run_tokio(async || {
         let mut terminal = Terminal::new()?;
         terminal.init()?;
+        eprintln!("before run");
 
         run(&mut runtime, &mut terminal).await
     })
@@ -17,6 +18,7 @@ async fn main() -> io::Result<()> {
 }
 
 async fn run(runtime: &mut Runtime, terminal: &mut Terminal) -> io::Result<()> {
+    eprintln!("BEFORE VIEW CALL");
     let username = RwSignal::new(String::new());
     let password = RwSignal::new(String::new());
 

@@ -9,6 +9,7 @@ use korin_reactive::{
     reactive_graph::traits::{Get, GetUntracked, Set, Update},
 };
 use korin_runtime::IntoView;
+use korin_runtime::NodeRef;
 use korin_style::{Color, Style};
 
 type Submit = Box<dyn Fn(&str) + Send + Sync>;
@@ -17,6 +18,7 @@ type Submit = Box<dyn Fn(&str) + Send + Sync>;
 pub fn text_input(
     value: RwSignal<String>,
     placeholder: Option<String>,
+    node_ref: Option<NodeRef>,
     on_submit: Option<Submit>,
 ) -> impl IntoView {
     let focused = RwSignal::new(false);
@@ -112,6 +114,7 @@ pub fn text_input(
        <Container
             style={style}
             focusable={true}
+            node_ref={node_ref}
             on:key={on_key}
             on:focus={on_focus}
             on:blur={on_blur}

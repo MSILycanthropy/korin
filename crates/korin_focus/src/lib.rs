@@ -67,26 +67,30 @@ impl<Id: Copy + Eq> FocusManager<Id> {
         false
     }
 
-    pub fn focus_next(&mut self) -> FocusChange<Id> {
+    #[must_use]
+    pub fn prev(&self) -> FocusChange<Id> {
         if self.order.is_empty() {
-            tracing::debug!("focus_next: empty order");
-            return FocusChange::EMPTY;
-        }
-
-        let to = (self.index + 1) % self.len();
-
-        self.change_focus(to)
-    }
-
-    pub fn focus_prev(&mut self) -> FocusChange<Id> {
-        if self.order.is_empty() {
-            tracing::debug!("focus_prev: empty order");
             return FocusChange::EMPTY;
         }
 
         let to = self.index.checked_sub(1).unwrap_or(self.order.len() - 1);
+        let prev = self.focused();
+        let next = self.order.get(to).copied();
 
-        self.change_focus(to)
+        FocusChange { prev, next }
+    }
+
+    #[must_use]
+    pub fn next(&self) -> FocusChange<Id> {
+        if self.order.is_empty() {
+            return FocusChange::EMPTY;
+        }
+
+        let to = (self.index + 1) % self.len();
+        let prev = self.focused();
+        let next = self.order.get(to).copied();
+
+        FocusChange { prev, next }
     }
 
     pub fn set_order(&mut self, order: Vec<Id>) {
@@ -119,19 +123,6 @@ impl<Id: Copy + Eq> FocusManager<Id> {
     #[must_use]
     pub const fn is_empty(&self) -> bool {
         self.order.is_empty()
-    }
-
-    fn change_focus(&mut self, to: usize) -> FocusChange<Id> {
-        let prev = self.focused();
-        let from = self.index;
-
-        self.index = to;
-
-        let next = self.focused();
-
-        tracing::debug!(from, to, "change_focus");
-
-        FocusChange { prev, next }
     }
 }
 
@@ -170,43 +161,9 @@ mod tests {
     }
 
     #[test]
-    fn focus_next_cycles_forward() {
-        let mut focus_manager = FocusManager::new();
-        focus_manager.set_order(vec![1, 2, 3]);
-
-        assert_eq!(focus_manager.focused(), Some(1));
-
-        focus_manager.focus_next();
-        assert_eq!(focus_manager.focused(), Some(2));
-
-        focus_manager.focus_next();
-        assert_eq!(focus_manager.focused(), Some(3));
-
-        focus_manager.focus_next();
-        assert_eq!(focus_manager.focused(), Some(1));
-    }
-
-    #[test]
-    fn focus_prev_cycles_backward() {
-        let mut focus_manager = FocusManager::new();
-        focus_manager.set_order(vec![1, 2, 3]);
-
-        assert_eq!(focus_manager.focused(), Some(1));
-
-        focus_manager.focus_prev();
-        assert_eq!(focus_manager.focused(), Some(3));
-
-        focus_manager.focus_prev();
-        assert_eq!(focus_manager.focused(), Some(2));
-
-        focus_manager.focus_prev();
-        assert_eq!(focus_manager.focused(), Some(1));
-    }
-
-    #[test]
-    fn focus_next_on_empty_returns_empty_change() {
-        let mut focus_manager: FocusManager<u32> = FocusManager::new();
-        let change = focus_manager.focus_next();
+    fn next_on_empty_returns_empty_change() {
+        let focus_manager: FocusManager<u32> = FocusManager::new();
+        let change = focus_manager.next();
 
         assert!(!change.relevant());
         assert!(change.prev().is_none());
@@ -214,9 +171,9 @@ mod tests {
     }
 
     #[test]
-    fn focus_prev_on_empty_returns_empty_change() {
-        let mut focus_manager: FocusManager<u32> = FocusManager::new();
-        let change = focus_manager.focus_prev();
+    fn prev_on_empty_returns_empty_change() {
+        let focus_manager: FocusManager<u32> = FocusManager::new();
+        let change = focus_manager.prev();
 
         assert!(!change.relevant());
     }
@@ -226,7 +183,7 @@ mod tests {
         let mut focus_manager = FocusManager::new();
         focus_manager.set_order(vec![1, 2]);
 
-        let change = focus_manager.focus_next();
+        let change = focus_manager.next();
         assert!(change.relevant());
         assert_eq!(change.prev(), Some(1));
         assert_eq!(change.next(), Some(2));
@@ -237,7 +194,7 @@ mod tests {
         let mut focus_manager = FocusManager::new();
         focus_manager.set_order(vec![1]);
 
-        let change = focus_manager.focus_next();
+        let change = focus_manager.next();
         assert!(!change.relevant());
         assert_eq!(change.prev(), Some(1));
         assert_eq!(change.next(), Some(1));
@@ -268,10 +225,6 @@ mod tests {
 
         assert!(focus_manager.is_focused(1));
         assert!(!focus_manager.is_focused(2));
-
-        focus_manager.focus_next();
-        assert!(!focus_manager.is_focused(1));
-        assert!(focus_manager.is_focused(2));
     }
 
     #[test]

@@ -1,5 +1,8 @@
 use any_spawner::ExecutorError;
 
+mod ref_;
+
+pub use ref_::Ref;
 pub mod reactive_graph {
     pub use reactive_graph::*;
 }
@@ -7,6 +10,7 @@ pub mod reactive_graph {
 pub use reactive_graph::{
     computed::Memo,
     effect::Effect,
+    owner::use_context,
     signal::{ReadSignal, RwSignal, WriteSignal, signal},
 };
 
