@@ -12,6 +12,7 @@ use crate::{Node, NodeContent, RuntimeResult, inner::RuntimeInner};
 pub struct RuntimeContext {
     runtime: Arc<RwLock<RuntimeInner>>,
     parent: Option<NodeId>,
+    last_created: Option<NodeId>,
 }
 
 impl RuntimeContext {
@@ -19,6 +20,7 @@ impl RuntimeContext {
         Self {
             runtime,
             parent: None,
+            last_created: None,
         }
     }
 
@@ -27,6 +29,7 @@ impl RuntimeContext {
         Self {
             runtime: self.runtime.clone(),
             parent: Some(parent),
+            last_created: None,
         }
     }
 
@@ -72,6 +75,8 @@ impl RenderContext for RuntimeContext {
             self.runtime_mut().set_root(node).ok()?;
         }
 
+        self.last_created = Some(node);
+
         Some(node)
     }
 
@@ -84,11 +89,15 @@ impl RenderContext for RuntimeContext {
             .create_node(node, Layout::default())
             .ok()?;
 
+        eprintln!("create_text: parent={:?}", self.parent);
+
         if let Some(parent) = self.parent {
             self.runtime_mut().append_child(parent, node).ok()?;
         } else {
             self.runtime_mut().set_root(node).ok()?;
         }
+
+        self.last_created = Some(node);
 
         Some(node)
     }
@@ -134,10 +143,19 @@ impl RenderContext for RuntimeContext {
         self.runtime_mut().event_listeners.insert(id, listeners);
     }
 
+    fn remove_node(&mut self, id: NodeId) {
+        let _ = self.runtime_mut().remove_node(id);
+    }
+
+    fn last_created_node(&self) -> Option<NodeId> {
+        self.last_created
+    }
+
     fn with_parent(&self, parent: NodeId) -> Self {
         Self {
             runtime: self.runtime.clone(),
             parent: Some(parent),
+            last_created: None,
         }
     }
 }

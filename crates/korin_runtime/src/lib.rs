@@ -1,6 +1,7 @@
 mod context;
 mod error;
 mod inner;
+mod lazy;
 mod node;
 mod node_ref;
 
@@ -19,12 +20,16 @@ use korin_reactive::reactive_graph::owner::{Owner, provide_context};
 use korin_style::PseudoState;
 pub use korin_tree::NodeId;
 use korin_view::{AnyStyle, AnyView, IntoAnyStyle, Render};
+pub use lazy::{IntoLazyFn, LazyFn};
 pub use node::{Node, NodeContent};
 pub use node_ref::NodeRef;
 use num_traits::AsPrimitive;
 
 pub type View = AnyView<RuntimeContext>;
 pub type StyleProp = AnyStyle<RuntimeContext>;
+
+pub type ChildFn = LazyFn<View>;
+pub type ConditionFn = LazyFn<bool>;
 
 pub trait IntoStyle: IntoAnyStyle<RuntimeContext> {
     fn into_style(self) -> StyleProp;

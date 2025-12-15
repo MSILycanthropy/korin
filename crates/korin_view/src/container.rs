@@ -119,6 +119,7 @@ impl<Ctx: RenderContext + Clone> Render<Ctx> for Container<Ctx> {
     }
 
     fn rebuild(self, state: &mut Self::State, ctx: &mut Ctx) {
+        eprintln!("Container rebuild: node_id={:?}", state.node_id);
         ctx.update_container(state.node_id);
 
         if let (Some(style), Some(style_state)) = (self.style, &mut state.style_state) {

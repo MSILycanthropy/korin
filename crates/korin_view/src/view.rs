@@ -1,17 +1,21 @@
 use std::any::{Any, TypeId};
 use std::fmt::Debug;
 
+use korin_tree::NodeId;
+
 use crate::{Render, RenderContext};
 
 pub struct AnyState {
     type_id: TypeId,
+    root: Option<NodeId>,
     inner: Box<dyn Any + Send + Sync>,
 }
 
 impl AnyState {
-    pub fn new<T: Send + Sync + 'static>(inner: T, type_id: TypeId) -> Self {
+    pub fn new<T: Send + Sync + 'static>(inner: T, type_id: TypeId, root: Option<NodeId>) -> Self {
         Self {
             type_id,
+            root,
             inner: Box::new(inner),
         }
     }
@@ -26,6 +30,21 @@ impl AnyState {
 
     pub fn downcast_mut<T: 'static>(&mut self) -> Option<&mut T> {
         self.inner.downcast_mut()
+    }
+
+    pub const fn root(&self) -> Option<NodeId> {
+        self.root
+    }
+
+    pub fn replace<T: Send + Sync + 'static>(
+        &mut self,
+        inner: T,
+        type_id: TypeId,
+        root: Option<NodeId>,
+    ) {
+        self.type_id = type_id;
+        self.root = root;
+        self.inner = Box::new(inner);
     }
 }
 
@@ -94,15 +113,45 @@ where
 {
     fn build(self: Box<Self>, ctx: &mut Ctx) -> AnyState {
         let type_id = TypeId::of::<T::State>();
+        let root_before = ctx.last_created_node();
         let state = self.inner.build(ctx);
+        let root_after = ctx.last_created_node();
 
-        AnyState::new(state, type_id)
+        let root = if root_before == root_after {
+            None
+        } else {
+            root_after
+        };
+
+        AnyState::new(state, type_id, root)
     }
 
     fn rebuild(self: Box<Self>, state: &mut AnyState, ctx: &mut Ctx) {
-        if let Some(s) = state.downcast_mut::<T::State>() {
+        let new_type_id = TypeId::of::<T::State>();
+        let old_type_id = state.type_id;
+
+        if old_type_id == new_type_id
+            && let Some(s) = state.downcast_mut::<T::State>()
+        {
             self.inner.rebuild(s, ctx);
+            return;
         }
+
+        if let Some(old_root) = state.root() {
+            ctx.remove_node(old_root);
+        }
+
+        let root_before = ctx.last_created_node();
+        let new_state = self.inner.build(ctx);
+        let root_after = ctx.last_created_node();
+
+        let root = if root_before == root_after {
+            None
+        } else {
+            root_after
+        };
+
+        state.replace(new_state, new_type_id, root);
     }
 }
 

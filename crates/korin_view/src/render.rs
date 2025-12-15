@@ -22,6 +22,9 @@ pub trait RenderContext {
     fn set_focusable(&mut self, id: NodeId);
     fn set_listeners(&mut self, id: NodeId, listeners: Listeners);
 
+    fn remove_node(&mut self, id: NodeId);
+    fn last_created_node(&self) -> Option<NodeId>;
+
     #[must_use]
     fn with_parent(&self, parent: NodeId) -> Self;
 }
