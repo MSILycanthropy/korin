@@ -3,10 +3,9 @@ use std::{
     collections::HashMap,
 };
 
-use crate::{Event, EventContext};
+use crate::{Event, EventContext, Handler, IntoHandler};
 
 type ErasedHandler = Box<dyn Any + Send + Sync>;
-type Handler<E> = Box<dyn Fn(&EventContext<E>) + Send + Sync>;
 
 pub struct Listeners {
     handlers: HashMap<TypeId, Vec<ErasedHandler>>,
@@ -20,14 +19,18 @@ impl Listeners {
         }
     }
 
-    pub fn add<E: Event>(&mut self, handler: impl Fn(&EventContext<E>) + Send + Sync + 'static) {
-        let type_id = TypeId::of::<E>();
-        let boxed: Handler<E> = Box::new(handler);
+    pub fn add<E: Event>(&mut self, handler: impl IntoHandler<E>) {
+        let handler = handler.into_handler();
 
+        if handler.is_none() {
+            return;
+        }
+
+        let type_id = TypeId::of::<E>();
         self.handlers
             .entry(type_id)
             .or_default()
-            .push(Box::new(boxed));
+            .push(Box::new(handler));
     }
 
     pub fn emit<E: Event>(&self, event: &E) -> bool {
@@ -39,8 +42,8 @@ impl Listeners {
         };
 
         for handler in handlers {
-            if let Some(h) = handler.downcast_ref::<Box<dyn Fn(&EventContext<E>) + Send + Sync>>() {
-                h(&context);
+            if let Some(h) = handler.downcast_ref::<Handler<E>>() {
+                h.call(&context);
 
                 if context.is_stopped() {
                     break;

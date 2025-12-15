@@ -1,4 +1,4 @@
-use korin_event::{Blur, Event, EventContext, Focus, Listeners};
+use korin_event::{Blur, Event, EventContext, Focus, Listeners, MouseDown};
 use korin_focus::FocusManager;
 use korin_layout::{Layout, LayoutEngine, LayoutInfo, Overflow, Point, Rect, Size};
 use korin_style::{Borders, PseudoState, Style, WhiteSpace};
@@ -298,10 +298,10 @@ impl RuntimeInner {
         }
     }
 
-    pub(crate) fn mouse_down(&mut self, position: Point) {
+    pub(crate) fn mouse_down(&mut self, event: MouseDown) {
         let Some(hit) = self
             .layout
-            .hit_test(&self.tree, position, |n| n.computed_style.z_index())
+            .hit_test(&self.tree, event.position, |n| n.computed_style.z_index())
         else {
             return;
         };
@@ -311,6 +311,7 @@ impl RuntimeInner {
         };
 
         self.focus_node(focusable);
+        self.emit(focusable, &event);
 
         if let Some(node) = self.get_mut(focusable) {
             node.pseudo_state.insert(PseudoState::FOCUS);

@@ -1,11 +1,13 @@
 mod context;
 mod event;
 mod events;
+mod handler;
 mod listeners;
 
 pub use context::EventContext;
 pub use event::Event;
 pub use events::*;
+pub use handler::*;
 pub use listeners::Listeners;
 
 #[cfg(feature = "crossterm")]

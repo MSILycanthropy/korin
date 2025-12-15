@@ -78,6 +78,22 @@ impl<Ctx: RenderContext + Clone + 'static> IntoStyle<Ctx> for AnyStyle<Ctx> {
     }
 }
 
+impl<Ctx: RenderContext + Clone + 'static> IntoStyle<Ctx> for Option<AnyStyle<Ctx>> {
+    type State = Option<AnyStyleState>;
+
+    fn build(self, id: NodeId, ctx: &mut Ctx) -> Self::State {
+        self.map(|s| s.build(id, ctx))
+    }
+
+    fn rebuild(self, id: NodeId, state: &mut Self::State, ctx: &mut Ctx) {
+        match (self, state.as_mut()) {
+            (Some(style), Some(s)) => style.rebuild(id, s, ctx),
+            (Some(style), None) => *state = Some(style.build(id, ctx)),
+            (None, _) => {}
+        }
+    }
+}
+
 pub trait ErasedStyle<Ctx>: Send + Sync {
     fn build(self: Box<Self>, id: NodeId, ctx: &mut Ctx) -> AnyStyleState;
     fn rebuild(self: Box<Self>, id: NodeId, state: &mut AnyStyleState, ctx: &mut Ctx);

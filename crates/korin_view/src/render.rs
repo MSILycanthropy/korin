@@ -3,7 +3,11 @@ use korin_reactive::reactive_graph::effect::RenderEffect;
 use korin_style::Style;
 use korin_tree::NodeId;
 
-use crate::text::{Text, TextState};
+use crate::{
+    AnyView,
+    text::{Text, TextState},
+    view::AnyState,
+};
 
 pub trait RenderContext {
     fn create_container(&mut self) -> Option<NodeId>;
@@ -97,6 +101,20 @@ where
             (Some(new), None) => *state = Some(new.build(ctx)),
             (None, Some(_)) => *state = None, // TODO: cleanup old state
             (None, None) => {}
+        }
+    }
+}
+
+impl<Ctx: RenderContext + Clone> Render<Ctx> for Vec<AnyView<Ctx>> {
+    type State = Vec<AnyState>;
+
+    fn build(self, ctx: &mut Ctx) -> Self::State {
+        self.into_iter().map(|v| v.build(ctx)).collect()
+    }
+
+    fn rebuild(self, state: &mut Self::State, ctx: &mut Ctx) {
+        for (view, s) in self.into_iter().zip(state.iter_mut()) {
+            view.rebuild(s, ctx);
         }
     }
 }

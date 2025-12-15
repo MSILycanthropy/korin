@@ -13,7 +13,7 @@ use inner::RuntimeInner;
 
 pub use context::RuntimeContext;
 pub use error::{RuntimeError, RuntimeResult};
-use korin_event::{Event, Focus};
+use korin_event::{Event, Focus, MouseDown};
 use korin_layout::{Point, Rect, Size};
 use korin_reactive::reactive_graph::owner::{Owner, provide_context};
 use korin_style::PseudoState;
@@ -178,13 +178,13 @@ impl Runtime {
         self.inner_mut().compute_layout(size)
     }
 
-    pub fn mouse_down<T>(&self, position: Point<T>)
+    pub fn mouse_down<T>(&self, event: MouseDown<T>)
     where
-        T: AsPrimitive<f32>,
+        T: AsPrimitive<f32> + Send + Sync,
     {
-        let position = position.cast::<f32>();
+        let event = event.cast::<f32>();
 
-        self.inner_mut().mouse_down(position);
+        self.inner_mut().mouse_down(event);
     }
 
     pub fn mouse_move<T>(&self, position: Point<T>)

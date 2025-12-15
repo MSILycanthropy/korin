@@ -1,12 +1,8 @@
-use korin_event::{Blur, EventContext, Focus, Key};
+use korin_event::{Blur, Focus, Handler, Key, MouseDown};
 use korin_macros::component;
 use korin_runtime::{IntoView, View};
 use korin_runtime::{NodeRef, StyleProp};
 use korin_view::Container as PrimitiveContainer;
-
-pub type KeyHandler = Box<dyn Fn(&EventContext<Key>) + Send + Sync>;
-pub type FocusHandler = Box<dyn Fn(&EventContext<Focus>) + Send + Sync>;
-pub type BlurHandler = Box<dyn Fn(&EventContext<Blur>) + Send + Sync>;
 
 #[component]
 pub fn container(
@@ -14,9 +10,10 @@ pub fn container(
     children: Option<Vec<View>>,
     focusable: Option<bool>,
     #[prop(required_option)] node_ref: Option<NodeRef>,
-    on_key: Option<KeyHandler>,
-    on_focus: Option<FocusHandler>,
-    on_blur: Option<BlurHandler>,
+    on_key: Option<Handler<Key>>,
+    on_focus: Option<Handler<Focus>>,
+    on_blur: Option<Handler<Blur>>,
+    on_mouse_down: Option<Handler<MouseDown>>,
 ) -> impl IntoView {
     let mut c = PrimitiveContainer::new();
 
@@ -47,6 +44,10 @@ pub fn container(
     }
 
     if let Some(handler) = on_key {
+        c.on(handler);
+    }
+
+    if let Some(handler) = on_mouse_down {
         c.on(handler);
     }
 

@@ -1,4 +1,4 @@
-use korin_event::{Event, EventContext, Listeners};
+use korin_event::{Event, IntoHandler, Listeners};
 use korin_reactive::Ref;
 use korin_tree::NodeId;
 
@@ -69,7 +69,7 @@ impl<Ctx: RenderContext + Clone> Container<Ctx> {
         self
     }
 
-    pub fn on<E: Event>(&mut self, handler: impl Fn(&EventContext<E>) + Send + Sync + 'static) {
+    pub fn on<E: Event>(&mut self, handler: impl IntoHandler<E>) {
         self.listeners.add(handler);
     }
 }

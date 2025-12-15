@@ -289,6 +289,7 @@ fn generate_impl_fn(names: &ComponentNames, input: &ItemFn, ret_type: &Type) -> 
     });
 
     quote! {
+        #[allow(clippy::too_many_arguments)]
         fn #impl_fn_ident(#(#inputs),*) -> #ret_type #body
     }
 }

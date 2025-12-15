@@ -59,7 +59,7 @@ pub fn dispatch(event: &Event, runtime: &Runtime) {
         }
         Event::Mouse(raw) => {
             if let Ok(down) = MouseDown::try_from(*raw) {
-                runtime.mouse_down(down.position);
+                runtime.mouse_down(down);
                 return;
             }
 

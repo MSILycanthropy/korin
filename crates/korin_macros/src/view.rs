@@ -248,7 +248,7 @@ fn generate_element(elem: &Element) -> TokenStream2 {
             let value = &p.value;
 
             if p.name.starts_with("on_") {
-                quote! { .#name(Box::new(#value)) }
+                quote! { .#name(korin_event::IntoHandler::into_handler(#value)) }
             } else if p.name == "style" {
                 quote! { .#name(korin_view::IntoAnyStyle::<korin_runtime::RuntimeContext>::into_style(#value)) }
             }
