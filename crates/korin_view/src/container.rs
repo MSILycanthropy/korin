@@ -3,10 +3,10 @@ use korin_reactive::Ref;
 use korin_tree::NodeId;
 
 use crate::{
-    Render,
+    IntoAnyView, Render,
     render::RenderContext,
     style::{AnyStyle, AnyStyleState, IntoStyle, StyleWrapper},
-    view::{AnyState, AnyView, IntoView},
+    view::{AnyState, AnyView},
 };
 
 pub struct Container<Ctx: RenderContext + Clone + 'static> {
@@ -53,8 +53,8 @@ impl<Ctx: RenderContext + Clone> Container<Ctx> {
     }
 
     #[must_use]
-    pub fn child(mut self, child: impl IntoView<Ctx>) -> Self {
-        self.children.push(child.into_view());
+    pub fn child(mut self, child: impl IntoAnyView<Ctx>) -> Self {
+        self.children.push(child.into_any_view());
         self
     }
 
@@ -62,10 +62,10 @@ impl<Ctx: RenderContext + Clone> Container<Ctx> {
     pub fn children<I, C>(mut self, children: I) -> Self
     where
         I: IntoIterator<Item = C>,
-        C: IntoView<Ctx>,
+        C: IntoAnyView<Ctx>,
     {
         self.children
-            .extend(children.into_iter().map(IntoView::into_view));
+            .extend(children.into_iter().map(IntoAnyView::into_any_view));
         self
     }
 
@@ -119,7 +119,6 @@ impl<Ctx: RenderContext + Clone> Render<Ctx> for Container<Ctx> {
     }
 
     fn rebuild(self, state: &mut Self::State, ctx: &mut Ctx) {
-        eprintln!("Container rebuild: node_id={:?}", state.node_id);
         ctx.update_container(state.node_id);
 
         if let (Some(style), Some(style_state)) = (self.style, &mut state.style_state) {

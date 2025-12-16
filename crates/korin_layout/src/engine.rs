@@ -115,6 +115,30 @@ impl Engine {
         Ok(taffy_id)
     }
 
+    pub fn insert_before(&mut self, child: NodeId, before: NodeId) -> LayoutResult<()> {
+        let child_taffy = self.taffy_node(child)?;
+        let before_taffy = self.taffy_node(before)?;
+
+        let parent_taffy = self
+            .taffy
+            .parent(before_taffy)
+            .ok_or(LayoutError::NodeNotFound(before))?;
+
+        let mut children: Vec<_> = self.taffy.children(parent_taffy)?;
+        children.retain(|&c| c != child_taffy);
+
+        let pos = children
+            .iter()
+            .position(|&c| c == before_taffy)
+            .ok_or(LayoutError::NodeNotFound(before))?;
+
+        children.insert(pos, child_taffy);
+        self.taffy.set_children(parent_taffy, &children)?;
+
+        tracing::debug!(child = %child, before = %before, "insert_before");
+        Ok(())
+    }
+
     pub fn remove(&mut self, id: NodeId) -> LayoutResult<TaffyId> {
         if let Some(taffy_id) = self.nodes.remove(id) {
             let taffy_id = self.taffy.remove(taffy_id)?;

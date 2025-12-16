@@ -7,4 +7,4 @@ pub use korin_reactive::{
 };
 pub use korin_runtime::{NodeRef, Runtime, RuntimeContext, StyleProp, View};
 pub use korin_style::{Alignment, BorderStyle, Borders, Color, Modifiers, Style};
-pub use korin_view::{IntoView, Render, RenderContext};
+pub use korin_view::{IntoAnyView, Render, RenderContext};

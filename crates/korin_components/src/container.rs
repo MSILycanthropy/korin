@@ -1,15 +1,15 @@
 use korin_event::{Blur, Focus, Handler, Key, MouseDown};
 use korin_macros::component;
-use korin_runtime::{IntoView, View};
+use korin_runtime::{Children, IntoView};
 use korin_runtime::{NodeRef, StyleProp};
 use korin_view::Container as PrimitiveContainer;
 
 #[component]
 pub fn container(
     style: Option<StyleProp>,
-    children: Option<Vec<View>>,
+    children: Children,
     focusable: Option<bool>,
-    #[prop(required_option)] node_ref: Option<NodeRef>,
+    #[prop(into)] node_ref: Option<NodeRef>,
     on_key: Option<Handler<Key>>,
     on_focus: Option<Handler<Focus>>,
     on_blur: Option<Handler<Blur>>,
@@ -25,11 +25,7 @@ pub fn container(
         c = c.focusable(focusable);
     }
 
-    if let Some(children) = children {
-        for child in children {
-            c = c.child(child);
-        }
-    }
+    c = c.child(children());
 
     if let Some(node_ref) = node_ref {
         c = c.node_ref(node_ref);

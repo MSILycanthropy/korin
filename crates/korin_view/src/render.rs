@@ -25,6 +25,8 @@ pub trait RenderContext {
     fn remove_node(&mut self, id: NodeId);
     fn last_created_node(&self) -> Option<NodeId>;
 
+    fn insert_before(&mut self, child: NodeId, before: NodeId);
+
     #[must_use]
     fn with_parent(&self, parent: NodeId) -> Self;
 }

@@ -26,30 +26,32 @@ async fn run(runtime: &mut Runtime, terminal: &mut Terminal) -> io::Result<()> {
     let first_ref = first_input.clone();
     let second_ref = second_input.clone();
 
-    let app = view! {
-        <Container style={Style::builder()
-            .col()
-            .w(full())
-            .h(full())
-            .gap(1)
-            .p(1)
-            .background(Color::DarkGray)
-            .build()
-        }>
-            <Container style={Style::builder().h(3).w(full()).bordered().build()}>
-                "Refs Demo - Press J to focus first input, H for second"
-            </Container>
+    let app = || {
+        view! {
+            <Container style={Style::builder()
+                .col()
+                .w(full())
+                .h(full())
+                .gap(1)
+                .p(1)
+                .background(Color::DarkGray)
+                .build()
+            }>
+                <Container style={Style::builder().h(3).w(full()).bordered().build()}>
+                    "Refs Demo - Press J to focus first input, H for second"
+                </Container>
 
-            <Container style={Style::builder().col().gap(1).build()}>
-                "First input:"
-                <TextInput node_ref={first_ref} value={value1} placeholder={"Type here..."} />
-            </Container>
+                <Container style={Style::builder().col().gap(1).build()}>
+                    "First input:"
+                    <TextInput node_ref={first_ref} value={value1} placeholder={"Type here..."} />
+                </Container>
 
-            <Container style={Style::builder().col().gap(1).build()}>
-                "Second input:"
-                <TextInput node_ref={second_ref} value={value2} placeholder={"Or here..."} />
+                <Container style={Style::builder().col().gap(1).build()}>
+                    "Second input:"
+                    <TextInput node_ref={second_ref} value={value2} placeholder={"Or here..."} />
+                </Container>
             </Container>
-        </Container>
+        }
     };
 
     runtime.mount(app).expect("failed to mount");
@@ -77,8 +79,6 @@ fn run_once(
                     std::process::exit(0)
                 }
                 KeyCode::Char(char) => {
-                    eprintln!("pressed {char}");
-
                     if char == 'j' {
                         second.focus();
                         return Ok(());

@@ -1,19 +1,21 @@
 use korin_macros::component;
-use korin_runtime::{ChildFn, ConditionFn, IntoView, View};
-use korin_view::Container;
+use korin_reactive::reactive_graph::{computed::ArcMemo, traits::Get};
+use korin_runtime::{IntoView, TypedChildrenFn, ViewFn};
 
 #[component]
-pub fn show(when: ConditionFn, children: ChildFn, fallback: Option<ChildFn>) -> impl IntoView {
-    let children = children;
-    let fallback = fallback;
+pub fn show<W, C>(when: W, children: TypedChildrenFn<C>, fallback: ViewFn) -> impl IntoView
+where
+    W: Fn() -> bool + Send + Sync + Clone + 'static,
+    C: IntoView + 'static,
+{
+    let memoized_when = ArcMemo::new(move |_| when());
+    let children = children.into_inner();
 
-    move || -> View {
-        if when.call() {
-            children.call()
-        } else if let Some(ref fb) = fallback {
-            fb.call()
+    move || {
+        if memoized_when.get() {
+            children().into_view()
         } else {
-            ().into_view()
+            fallback.run()
         }
     }
 }

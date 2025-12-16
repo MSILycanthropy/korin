@@ -2,12 +2,12 @@ use crate::{Container, ContainerProps};
 use korin_event::{Blur, EventContext, Focus, Handler, Key, KeyCode, MouseButton, MouseDown};
 use korin_layout::Point;
 use korin_macros::{component, view};
-use korin_runtime::{IntoView, NodeRef, StyleProp, View};
+use korin_runtime::{Children, IntoView, NodeRef, StyleProp};
 
 #[component]
 pub fn button(
     style: Option<StyleProp>,
-    children: Option<Vec<View>>,
+    children: Children,
     node_ref: Option<NodeRef>,
     on_click: Option<Handler<MouseDown>>,
     on_key: Option<Handler<Key>>,
@@ -45,7 +45,7 @@ pub fn button(
             on_blur={on_blur}
             on_mouse_down={on_mouse_down}
         >
-            {children}
+            {children()}
         </Container>
     }
 }

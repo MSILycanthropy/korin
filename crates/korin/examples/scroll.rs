@@ -17,7 +17,9 @@ async fn main() -> io::Result<()> {
 }
 
 async fn run(runtime: &mut Runtime, terminal: &mut Terminal) -> io::Result<()> {
-    let app = view! {
+    let lines: Vec<usize> = (1..=20).collect();
+
+    let app = || view! {
         <Container style={Style::builder()
             .w(full())
             .h(full())
@@ -54,26 +56,11 @@ async fn run(runtime: &mut Runtime, terminal: &mut Terminal) -> io::Result<()> {
                         .col()
                         .build()
                     }>
-                        "Line 1"
-                        "Line 2"
-                        "Line 3"
-                        "Line 4"
-                        "Line 5"
-                        "Line 6"
-                        "Line 7"
-                        "Line 8"
-                        "Line 9"
-                        "Line 10"
-                        "Line 11"
-                        "Line 12"
-                        "Line 13"
-                        "Line 14"
-                        "Line 15"
-                        "Line 16"
-                        "Line 17"
-                        "Line 18"
-                        "Line 19"
-                        "Line 20"
+                        <Each
+                            each={move || lines.clone()}
+                            key={|n| *n}
+                            children={|n| format!("Line {n}")}
+                        />
                     </Container>
                 </Container>
 

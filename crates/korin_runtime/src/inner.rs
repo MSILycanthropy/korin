@@ -56,6 +56,12 @@ impl RuntimeInner {
         Ok(())
     }
 
+    pub fn insert_before(&mut self, child: NodeId, before: NodeId) -> RuntimeResult<()> {
+        self.tree.insert_before(child, before)?;
+        self.layout.insert_before(child, before)?;
+        Ok(())
+    }
+
     pub fn append_child(&mut self, parent: NodeId, child: NodeId) -> RuntimeResult<()> {
         self.tree.append(parent, child)?;
         self.layout.append(parent, child)?;

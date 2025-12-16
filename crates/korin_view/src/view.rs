@@ -20,10 +20,12 @@ impl AnyState {
         }
     }
 
+    #[must_use] 
     pub const fn type_id(&self) -> TypeId {
         self.type_id
     }
 
+    #[must_use] 
     pub fn downcast<T: 'static>(&self) -> Option<&T> {
         self.inner.downcast_ref()
     }
@@ -32,6 +34,7 @@ impl AnyState {
         self.inner.downcast_mut()
     }
 
+    #[must_use] 
     pub const fn root(&self) -> Option<NodeId> {
         self.root
     }
@@ -155,17 +158,17 @@ where
     }
 }
 
-pub trait IntoView<Ctx> {
-    fn into_view(self) -> AnyView<Ctx>;
+pub trait IntoAnyView<Ctx> {
+    fn into_any_view(self) -> AnyView<Ctx>;
 }
 
-impl<T, Ctx> IntoView<Ctx> for T
+impl<T, Ctx> IntoAnyView<Ctx> for T
 where
     T: Render<Ctx> + Send + Sync + 'static,
     Ctx: RenderContext + Clone,
     T::State: Send + Sync + 'static,
 {
-    fn into_view(self) -> AnyView<Ctx> {
+    fn into_any_view(self) -> AnyView<Ctx> {
         AnyView {
             type_id: TypeId::of::<T>(),
             inner: Box::new(View { inner: self }),

@@ -1,9 +1,11 @@
+mod children;
 mod context;
 mod error;
 mod inner;
 mod lazy;
 mod node;
 mod node_ref;
+mod owned;
 
 use std::{
     any::Any,
@@ -12,6 +14,7 @@ use std::{
 
 use inner::RuntimeInner;
 
+pub use children::*;
 pub use context::RuntimeContext;
 pub use error::{RuntimeError, RuntimeResult};
 use korin_event::{Event, Focus, MouseDown};
@@ -24,6 +27,7 @@ pub use lazy::{IntoLazyFn, LazyFn};
 pub use node::{Node, NodeContent};
 pub use node_ref::NodeRef;
 use num_traits::AsPrimitive;
+pub use owned::*;
 
 pub type View = AnyView<RuntimeContext>;
 pub type StyleProp = AnyStyle<RuntimeContext>;
@@ -41,13 +45,13 @@ impl<T: IntoAnyStyle<RuntimeContext>> IntoStyle for T {
     }
 }
 
-pub trait IntoView: korin_view::IntoView<RuntimeContext> {
+pub trait IntoView: korin_view::IntoAnyView<RuntimeContext> {
     fn into_view(self) -> View;
 }
 
-impl<T: korin_view::IntoView<RuntimeContext>> IntoView for T {
+impl<T: korin_view::IntoAnyView<RuntimeContext>> IntoView for T {
     fn into_view(self) -> View {
-        korin_view::IntoView::into_view(self)
+        self.into_any_view()
     }
 }
 
@@ -69,19 +73,21 @@ impl Runtime {
         }
     }
 
-    pub fn mount<V>(&mut self, view: V) -> RuntimeResult<()>
+    pub fn mount<V, F>(&mut self, view_fn: F) -> RuntimeResult<()>
     where
+        F: FnOnce() -> V,
         V: Render<RuntimeContext>,
         V::State: 'static,
     {
         let _span = tracing::debug_span!("mount").entered();
 
-        self.owner.set();
-
         provide_context(self.inner.clone());
 
-        let mut ctx = RuntimeContext::new(self.inner.clone());
-        let state = view.build(&mut ctx);
+        let state = self.owner.with(|| {
+            let view = view_fn();
+            let mut ctx = RuntimeContext::new(self.inner.clone());
+            view.build(&mut ctx)
+        });
 
         self.state = Some(Box::new(state));
 

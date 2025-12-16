@@ -17,24 +17,26 @@ async fn main() -> io::Result<()> {
 }
 
 async fn run(runtime: &mut Runtime, terminal: &mut Terminal) -> io::Result<()> {
-    let app = view! {
-        <Container style={Style::builder()
-            .w(20)
-            .h(10)
-            .bordered()
-            .background(Color::Blue)
-            .build()
-        }>
+    let app = || {
+        view! {
             <Container style={Style::builder()
-                .min_w(30)
-                .w(180)
-                .h(20)
-                .background(Color::Red)
+                .w(20)
+                .h(10)
+                .bordered()
+                .background(Color::Blue)
                 .build()
             }>
-                "This text is way too long to fit in the parent container"
+                <Container style={Style::builder()
+                    .min_w(30)
+                    .w(180)
+                    .h(20)
+                    .background(Color::Red)
+                    .build()
+                }>
+                    "This text is way too long to fit in the parent container"
+                </Container>
             </Container>
-        </Container>
+        }
     };
 
     runtime.mount(app).expect("failed to mount");

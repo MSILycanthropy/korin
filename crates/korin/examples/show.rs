@@ -35,7 +35,7 @@ async fn run(runtime: &mut Runtime, terminal: &mut Terminal) -> io::Result<()> {
         .build()
     };
 
-    let app = view! {
+    let app = || view! {
         <Container style={style}>
             <Container style={Style::builder().h(3).w(full()).build()}>
                 "Show Demo - Press the button to toggle visibility"

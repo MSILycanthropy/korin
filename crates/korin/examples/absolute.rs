@@ -17,80 +17,82 @@ async fn main() -> io::Result<()> {
 }
 
 async fn run(runtime: &mut Runtime, terminal: &mut Terminal) -> io::Result<()> {
-    let app = view! {
-        <Container style={Style::builder()
-            .w(full())
-            .h(full())
-            .background(Color::DarkGray)
-            .position(Position::Relative)
-            .build()
-        }>
-            // Normal flow content
+    let app = || {
+        view! {
             <Container style={Style::builder()
-                .w(20)
-                .h(5)
-                .bordered()
-                .background(Color::Blue)
+                .w(full())
+                .h(full())
+                .background(Color::DarkGray)
+                .position(Position::Relative)
                 .build()
             }>
-                "Normal box 1"
-            </Container>
+                // Normal flow content
+                <Container style={Style::builder()
+                    .w(20)
+                    .h(5)
+                    .bordered()
+                    .background(Color::Blue)
+                    .build()
+                }>
+                    "Normal box 1"
+                </Container>
 
-            <Container style={Style::builder()
-                .w(20)
-                .h(5)
-                .bordered()
-                .background(Color::Green)
-                .build()
-            }>
-                "Normal box 2"
-            </Container>
+                <Container style={Style::builder()
+                    .w(20)
+                    .h(5)
+                    .bordered()
+                    .background(Color::Green)
+                    .build()
+                }>
+                    "Normal box 2"
+                </Container>
 
-            // Absolute positioned - top right corner
-            <Container style={Style::builder()
-                .position(Position::Absolute)
-                .top(1)
-                .right(1)
-                .w(15)
-                .h(5)
-                .bordered()
-                .background(Color::Red)
-                .z_index(10)
-                .build()
-            }>
-                "Top Right"
-            </Container>
+                // Absolute positioned - top right corner
+                <Container style={Style::builder()
+                    .position(Position::Absolute)
+                    .top(1)
+                    .right(1)
+                    .w(15)
+                    .h(5)
+                    .bordered()
+                    .background(Color::Red)
+                    .z_index(10)
+                    .build()
+                }>
+                    "Top Right"
+                </Container>
 
-            // Absolute positioned - bottom left
-            <Container style={Style::builder()
-                .position(Position::Absolute)
-                .bottom(1)
-                .left(1)
-                .w(15)
-                .h(5)
-                .bordered()
-                .background(Color::Magenta)
-                .z_index(10)
-                .build()
-            }>
-                "Bottom Left"
-            </Container>
+                // Absolute positioned - bottom left
+                <Container style={Style::builder()
+                    .position(Position::Absolute)
+                    .bottom(1)
+                    .left(1)
+                    .w(15)
+                    .h(5)
+                    .bordered()
+                    .background(Color::Magenta)
+                    .z_index(10)
+                    .build()
+                }>
+                    "Bottom Left"
+                </Container>
 
-            // Absolute centered (using left/top with offset)
-            <Container style={Style::builder()
-                .position(Position::Absolute)
-                .top(10)
-                .left(20)
-                .w(20)
-                .h(7)
-                .bordered()
-                .background(Color::Cyan)
-                .z_index(20)
-                .build()
-            }>
-                "Floating Modal"
+                // Absolute centered (using left/top with offset)
+                <Container style={Style::builder()
+                    .position(Position::Absolute)
+                    .top(10)
+                    .left(20)
+                    .w(20)
+                    .h(7)
+                    .bordered()
+                    .background(Color::Cyan)
+                    .z_index(20)
+                    .build()
+                }>
+                    "Floating Modal"
+                </Container>
             </Container>
-        </Container>
+        }
     };
 
     runtime.mount(app).expect("failed to mount");

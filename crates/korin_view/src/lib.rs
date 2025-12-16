@@ -8,7 +8,7 @@ pub use container::Container;
 pub use render::{Render, RenderContext};
 pub use style::{AnyStyle, IntoAnyStyle};
 pub use text::Text;
-pub use view::{AnyView, IntoView};
+pub use view::{AnyState, AnyView, IntoAnyView};
 
 #[must_use]
 pub fn container<Ctx: RenderContext + Clone>() -> Container<Ctx> {

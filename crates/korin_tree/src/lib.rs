@@ -72,6 +72,30 @@ impl<T> Tree<T> {
         id
     }
 
+    pub fn insert_before(&mut self, child: NodeId, before: NodeId) -> TreeResult<()> {
+        let parent = self.parent(before).ok_or(TreeError::NodeNotFound(before))?;
+
+        let Some(parent_node) = self.nodes.get_mut(parent) else {
+            return Err(TreeError::NodeNotFound(parent));
+        };
+
+        parent_node.children.retain(|&c| c != child);
+
+        let pos = parent_node
+            .children
+            .iter()
+            .position(|&c| c == before)
+            .ok_or(TreeError::NodeNotFound(before))?;
+
+        parent_node.children.insert(pos, child);
+
+        if let Some(child_node) = self.nodes.get_mut(child) {
+            child_node.parent = Some(parent);
+        }
+
+        tracing::debug!(child = %child, before = %before, "insert_before");
+        Ok(())
+    }
     pub fn append(&mut self, parent: NodeId, child: NodeId) -> TreeResult<()> {
         let Some(parent_node) = self.nodes.get_mut(parent) else {
             tracing::warn!(parent = %parent, child = %child, "append failed: parent not found");

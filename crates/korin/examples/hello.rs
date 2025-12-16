@@ -35,38 +35,40 @@ async fn run(runtime: &mut Runtime, terminal: &mut Terminal) -> io::Result<()> {
 
     let display = move || format!("Hello, {}!", greeting.get());
 
-    let app = view! {
-        <Container style={Style::builder()
-            .col()
-            .w(full())
-            .h(full())
-            .gap(1)
-            .p(1)
-            .background(Color::DarkGray)
-            .build()
-        }>
-            <Container style={Style::builder().h(3).w(full()).build()}>
-                {display}
-            </Container>
-
-            <Container style={Style::builder().col().gap(1).build()}>
-                "Enter your name:"
-                <TextInput value={name} placeholder={"Type here..."} />
-            </Container>
-
-            <Button style={Style::builder()
-                .h(3)
-                .w(20)
-                .items(AlignItems::Center)
-                .justify(JustifyContent::Center)
-                .background(Color::Blue)
-                .on_focus(Style::builder().background(Color::Red))
-                .on_hover(Style::builder().background(Color::LightGreen))
+    let app = || {
+        view! {
+            <Container style={Style::builder()
+                .col()
+                .w(full())
+                .h(full())
+                .gap(1)
+                .p(1)
+                .background(Color::DarkGray)
                 .build()
-            } on:click={on_click}>
-                "Greet"
-            </Button>
-        </Container>
+            }>
+                <Container style={Style::builder().h(3).w(full()).build()}>
+                    {display}
+                </Container>
+
+                <Container style={Style::builder().col().gap(1).build()}>
+                    "Enter your name:"
+                    <TextInput value={name} placeholder={"Type here..."} />
+                </Container>
+
+                <Button style={Style::builder()
+                    .h(3)
+                    .w(20)
+                    .items(AlignItems::Center)
+                    .justify(JustifyContent::Center)
+                    .background(Color::Blue)
+                    .on_focus(Style::builder().background(Color::Red))
+                    .on_hover(Style::builder().background(Color::LightGreen))
+                    .build()
+                } on:click={on_click}>
+                    "Greet"
+                </Button>
+            </Container>
+        }
     };
 
     runtime.mount(app).expect("failed to mount");

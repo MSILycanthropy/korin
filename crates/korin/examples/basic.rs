@@ -10,7 +10,6 @@ async fn main() -> io::Result<()> {
     run_tokio(async || {
         let mut terminal = Terminal::new()?;
         terminal.init()?;
-        eprintln!("before run");
 
         run(&mut runtime, &mut terminal).await
     })
@@ -18,29 +17,30 @@ async fn main() -> io::Result<()> {
 }
 
 async fn run(runtime: &mut Runtime, terminal: &mut Terminal) -> io::Result<()> {
-    eprintln!("BEFORE VIEW CALL");
     let username = RwSignal::new(String::new());
     let password = RwSignal::new(String::new());
 
-    let app = view! {
-        <Container style={Style::builder().col().w(full()).h(full()).gap(1).background(Color::DarkGray).overflow(Overflow::Scroll).build()}>
-            <Container style={Style::builder().h(3).w(full()).bordered().background(Color::Blue).build()}>
-                "Login Form"
-            </Container>
-            <Container style={Style::builder().col().grow(1).w(full()).gap(0.5).build()}>
-                <Container style={Style::builder().col().gap(1).build()}>
-                    "Username:"
-                    <TextInput value={username} placeholder={"Enter username..."} />
+    let app = || {
+        view! {
+            <Container style={Style::builder().col().w(full()).h(full()).gap(1).background(Color::DarkGray).overflow(Overflow::Scroll).build()}>
+                <Container style={Style::builder().h(3).w(full()).bordered().background(Color::Blue).build()}>
+                    "Login Form"
                 </Container>
-                <Container style={Style::builder().col().gap(0.5).build()}>
-                    "Password:"
-                    <TextInput value={password} placeholder={"Enter password..."} />
+                <Container style={Style::builder().col().grow(1).w(full()).gap(0.5).build()}>
+                    <Container style={Style::builder().col().gap(1).build()}>
+                        "Username:"
+                        <TextInput value={username} placeholder={"Enter username..."} />
+                    </Container>
+                    <Container style={Style::builder().col().gap(0.5).build()}>
+                        "Password:"
+                        <TextInput value={password} placeholder={"Enter password..."} />
+                    </Container>
+                </Container>
+                <Container style={Style::builder().bordered().background(Color::Magenta).h(3).w(full()).build()}>
+                    "Press Tab to switch fields, Ctrl+Q to quit"
                 </Container>
             </Container>
-            <Container style={Style::builder().bordered().background(Color::Magenta).h(3).w(full()).build()}>
-                "Press Tab to switch fields, Ctrl+Q to quit"
-            </Container>
-        </Container>
+        }
     };
 
     runtime.mount(app).expect("failed to mount");

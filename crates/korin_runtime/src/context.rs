@@ -89,8 +89,6 @@ impl RenderContext for RuntimeContext {
             .create_node(node, Layout::default())
             .ok()?;
 
-        eprintln!("create_text: parent={:?}", self.parent);
-
         if let Some(parent) = self.parent {
             self.runtime_mut().append_child(parent, node).ok()?;
         } else {
@@ -149,6 +147,10 @@ impl RenderContext for RuntimeContext {
 
     fn last_created_node(&self) -> Option<NodeId> {
         self.last_created
+    }
+
+    fn insert_before(&mut self, child: NodeId, before: NodeId) {
+        let _ = self.runtime_mut().insert_before(child, before);
     }
 
     fn with_parent(&self, parent: NodeId) -> Self {

@@ -1,8 +1,10 @@
+// Replace korin_macros/src/component.rs
+
 use convert_case::ccase;
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::{format_ident, quote};
-use syn::{FnArg, Ident, ItemFn, Pat, PatType, ReturnType, Type, Visibility};
+use syn::{FnArg, Generics, Ident, ItemFn, Pat, PatType, ReturnType, Type, Visibility};
 
 use crate::utils::{extract_option_inner, is_option_type, is_string_type, is_string_type_ts};
 
@@ -19,10 +21,11 @@ fn generate_component(input: &ItemFn) -> syn::Result<TokenStream2> {
     let ret_type = validate_return_type(input)?;
     let props = extract_props(input)?;
     let names = generate_names(&input.sig.ident);
+    let generics = &input.sig.generics;
 
-    let props_struct = generate_props_struct(&input.vis, &names, &props);
-    let builder_struct = generate_builder_struct(&input.vis, &names, &props);
-    let component_struct = generate_component_struct(&input.vis, &names, &props);
+    let props_struct = generate_props_struct(&input.vis, &names, &props, generics);
+    let builder_struct = generate_builder_struct(&input.vis, &names, &props, generics);
+    let component_struct = generate_component_struct(&input.vis, &names, &props, generics);
     let impl_fn = generate_impl_fn(&names, input, ret_type);
 
     Ok(quote! {
@@ -55,7 +58,8 @@ struct Prop {
     name: Ident,
     ty: Box<Type>,
     is_optional: bool,
-    required_option: bool,
+    optional: bool,
+    into: bool,
 }
 
 fn extract_props(input: &ItemFn) -> syn::Result<Vec<Prop>> {
@@ -85,24 +89,29 @@ fn extract_prop(pat_type: &PatType) -> syn::Result<Prop> {
     let ty = pat_type.ty.clone();
     let is_optional = is_option_type(&ty);
 
-    let required_option = pat_type.attrs.iter().any(|attr| {
-        attr.path().is_ident("prop")
-            && attr
-                .parse_nested_meta(|meta| {
-                    if meta.path.is_ident("required_option") {
-                        Ok(())
-                    } else {
-                        Err(meta.error("unknown prop attribute"))
-                    }
-                })
-                .is_ok()
-    });
+    let mut optional = false;
+    let mut into = false;
+
+    for attr in &pat_type.attrs {
+        if attr.path().is_ident("prop") {
+            attr.parse_nested_meta(|meta| {
+                if meta.path.is_ident("optional") {
+                    optional = true;
+                } else if meta.path.is_ident("into") {
+                    into = true;
+                }
+                Ok(())
+            })
+            .ok();
+        }
+    }
 
     Ok(Prop {
         name,
         ty,
         is_optional,
-        required_option,
+        optional,
+        into,
     })
 }
 
@@ -116,9 +125,15 @@ fn validate_return_type(input: &ItemFn) -> syn::Result<&Type> {
     }
 }
 
-fn generate_props_struct(vis: &Visibility, names: &ComponentNames, props: &[Prop]) -> TokenStream2 {
+fn generate_props_struct(
+    vis: &Visibility,
+    names: &ComponentNames,
+    props: &[Prop],
+    generics: &Generics,
+) -> TokenStream2 {
     let props_ident = &names.props_ident;
     let builder_ident = &names.builder_ident;
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     let fields = props.iter().map(|p| {
         let name = &p.name;
@@ -127,25 +142,28 @@ fn generate_props_struct(vis: &Visibility, names: &ComponentNames, props: &[Prop
     });
 
     quote! {
-        #vis struct #props_ident {
+        #vis struct #props_ident #impl_generics #where_clause {
             #(#fields),*
         }
 
-        impl #props_ident {
-            pub fn builder() -> #builder_ident {
+        impl #impl_generics #props_ident #ty_generics #where_clause {
+            pub fn builder() -> #builder_ident #ty_generics {
                 #builder_ident::default()
             }
         }
     }
 }
 
+#[allow(clippy::too_many_lines)]
 fn generate_builder_struct(
     vis: &Visibility,
     names: &ComponentNames,
     props: &[Prop],
+    generics: &Generics,
 ) -> TokenStream2 {
     let props_ident = &names.props_ident;
     let builder_ident = &names.builder_ident;
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     let builder_fields = props.iter().map(|p| {
         let name = &p.name;
@@ -177,7 +195,7 @@ fn generate_builder_struct(
                         self
                     }
                 }
-            } else if p.required_option {
+            } else if p.into {
                 quote! {
                     pub fn #name(mut self, value: impl Into<Option<#inner_ty>>) -> Self {
                         self.#name = value.into();
@@ -202,6 +220,13 @@ fn generate_builder_struct(
                         self
                     }
                 }
+            } else if p.into {
+                quote! {
+                    pub fn #name(mut self, value: impl Into<#ty>) -> Self {
+                        self.#name = Some(value.into());
+                        self
+                    }
+                }
             } else {
                 quote! {
                     pub fn #name(mut self, value: #ty) -> Self {
@@ -217,17 +242,19 @@ fn generate_builder_struct(
         let name = &p.name;
         if p.is_optional {
             quote! { #name: self.#name }
+        } else if p.optional {
+            quote! { #name: self.#name.unwrap_or_default() }
         } else {
             quote! { #name: self.#name.expect(concat!("required prop '", stringify!(#name), "' not set")) }
         }
     });
 
     quote! {
-        #vis struct #builder_ident {
+        #vis struct #builder_ident #impl_generics #where_clause {
             #(#builder_fields),*
         }
 
-        impl #builder_ident {
+        impl #impl_generics #builder_ident #ty_generics #where_clause {
             pub fn new() -> Self {
                 Self {
                     #(#builder_defaults),*
@@ -236,14 +263,14 @@ fn generate_builder_struct(
 
             #(#builder_methods)*
 
-            pub fn build(self) -> #props_ident {
+            pub fn build(self) -> #props_ident #ty_generics {
                 #props_ident {
                     #(#build_fields),*
                 }
             }
         }
 
-        impl Default for #builder_ident {
+        impl #impl_generics Default for #builder_ident #ty_generics #where_clause {
             fn default() -> Self {
                 Self::new()
             }
@@ -255,21 +282,23 @@ fn generate_component_struct(
     vis: &Visibility,
     names: &ComponentNames,
     props: &[Prop],
+    generics: &Generics,
 ) -> TokenStream2 {
     let struct_name = &names.struct_name;
     let props_ident = &names.props_ident;
     let impl_fn_ident = &names.impl_fn_ident;
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     let prop_names = props.iter().map(|p| &p.name);
 
     quote! {
-        #vis struct #struct_name(pub #props_ident);
+        #vis struct #struct_name #impl_generics (pub #props_ident #ty_generics) #where_clause;
 
-        impl korin_view::IntoView<korin_runtime::RuntimeContext> for #struct_name {
-            fn into_view(self) -> korin_runtime::View {
+        impl #impl_generics korin_view::IntoAnyView<korin_runtime::RuntimeContext> for #struct_name #ty_generics #where_clause {
+            fn into_any_view(self) -> korin_runtime::View {
                 let result = #impl_fn_ident(#(self.0.#prop_names),*);
 
-                korin_view::IntoView::into_view(result)
+                result.into_any_view()
             }
         }
     }
@@ -278,6 +307,8 @@ fn generate_component_struct(
 fn generate_impl_fn(names: &ComponentNames, input: &ItemFn, ret_type: &Type) -> TokenStream2 {
     let impl_fn_ident = &names.impl_fn_ident;
     let body = &input.block;
+    let generics = &input.sig.generics;
+    let (impl_generics, _, where_clause) = generics.split_for_impl();
 
     let inputs = input.sig.inputs.iter().map(|arg| match arg {
         FnArg::Typed(pt) => {
@@ -290,6 +321,6 @@ fn generate_impl_fn(names: &ComponentNames, input: &ItemFn, ret_type: &Type) -> 
 
     quote! {
         #[allow(clippy::too_many_arguments)]
-        fn #impl_fn_ident(#(#inputs),*) -> #ret_type #body
+        fn #impl_fn_ident #impl_generics (#(#inputs),*) -> #ret_type #where_clause #body
     }
 }

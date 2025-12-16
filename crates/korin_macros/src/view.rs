@@ -11,8 +11,6 @@ pub fn implmentation(input: TokenStream) -> TokenStream {
     }
 }
 
-const LAZY_CHILDREN_COMPONENTS: &[&str] = &["Show"];
-
 #[derive(Debug)]
 enum Node {
     Element(Element),
@@ -25,12 +23,6 @@ struct Element {
     name: String,
     props: Vec<Prop>,
     children: Vec<Node>,
-}
-
-impl Element {
-    fn has_lazy_children(&self) -> bool {
-        LAZY_CHILDREN_COMPONENTS.contains(&self.name.as_str())
-    }
 }
 
 #[derive(Debug)]
@@ -240,14 +232,13 @@ fn generate_node(node: &Node) -> TokenStream2 {
     match node {
         Node::Element(elem) => generate_element(elem),
         Node::Fragment(children) => generate_fragment(children),
-        Node::Expr(expr) => quote! { korin_view::IntoView::into_view((#expr)) },
+        Node::Expr(expr) => quote! { korin_view::IntoAnyView::into_any_view((#expr)) },
     }
 }
 
 fn generate_element(elem: &Element) -> TokenStream2 {
     let name = format_ident!("{}", elem.name);
     let props_name = format_ident!("{}Props", elem.name);
-    let lazy_children = elem.has_lazy_children();
 
     let prop_setters: Vec<_> = elem
         .props
@@ -260,11 +251,10 @@ fn generate_element(elem: &Element) -> TokenStream2 {
                 quote! { .#name(korin_event::IntoHandler::into_handler(#value)) }
             } else if p.name == "style" {
                 quote! { .#name(korin_view::IntoAnyStyle::<korin_runtime::RuntimeContext>::into_style(#value)) }
-            }else if p.name == "when" {
-                quote! { .#name(korin_runtime::IntoLazyFn::into_lazy(#value)) }
             } else if p.name == "fallback" {
-                quote! { .#name(korin_runtime::IntoLazyFn::into_lazy(|| korin_view::IntoView::into_view((#value)()))) }
-            } else {
+                quote! { .#name(korin_runtime::ViewFn::from(#value)) }
+            }
+            else {
                 quote! { .#name(#value) }
             }
         })
@@ -272,20 +262,17 @@ fn generate_element(elem: &Element) -> TokenStream2 {
 
     let children_code = if elem.children.is_empty() {
         quote! {}
-    } else if lazy_children {
+    } else {
         let child_exprs: Vec<_> = elem.children.iter().map(generate_node).collect();
         if child_exprs.len() == 1 {
             let child = &child_exprs[0];
-            quote! { .children(korin_runtime::IntoLazyFn::into_lazy(|| #child)) }
+            quote! { .children(korin_runtime::ToChildren::to_children(move || #child)) }
         } else {
-            quote! { .children(korin_runtime::IntoLazyFn::into_lazy(|| {
+            quote! { .children(korin_runtime::ToChildren::to_children(move || {
                 let children: Vec<korin_runtime::View> = vec![#(#child_exprs),*];
-                korin_view::IntoView::into_view(children)
+                korin_view::IntoAnyView::into_any_view(children)
             })) }
         }
-    } else {
-        let child_exprs: Vec<_> = elem.children.iter().map(generate_node).collect();
-        quote! { .children(vec![#(#child_exprs),*]) }
     };
 
     quote! {
@@ -296,7 +283,7 @@ fn generate_element(elem: &Element) -> TokenStream2 {
                 .build()
             );
 
-            korin_view::IntoView::into_view(result)
+            korin_view::IntoAnyView::into_any_view(result)
         }
     }
 }
