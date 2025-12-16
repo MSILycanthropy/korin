@@ -37,6 +37,8 @@ where
     W: Write,
 {
     pub fn init(&mut self) -> io::Result<()> {
+        crate::panic::install_panic_hook();
+
         terminal::enable_raw_mode()?;
         execute!(
             self.writer,

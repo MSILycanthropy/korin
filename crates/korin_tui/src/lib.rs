@@ -1,6 +1,7 @@
 mod buffer;
 mod cell;
 mod event;
+mod panic;
 mod renderer;
 mod symbols;
 mod terminal;
