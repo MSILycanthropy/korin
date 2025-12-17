@@ -251,8 +251,6 @@ fn generate_element(elem: &Element) -> TokenStream2 {
                 quote! { .#name(korin_event::IntoHandler::into_handler(#value)) }
             } else if p.name == "style" {
                 quote! { .#name(korin_view::IntoAnyStyle::<korin_runtime::RuntimeContext>::into_style(#value)) }
-            } else if p.name == "fallback" {
-                quote! { .#name(korin_runtime::ViewFn::from(#value)) }
             }
             else {
                 quote! { .#name(#value) }

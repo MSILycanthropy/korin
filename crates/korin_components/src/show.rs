@@ -3,7 +3,11 @@ use korin_reactive::reactive_graph::{computed::ArcMemo, traits::Get};
 use korin_runtime::{IntoView, TypedChildrenFn, ViewFn};
 
 #[component]
-pub fn show<W, C>(when: W, children: TypedChildrenFn<C>, fallback: ViewFn) -> impl IntoView
+pub fn show<W, C>(
+    when: W,
+    children: TypedChildrenFn<C>,
+    #[prop(into)] fallback: ViewFn,
+) -> impl IntoView
 where
     W: Fn() -> bool + Send + Sync + Clone + 'static,
     C: IntoView + 'static,
