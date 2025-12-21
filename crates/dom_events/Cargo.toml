@@ -1,0 +1,12 @@
+[package]
+name = "dom_events"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+bitflags.workspace = true
+euclid.workspace = true
+keyboard-types.workspace = true
+
+[lints]
+workspace = true

@@ -17,3 +17,9 @@ unwrap_used = { level = "forbid", priority = 1 }
 missing_errors_doc = { level = "allow", priority = 1 }
 
 [workspace.dependencies]
+dom_events = { workspace = true, path = "crates/dom_events" }
+
+bitflags = "2"
+euclid = "0.22"
+keyboard-types = "0.8"
+markup5ever = "0.36"

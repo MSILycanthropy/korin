@@ -1,0 +1,12 @@
+[package]
+name = "korin_core"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+dom_events.workspace = true
+euclid.workspace = true
+markup5ever.workspace = true
+
+[lints]
+workspace = true
