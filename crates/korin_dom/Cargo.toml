@@ -1,0 +1,10 @@
+[package]
+name = "korin_dom"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+slotmap.workspace = true
+
+[lints]
+workspace = true

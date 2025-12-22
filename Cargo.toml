@@ -18,8 +18,10 @@ missing_errors_doc = { level = "allow", priority = 1 }
 
 [workspace.dependencies]
 dom_events = { workspace = true, path = "crates/dom_events" }
+korin_core = { workspace = true, path = "crates/korin_core" }
 
 bitflags = "2"
 euclid = "0.22"
 keyboard-types = "0.8"
 markup5ever = "0.36"
+slotmap = "1"
