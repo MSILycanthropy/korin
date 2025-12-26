@@ -17,11 +17,18 @@ enum_glob_use = { level = "allow", priority = 1 }
 missing_errors_doc = { level = "allow", priority = 1 }
 
 [workspace.dependencies]
+# korin deps
 dom_events = { workspace = true, path = "crates/dom_events" }
 korin_core = { workspace = true, path = "crates/korin_core" }
 
+# member deps
 bitflags = "2"
-euclid = "0.22"
 keyboard-types = "0.8"
-markup5ever = "0.36"
 slotmap = "1"
+thiserror = "2"
+rustc-hash = "2"
+
+# Servo deps
+cssparser = "0.36"
+euclid = "0.22"
+markup5ever = "0.36"

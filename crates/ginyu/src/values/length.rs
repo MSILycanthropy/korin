@@ -51,7 +51,7 @@ pub enum CalcExpr {
     Percent(f32),
     Add(Box<CalcExpr>, Box<CalcExpr>),
     Sub(Box<CalcExpr>, Box<CalcExpr>),
-    Mul(Box<CalcExpr>, f32),
+    Mult(Box<CalcExpr>, f32),
     Div(Box<CalcExpr>, f32),
 }
 
@@ -68,7 +68,7 @@ impl CalcExpr {
             Self::Percent(p) => parent * p / 100.0,
             Self::Add(a, b) => a.resolve_f32(parent) + b.resolve_f32(parent),
             Self::Sub(a, b) => a.resolve_f32(parent) - b.resolve_f32(parent),
-            Self::Mul(a, n) => a.resolve_f32(parent) * n,
+            Self::Mult(a, n) => a.resolve_f32(parent) * n,
             Self::Div(a, n) => a.resolve_f32(parent) / n,
         }
     }
@@ -129,7 +129,7 @@ mod tests {
     #[test]
     fn calc_mul_div() {
         // calc(50% * 2)
-        let expr = CalcExpr::Mul(Box::new(CalcExpr::Percent(50.0)), 2.0);
+        let expr = CalcExpr::Mult(Box::new(CalcExpr::Percent(50.0)), 2.0);
         assert_eq!(expr.resolve(100), 100);
 
         // calc(100 / 4)

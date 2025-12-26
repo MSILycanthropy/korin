@@ -6,7 +6,6 @@ use crate::{
 
 keyword_enum! {
     pub enum Property {
-
         Display = "display",
 
         FlexDirection = "flex-direction",
@@ -169,9 +168,9 @@ impl PropertyName {
 macro_rules! impl_from {
     ($($variant:ident($ty:ty)),* $(,)?) => {
         $(
-            impl From<$ty> for PropertyValue {
+            impl From<$ty> for Value {
                 fn from(v: $ty) -> Self {
-                    PropertyValue::$variant(v)
+                    Value::$variant(v)
                 }
             }
         )*
@@ -180,11 +179,11 @@ macro_rules! impl_from {
 
 macro_rules! impl_accessors {
     ($($name:ident -> $variant:ident($ty:ty)),* $(,)?) => {
-        impl PropertyValue {
+        impl Value {
             $(
                 pub const fn $name(&self) -> Option<&$ty> {
                     match self {
-                        PropertyValue::$variant(v) => Some(v),
+                        Value::$variant(v) => Some(v),
                         _ => None,
                     }
                 }
@@ -194,7 +193,7 @@ macro_rules! impl_accessors {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum PropertyValue {
+pub enum Value {
     Display(Display),
     FlexDirection(FlexDirection),
     FlexWrap(FlexWrap),
@@ -268,7 +267,7 @@ impl_accessors! {
     as_color -> Color(Color),
 }
 
-impl PropertyValue {
+impl Value {
     #[must_use]
     pub const fn cells(cells: i16) -> Self {
         Self::Length(Length::Cells(cells))
@@ -359,29 +358,23 @@ mod tests {
 
     #[test]
     fn convenience_constructors() {
-        assert_eq!(
-            PropertyValue::cells(10),
-            PropertyValue::Length(Length::Cells(10))
-        );
-        assert_eq!(
-            PropertyValue::auto(),
-            PropertyValue::Dimension(Dimension::Auto)
-        );
+        assert_eq!(Value::cells(10), Value::Length(Length::Cells(10)));
+        assert_eq!(Value::auto(), Value::Dimension(Dimension::Auto));
     }
 
     #[test]
     fn from_impls() {
-        let v: PropertyValue = Display::Flex.into();
+        let v: Value = Display::Flex.into();
         assert_eq!(v.as_display(), Some(&Display::Flex));
 
-        let v: PropertyValue = Color::RED.into();
+        let v: Value = Color::RED.into();
         assert_eq!(v.as_color(), Some(&Color::RED));
     }
 
     #[test]
     fn global_keywords() {
-        assert!(PropertyValue::Inherit.is_inherit());
-        assert!(!PropertyValue::Inherit.is_initial());
-        assert!(PropertyValue::Initial.is_initial());
+        assert!(Value::Inherit.is_inherit());
+        assert!(!Value::Inherit.is_initial());
+        assert!(Value::Initial.is_initial());
     }
 }
