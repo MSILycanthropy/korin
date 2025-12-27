@@ -60,6 +60,8 @@ pub fn parse_property_value<'i>(
         Visibility => parse_visibility(input).map(Value::Visibility),
 
         ZIndex => parse_integer(input).map(Value::Integer),
+
+        Custom(_) => unreachable!(),
     }
 }
 

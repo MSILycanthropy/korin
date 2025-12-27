@@ -1,10 +1,11 @@
 use crate::{
-    AlignItems, AlignSelf, BorderStyle, Color, Dimension, Display, FlexDirection, FlexWrap,
-    FontStyle, FontWeight, JustifyContent, Length, Overflow, OverflowWrap, TextAlign,
-    TextDecoration, VerticalAlign, Visibility, WhiteSpace, macros::keyword_enum,
+    AlignItems, AlignSelf, BorderStyle, Color, CustomValue, Dimension, Display, FlexDirection,
+    FlexWrap, FontStyle, FontWeight, JustifyContent, Length, Overflow, OverflowWrap, TextAlign,
+    TextDecoration, UnresolvedValue, VerticalAlign, Visibility, WhiteSpace, macros::keyword_enum,
 };
 
 keyword_enum! {
+    #[derive(Copy)]
     pub enum Property {
         Display = "display",
 
@@ -69,6 +70,8 @@ keyword_enum! {
         Visibility = "visibility",
 
         ZIndex = "z-index",
+
+        @custom
     }
 }
 
@@ -222,6 +225,9 @@ pub enum Value {
 
     Inherit,
     Initial,
+
+    Unresolved(UnresolvedValue),
+    Custom(CustomValue),
 }
 
 impl_from! {
@@ -296,6 +302,37 @@ impl Value {
     pub const fn as_integer(&self) -> Option<i16> {
         match self {
             Self::Integer(v) => Some(*v),
+            _ => None,
+        }
+    }
+
+    #[must_use]
+    pub const fn is_unresolved(&self) -> bool {
+        matches!(self, Self::Unresolved(_))
+    }
+
+    #[must_use]
+    pub const fn as_unresolved(&self) -> Option<&UnresolvedValue> {
+        match self {
+            Self::Unresolved(u) => Some(u),
+            _ => None,
+        }
+    }
+
+    #[must_use]
+    pub fn as_unresolved_css(&self) -> Option<&str> {
+        self.as_unresolved().map(|u| u.css.as_str())
+    }
+
+    #[must_use]
+    pub const fn is_custom(&self) -> bool {
+        matches!(self, Self::Custom(_))
+    }
+
+    #[must_use]
+    pub const fn as_custom(&self) -> Option<&CustomValue> {
+        match self {
+            Self::Custom(c) => Some(c),
             _ => None,
         }
     }

@@ -1,8 +1,9 @@
-use cssparser::{Parser, parse_important};
+use cssparser::{Parser, Token, parse_important};
+use ginyu_poses::Pose;
 
 use crate::{
-    Color, Dimension, GlobalKeyword, Length, ParseErrorKind, ParseResult, Property, PropertyName,
-    Shorthand, Specified, UnresolvedValue, Value,
+    Color, CustomValue, Dimension, GlobalKeyword, Length, ParseErrorKind, ParseResult, Property,
+    PropertyName, Shorthand, UnresolvedValue, Value,
     parser::{
         error::build_err, parse_border_style, parse_color, parse_dimension, parse_length,
         parse_number, parse_overflow, parse_value_with_vars, value::parse_property_value,
@@ -12,12 +13,12 @@ use crate::{
 #[derive(Debug, Clone, PartialEq)]
 pub struct Declaration {
     pub property: Property,
-    pub value: Specified<Value>,
+    pub value: Value,
     pub important: bool,
 }
 
 impl Declaration {
-    pub fn new(property: Property, value: impl Into<Specified<Value>>) -> Self {
+    pub fn new(property: Property, value: impl Into<Value>) -> Self {
         Self {
             property,
             value: value.into(),
@@ -28,19 +29,19 @@ impl Declaration {
     pub const fn unresolved(property: Property, value: UnresolvedValue, important: bool) -> Self {
         Self {
             property,
-            value: Specified::Unresolved(value),
+            value: Value::Unresolved(value),
             important,
         }
     }
 }
 
-fn try_parse_global(input: &mut Parser<'_, '_>) -> Option<Specified<Value>> {
+fn try_parse_global(input: &mut Parser<'_, '_>) -> Option<Value> {
     input
         .try_parse(|i| {
             let ident = i.expect_ident().map_err(|_| ())?;
             match GlobalKeyword::from_name(ident) {
-                Some(GlobalKeyword::Inherit) => Ok(Specified::Inherit),
-                Some(GlobalKeyword::Initial) => Ok(Specified::Initial),
+                Some(GlobalKeyword::Inherit) => Ok(Value::Inherit),
+                Some(GlobalKeyword::Initial) => Ok(Value::Initial),
                 None => Err(()),
             }
         })
@@ -53,6 +54,10 @@ pub fn parse_declaration<'i>(
     input: &mut Parser<'i, '_>,
 ) -> ParseResult<'i, Vec<Declaration>> {
     let location = input.current_source_location();
+
+    if let Some(custom_name) = name.strip_prefix("--") {
+        return parse_custom_property_declaration(Pose::from(custom_name), input);
+    }
 
     let property_name = PropertyName::from_name(name)
         .ok_or_else(|| build_err(ParseErrorKind::UnknownProperty(name.to_string()), location))?;
@@ -81,6 +86,64 @@ pub fn parse_declaration<'i>(
     }
 
     Ok(declarations)
+}
+
+fn parse_custom_property_declaration<'i>(
+    name: Pose,
+    input: &mut Parser<'i, '_>,
+) -> ParseResult<'i, Vec<Declaration>> {
+    let property = Property::Custom(name);
+
+    let result = input.try_parse(|i| {
+        let ident = i.expect_ident().map_err(|_| ())?;
+        match ident.as_ref() {
+            "inherit" => Ok(CustomValue::Inherit),
+            "initial" => Ok(CustomValue::Initial),
+            _ => Err(()),
+        }
+    });
+
+    if let Ok(value) = result {
+        let important = parse_important(input).is_ok();
+
+        return Ok(vec![Declaration {
+            property,
+            value: Value::Custom(value),
+            important,
+        }]);
+    }
+
+    if let Some(unresolved) = parse_value_with_vars(input)? {
+        let important = parse_important(input).is_ok();
+
+        return Ok(vec![Declaration {
+            property,
+            value: Value::Custom(CustomValue::Unresolved(unresolved)),
+            important,
+        }]);
+    }
+
+    let start = input.position();
+    while !input.is_exhausted() {
+        let state = input.state();
+        if matches!(input.next(), Ok(Token::Delim('!')))
+            && input
+                .try_parse(|i| i.expect_ident_matching("important"))
+                .is_ok()
+            {
+                input.reset(&state);
+                break;
+            }
+    }
+
+    let raw = input.slice_from(start).trim().to_string();
+    let important = parse_important(input).is_ok();
+
+    Ok(vec![Declaration {
+        property,
+        value: Value::Custom(CustomValue::Resolved(raw)),
+        important,
+    }])
 }
 
 fn parse_shorthand<'i>(
@@ -186,11 +249,7 @@ fn shorthand_properties(shorthand: Shorthand) -> Vec<Property> {
     }
 }
 
-fn expand_to_properties(
-    name: PropertyName,
-    value: &Specified<Value>,
-    important: bool,
-) -> Vec<Declaration> {
+fn expand_to_properties(name: PropertyName, value: &Value, important: bool) -> Vec<Declaration> {
     let properties = match name {
         PropertyName::Longhand(property) => vec![property],
         PropertyName::Shorthand(shorthand) => shorthand_properties(shorthand),
@@ -460,14 +519,14 @@ mod tests {
     fn inherit_keyword() {
         let decls = parse("color", "inherit").expect("failed");
         assert_eq!(decls.len(), 1);
-        assert_eq!(decls[0].value, Specified::Inherit);
+        assert_eq!(decls[0].value, Value::Inherit);
     }
 
     #[test]
     fn initial_keyword() {
         let decls = parse("margin", "initial").expect("failed");
         assert_eq!(decls.len(), 4);
-        assert!(decls.iter().all(|d| d.value == Specified::Initial));
+        assert!(decls.iter().all(|d| d.value == Value::Initial));
     }
 
     #[test]

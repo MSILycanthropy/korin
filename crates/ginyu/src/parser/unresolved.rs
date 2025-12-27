@@ -1,4 +1,5 @@
 use cssparser::{Parser, SourcePosition, Token, TokenSerializationType};
+use ginyu_poses::Pose;
 
 use crate::{ParseErrorKind, ParseResult, UnresolvedValue, VarFallback, VarReference};
 
@@ -151,7 +152,7 @@ fn parse_var_function<'i>(
     let name_token = input.expect_ident()?;
 
     let name = if let Some(stripped) = name_token.strip_prefix("--") {
-        stripped.to_string()
+        Pose::from(stripped)
     } else {
         return Err(input.new_custom_error(ParseErrorKind::InvalidVariable));
     };
@@ -213,6 +214,11 @@ fn byte_offset(start: SourcePosition, current: SourcePosition) -> usize {
 
 #[cfg(test)]
 mod tests {
+    use ginyu_poses::Pose;
+    use rustc_hash::FxHashMap;
+
+    use crate::SubstituteError;
+
     use super::*;
     use cssparser::ParserInput;
 
@@ -220,6 +226,13 @@ mod tests {
         let mut input = ParserInput::new(s);
         let mut parser = Parser::new(&mut input);
         parse_value_with_vars(&mut parser).ok().flatten()
+    }
+
+    fn make_vars(pairs: &[(&str, &str)]) -> FxHashMap<Pose, String> {
+        pairs
+            .iter()
+            .map(|(k, v)| (Pose::from(*k), (*v).to_string()))
+            .collect()
     }
 
     #[test]
@@ -233,7 +246,7 @@ mod tests {
     fn simple_var() {
         let result = parse("var(--primary)").expect("failed");
         assert_eq!(result.references.len(), 1);
-        assert_eq!(result.references[0].name, "primary");
+        assert!(result.references[0].name == "primary");
         assert!(result.references[0].fallback.is_none());
     }
 
@@ -241,7 +254,7 @@ mod tests {
     fn var_with_fallback() {
         let result = parse("var(--primary, blue)").expect("failed");
         assert_eq!(result.references.len(), 1);
-        assert_eq!(result.references[0].name, "primary");
+        assert!(result.references[0].name == "primary");
         assert!(result.references[0].fallback.is_some());
     }
 
@@ -249,15 +262,15 @@ mod tests {
     fn nested_var_in_function() {
         let result = parse("calc(var(--size) + 10)").expect("failed");
         assert_eq!(result.references.len(), 1);
-        assert_eq!(result.references[0].name, "size");
+        assert!(result.references[0].name == "size");
     }
 
     #[test]
     fn multiple_vars() {
         let result = parse("var(--a) var(--b)").expect("failed");
         assert_eq!(result.references.len(), 2);
-        assert_eq!(result.references[0].name, "a");
-        assert_eq!(result.references[1].name, "b");
+        assert!(result.references[0].name == "a");
+        assert!(result.references[1].name == "b");
     }
 
     #[test]
@@ -265,8 +278,8 @@ mod tests {
         let result = parse("var(--a, var(--b))").expect("failed");
         assert_eq!(result.references.len(), 2);
         // Inner var is collected first during fallback parsing
-        assert_eq!(result.references[0].name, "b");
-        assert_eq!(result.references[1].name, "a");
+        assert!(result.references[0].name == "b");
+        assert!(result.references[1].name == "a");
     }
 
     #[test]
@@ -285,5 +298,79 @@ mod tests {
         let result = parse("calc(var(--foo) + 1)").expect("failed");
         assert_eq!(result.references[0].start, 5);
         assert_eq!(result.references[0].end, 15);
+    }
+
+    #[test]
+    fn substitute_simple() {
+        let unresolved = parse("var(--color)").expect("failed");
+        let vars = make_vars(&[("color", "red")]);
+
+        let result = unresolved.substitute(|name| vars.get(&name).map(String::as_str));
+        assert_eq!(result.expect("failed"), "red");
+    }
+
+    #[test]
+    fn substitute_with_surrounding_text() {
+        let unresolved = parse("1px solid var(--color)").expect("failed");
+        let vars = make_vars(&[("color", "blue")]);
+
+        let result = unresolved.substitute(|name| vars.get(&name).map(String::as_str));
+        assert_eq!(result.expect("failed"), "1px solid blue");
+    }
+
+    #[test]
+    fn substitute_multiple_vars() {
+        let unresolved = parse("var(--x) var(--y)").expect("failed");
+        let vars = make_vars(&[("x", "10"), ("y", "20")]);
+
+        let result = unresolved.substitute(|name| vars.get(&name).map(String::as_str));
+        assert_eq!(result.expect("failed"), "10 20");
+    }
+
+    #[test]
+    fn substitute_uses_fallback() {
+        let unresolved = parse("var(--missing, fallback-value)").expect("failed");
+        let vars: FxHashMap<Pose, String> = FxHashMap::default();
+
+        let result = unresolved.substitute(|name| vars.get(&name).map(String::as_str));
+        assert_eq!(result.expect("failed"), "fallback-value");
+    }
+
+    #[test]
+    fn substitute_prefers_value_over_fallback() {
+        let unresolved = parse("var(--color, fallback)").expect("failed");
+        let vars = make_vars(&[("color", "red")]);
+
+        let result = unresolved.substitute(|name| vars.get(&name).map(String::as_str));
+        assert_eq!(result.expect("failed"), "red");
+    }
+
+    #[test]
+    fn substitute_undefined_no_fallback_errors() {
+        let unresolved = parse("var(--missing)").expect("failed");
+        let vars: FxHashMap<Pose, String> = FxHashMap::default();
+
+        let result = unresolved.substitute(|name| vars.get(&name).map(String::as_str));
+        assert!(
+            matches!(result, Err(SubstituteError::UndefinedVariable(name)) if name == "missing")
+        );
+    }
+
+    #[test]
+    fn substitute_in_calc() {
+        let unresolved = parse("calc(var(--size) + 10)").expect("failed");
+        let vars = make_vars(&[("size", "100")]);
+
+        let result = unresolved.substitute(|name| vars.get(&name).map(String::as_str));
+        assert_eq!(result.expect("failed"), "calc(100 + 10)");
+    }
+
+    #[test]
+    fn substitute_empty_value() {
+        let unresolved = parse("var(--empty)").expect("failed");
+        let vars = make_vars(&[("empty", "")]);
+
+        let result = unresolved.substitute(|name| vars.get(&name).map(String::as_str));
+        assert_eq!(result.expect("failed"), "");
     }
 }

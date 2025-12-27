@@ -4,6 +4,8 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
+ginyu_poses.workspace = true
+
 cssparser.workspace = true
 selectors.workspace = true
 

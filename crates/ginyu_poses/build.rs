@@ -66,6 +66,8 @@ fn generate_lookup_fn(poses: &[String]) -> TokenStream {
     quote! {
         /// Look up a static pose index by string.
         #[inline]
+        #[must_use]
+        #[allow(clippy::cast_possible_truncation, clippy::too_many_lines)]
         pub fn static_pose_index(s: &str) -> Option<u32> {
             match s {
                 #(#arms,)*
@@ -75,14 +77,17 @@ fn generate_lookup_fn(poses: &[String]) -> TokenStream {
     }
 }
 
+#[allow(clippy::cast_possible_truncation)]
 fn generate_macro(poses: &[String]) -> TokenStream {
     let arms: Vec<_> = poses
         .iter()
         .enumerate()
         .map(|(index, pose)| {
             let literals = Literal::string(pose);
+            let index = index as u32;
+
             quote! {
-                (#literals) => { $crate::Pose::from_static(#index as u32) }
+                (#literals) => { $crate::Pose::from_static(#index) }
             }
         })
         .collect();
