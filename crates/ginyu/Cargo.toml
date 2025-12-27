@@ -5,8 +5,11 @@ edition.workspace = true
 
 [dependencies]
 cssparser.workspace = true
+selectors.workspace = true
+
 thiserror.workspace = true
 rustc-hash.workspace = true
+precomputed-hash.workspace = true
 
 [lints]
 workspace = true

@@ -150,6 +150,7 @@ impl Shorthand {
     }
 }
 
+#[derive(Clone, Copy)]
 pub enum PropertyName {
     Longhand(Property),
     Shorthand(Shorthand),

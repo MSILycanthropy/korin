@@ -1,54 +1,86 @@
 use cssparser::{Parser, parse_important};
 
 use crate::{
-    Color, Dimension, Length, ParseErrorKind, ParseResult, Property, PropertyName, Shorthand,
-    Value,
+    Color, Dimension, GlobalKeyword, Length, ParseErrorKind, ParseResult, Property, PropertyName,
+    Shorthand, Specified, UnresolvedValue, Value,
     parser::{
         error::build_err, parse_border_style, parse_color, parse_dimension, parse_length,
-        parse_number, parse_overflow, value::parse_property_value,
+        parse_number, parse_overflow, parse_value_with_vars, value::parse_property_value,
     },
 };
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Declaration {
     pub property: Property,
-    pub value: Value,
+    pub value: Specified<Value>,
     pub important: bool,
 }
 
 impl Declaration {
-    pub const fn new(property: Property, value: Value) -> Self {
+    pub fn new(property: Property, value: impl Into<Specified<Value>>) -> Self {
         Self {
             property,
-            value,
+            value: value.into(),
             important: false,
+        }
+    }
+
+    pub const fn unresolved(property: Property, value: UnresolvedValue, important: bool) -> Self {
+        Self {
+            property,
+            value: Specified::Unresolved(value),
+            important,
         }
     }
 }
 
+fn try_parse_global(input: &mut Parser<'_, '_>) -> Option<Specified<Value>> {
+    input
+        .try_parse(|i| {
+            let ident = i.expect_ident().map_err(|_| ())?;
+            match GlobalKeyword::from_name(ident) {
+                Some(GlobalKeyword::Inherit) => Ok(Specified::Inherit),
+                Some(GlobalKeyword::Initial) => Ok(Specified::Initial),
+                None => Err(()),
+            }
+        })
+        .ok()
+}
+
 /// Parse a single declaration. Returns one or more declarations (if shorthands are expanded)
-pub fn parse_declaration<'i>(input: &mut Parser<'i, '_>) -> ParseResult<'i, Vec<Declaration>> {
+pub fn parse_declaration<'i>(
+    name: &str,
+    input: &mut Parser<'i, '_>,
+) -> ParseResult<'i, Vec<Declaration>> {
     let location = input.current_source_location();
 
-    let name = input.expect_ident()?;
     let property_name = PropertyName::from_name(name)
         .ok_or_else(|| build_err(ParseErrorKind::UnknownProperty(name.to_string()), location))?;
 
-    input.expect_colon()?;
+    if let Some(global) = try_parse_global(input) {
+        let important = parse_important(input).is_ok();
+        return Ok(expand_to_properties(property_name, &global, important));
+    }
 
-    match property_name {
+    if let Some(unresolved) = parse_value_with_vars(input)? {
+        let important = parse_important(input).is_ok();
+        return Ok(expand_unresolved(property_name, &unresolved, important));
+    }
+
+    let mut declarations = match property_name {
         PropertyName::Longhand(property) => {
             let value = parse_property_value(property, input)?;
-            let important = parse_important(input).is_ok();
-
-            Ok(vec![Declaration {
-                property,
-                value,
-                important,
-            }])
+            vec![Declaration::new(property, value)]
         }
-        PropertyName::Shorthand(shorthand) => parse_shorthand(shorthand, input),
+        PropertyName::Shorthand(shorthand) => parse_shorthand(shorthand, input)?,
+    };
+
+    let important = parse_important(input).is_ok();
+    for decl in &mut declarations {
+        decl.important = important;
     }
+
+    Ok(declarations)
 }
 
 fn parse_shorthand<'i>(
@@ -57,7 +89,7 @@ fn parse_shorthand<'i>(
 ) -> ParseResult<'i, Vec<Declaration>> {
     use Shorthand::*;
 
-    let declarations = match shorthand {
+    match shorthand {
         Margin => parse_box_shorthand(
             input,
             [
@@ -99,17 +131,95 @@ fn parse_shorthand<'i>(
             parse_border_side_shorthand(input, Property::BorderLeftStyle, Property::BorderLeftColor)
         }
         Background => parse_background_shorthand(input),
-    }?;
+    }
+}
 
-    let important = parse_important(input).is_ok();
+fn shorthand_properties(shorthand: Shorthand) -> Vec<Property> {
+    use Shorthand::*;
+    match shorthand {
+        Background => vec![Property::BackgroundColor],
+        Margin => vec![
+            Property::MarginTop,
+            Property::MarginRight,
+            Property::MarginBottom,
+            Property::MarginLeft,
+        ],
+        Padding => vec![
+            Property::PaddingTop,
+            Property::PaddingRight,
+            Property::PaddingBottom,
+            Property::PaddingLeft,
+        ],
+        Gap => vec![Property::RowGap, Property::ColumnGap],
+        Overflow => vec![Property::OverflowX, Property::OverflowY],
+        Flex => vec![
+            Property::FlexGrow,
+            Property::FlexShrink,
+            Property::FlexBasis,
+        ],
+        Border => vec![
+            Property::BorderTopStyle,
+            Property::BorderRightStyle,
+            Property::BorderBottomStyle,
+            Property::BorderLeftStyle,
+            Property::BorderTopColor,
+            Property::BorderRightColor,
+            Property::BorderBottomColor,
+            Property::BorderLeftColor,
+        ],
+        BorderTop => vec![Property::BorderTopStyle, Property::BorderTopColor],
+        BorderRight => vec![Property::BorderRightStyle, Property::BorderRightColor],
+        BorderBottom => vec![Property::BorderBottomStyle, Property::BorderBottomColor],
+        BorderLeft => vec![Property::BorderLeftStyle, Property::BorderLeftColor],
+        BorderStyle => vec![
+            Property::BorderTopStyle,
+            Property::BorderRightStyle,
+            Property::BorderBottomStyle,
+            Property::BorderLeftStyle,
+        ],
+        BorderColor => vec![
+            Property::BorderTopColor,
+            Property::BorderRightColor,
+            Property::BorderBottomColor,
+            Property::BorderLeftColor,
+        ],
+    }
+}
 
-    Ok(declarations
+fn expand_to_properties(
+    name: PropertyName,
+    value: &Specified<Value>,
+    important: bool,
+) -> Vec<Declaration> {
+    let properties = match name {
+        PropertyName::Longhand(property) => vec![property],
+        PropertyName::Shorthand(shorthand) => shorthand_properties(shorthand),
+    };
+
+    properties
         .into_iter()
-        .map(|mut d| {
-            d.important = important;
-            d
+        .map(|prop| Declaration {
+            property: prop,
+            value: value.clone(),
+            important,
         })
-        .collect())
+        .collect()
+}
+
+fn expand_unresolved(
+    name: PropertyName,
+    unresolved: &UnresolvedValue,
+    important: bool,
+) -> Vec<Declaration> {
+    let properties = match name {
+        PropertyName::Longhand(property) => vec![property],
+        PropertyName::Shorthand(shorthand) => shorthand_properties(shorthand),
+    };
+
+    properties
+        .into_iter()
+        .map(|prop| Declaration::unresolved(prop, unresolved.clone(), important))
+        .collect()
 }
 
 fn parse_box_shorthand<'i>(
@@ -325,4 +435,91 @@ fn parse_background_shorthand<'i>(input: &mut Parser<'i, '_>) -> ParseResult<'i,
         Property::BackgroundColor,
         Value::Color(color),
     )])
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use cssparser::ParserInput;
+
+    fn parse(name: &str, value: &str) -> Result<Vec<Declaration>, String> {
+        let mut input = ParserInput::new(value);
+        let mut parser = Parser::new(&mut input);
+        parse_declaration(name, &mut parser).map_err(|e| format!("{e:?}"))
+    }
+
+    #[test]
+    fn simple_declaration() {
+        let decls = parse("color", "red").expect("failed");
+        assert_eq!(decls.len(), 1);
+        assert_eq!(decls[0].property, Property::Color);
+        assert!(!decls[0].value.is_unresolved());
+    }
+
+    #[test]
+    fn inherit_keyword() {
+        let decls = parse("color", "inherit").expect("failed");
+        assert_eq!(decls.len(), 1);
+        assert_eq!(decls[0].value, Specified::Inherit);
+    }
+
+    #[test]
+    fn initial_keyword() {
+        let decls = parse("margin", "initial").expect("failed");
+        assert_eq!(decls.len(), 4);
+        assert!(decls.iter().all(|d| d.value == Specified::Initial));
+    }
+
+    #[test]
+    fn var_function_deferred() {
+        let decls = parse("color", "var(--primary)").expect("failed");
+        assert_eq!(decls.len(), 1);
+        assert!(decls[0].value.is_unresolved());
+        assert_eq!(decls[0].value.as_unresolved_css(), Some("var(--primary)"));
+    }
+
+    #[test]
+    fn var_in_shorthand() {
+        let decls = parse("margin", "var(--spacing)").expect("failed");
+        assert_eq!(decls.len(), 4);
+        assert!(decls.iter().all(|d| d.value.is_unresolved()));
+    }
+
+    #[test]
+    fn var_with_fallback() {
+        let decls = parse("color", "var(--primary, blue)").expect("failed");
+        assert!(decls[0].value.is_unresolved());
+
+        let unresolved = decls[0].value.as_unresolved().expect("failed");
+        assert_eq!(unresolved.references.len(), 1);
+        assert!(unresolved.references[0].fallback.is_some());
+    }
+
+    #[test]
+    fn important_flag() {
+        let decls = parse("color", "red !important").expect("failed");
+        assert!(decls[0].important);
+    }
+
+    #[test]
+    fn important_with_var() {
+        let decls = parse("color", "var(--x) !important").expect("failed");
+        assert!(decls[0].important);
+        assert!(decls[0].value.is_unresolved());
+        // !important should NOT be in the css string
+        assert!(
+            !decls[0]
+                .value
+                .as_unresolved_css()
+                .expect("failed")
+                .contains("!important")
+        );
+    }
+
+    #[test]
+    fn nested_var_references_tracked() {
+        let decls = parse("color", "var(--a, var(--b))").expect("failed");
+        let unresolved = decls[0].value.as_unresolved().expect("failed");
+        assert_eq!(unresolved.references.len(), 2);
+    }
 }

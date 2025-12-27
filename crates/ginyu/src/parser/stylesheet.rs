@@ -1,12 +1,9 @@
-use cssparser::{Parser, ParserInput, Token};
+use cssparser::{Parser, ParserInput, StyleSheetParser};
 use rustc_hash::FxHashMap;
 
 use crate::{
     ParseResult,
-    parser::{
-        declaration::Declaration,
-        rule::{Rule, parse_rule},
-    },
+    parser::rule::{Rule, TopLevelRuleParser},
 };
 
 #[derive(Debug, Clone, Default)]
@@ -31,66 +28,22 @@ impl Stylesheet {
 
 pub fn parse_stylesheet<'i>(input: &mut Parser<'i, '_>) -> ParseResult<'i, Stylesheet> {
     let mut stylesheet = Stylesheet::new();
+    let mut rule_parser = TopLevelRuleParser;
 
-    loop {
-        input.skip_whitespace();
+    let rules = StyleSheetParser::new(input, &mut rule_parser);
 
-        if input.is_exhausted() {
-            break;
-        }
-
-        match input.try_parse(parse_rule) {
+    for rule in rules {
+        match rule {
             Ok(rule) => {
-                if rule.selector.trim() == ":root" {
-                    extract_variables(&rule.declarations, &mut stylesheet.variables);
-                } else {
-                    stylesheet.rules.push(rule);
-                }
+                stylesheet.rules.push(rule);
             }
-            Err(_) => {
-                skip_to_next_rule(input);
+            Err((_err, _slice)) => {
+                // TODO: Logging
             }
         }
     }
 
     Ok(stylesheet)
-}
-
-fn extract_variables(declarations: &[Declaration], _variables: &mut FxHashMap<String, String>) {
-    for decl in declarations {
-        // Variables are stored as custom properties (--name)
-        // For now, we store the property name and value as strings
-        // TODO: Handle custom properties properly
-        let name = decl.property.to_name();
-        if name.starts_with("--") {
-            // We need to handle custom properties differently
-            // For now, skip - we'll implement this properly later
-        }
-    }
-}
-
-fn skip_to_next_rule(input: &mut Parser) {
-    let mut brace_depth = 0;
-
-    loop {
-        match input.next() {
-            Ok(Token::CurlyBracketBlock) => {
-                brace_depth += 1;
-
-                let _ = input.parse_nested_block(|inner| {
-                    while inner.next().is_ok() {}
-                    Ok::<(), cssparser::ParseError<'_, ()>>(())
-                });
-                brace_depth -= 1;
-
-                if brace_depth <= 0 {
-                    break;
-                }
-            }
-            Ok(_) => {}
-            Err(_) => break,
-        }
-    }
 }
 
 #[cfg(test)]
@@ -101,14 +54,13 @@ mod tests {
     fn empty_stylesheet() {
         let stylesheet = Stylesheet::parse("").expect("failed");
         assert!(stylesheet.rules.is_empty());
-        assert!(stylesheet.variables.is_empty());
     }
 
     #[test]
     fn single_rule() {
         let stylesheet = Stylesheet::parse(".foo { display: flex }").expect("failed");
         assert_eq!(stylesheet.rules.len(), 1);
-        assert_eq!(stylesheet.rules[0].selector, ".foo");
+        assert_eq!(stylesheet.rules[0].selectors.len(), 1);
     }
 
     #[test]
@@ -122,9 +74,6 @@ mod tests {
         )
         .expect("failed");
         assert_eq!(stylesheet.rules.len(), 3);
-        assert_eq!(stylesheet.rules[0].selector, ".foo");
-        assert_eq!(stylesheet.rules[1].selector, ".bar");
-        assert_eq!(stylesheet.rules[2].selector, "#baz");
     }
 
     #[test]
@@ -146,19 +95,24 @@ mod tests {
     }
 
     #[test]
-    fn root_rule_separate() {
+    fn root_with_custom_properties() {
         let stylesheet = Stylesheet::parse(
             r"
             :root {
-                color: red;
+                --primary: blue;
+                --spacing: 2;
             }
             .foo { display: flex }
         ",
         )
         .expect("failed");
-        // :root should not be in rules
-        assert_eq!(stylesheet.rules.len(), 1);
-        assert_eq!(stylesheet.rules[0].selector, ".foo");
+        // :root is now a normal rule
+        assert_eq!(stylesheet.rules.len(), 2);
+        assert_eq!(stylesheet.rules[0].custom_properties.len(), 2);
+        assert_eq!(
+            stylesheet.rules[0].custom_properties.get("primary"),
+            Some(&"blue".to_string())
+        );
     }
 
     #[test]
@@ -172,9 +126,18 @@ mod tests {
         )
         .expect("failed");
         assert_eq!(stylesheet.rules.len(), 3);
-        assert_eq!(stylesheet.rules[0].selector, "div.foo > span:hover");
-        assert_eq!(stylesheet.rules[1].selector, ".a .b .c");
-        assert_eq!(stylesheet.rules[2].selector, "[type=\"text\"]:focus");
+    }
+
+    #[test]
+    fn selector_list() {
+        let stylesheet = Stylesheet::parse(
+            r"
+            div, .foo, #bar { display: flex }
+        ",
+        )
+        .expect("failed");
+        assert_eq!(stylesheet.rules.len(), 1);
+        assert_eq!(stylesheet.rules[0].selectors.len(), 3);
     }
 
     #[test]
@@ -189,5 +152,42 @@ mod tests {
         .expect("failed");
         // Should have at least the valid rules
         assert!(stylesheet.rules.len() >= 2);
+    }
+
+    #[test]
+    fn nested_rules_in_stylesheet() {
+        let stylesheet = Stylesheet::parse(
+            r"
+            .parent {
+                color: red;
+                .child { color: blue }
+            }
+        ",
+        )
+        .expect("failed");
+        assert_eq!(stylesheet.rules.len(), 1);
+        assert_eq!(stylesheet.rules[0].nested_rules.len(), 1);
+    }
+
+    #[test]
+    fn custom_properties_throughout() {
+        let stylesheet = Stylesheet::parse(
+            r"
+            :root { --bg: #1a1a2e }
+            .button { --accent: red; color: var(--accent) }
+        ",
+        )
+        .expect("failed");
+        assert_eq!(stylesheet.rules.len(), 2);
+        assert_eq!(stylesheet.rules[0].custom_properties.len(), 1);
+        assert_eq!(
+            stylesheet.rules[0].custom_properties.get("bg"),
+            Some(&"#1a1a2e".to_string())
+        );
+        assert_eq!(stylesheet.rules[1].custom_properties.len(), 1);
+        assert_eq!(
+            stylesheet.rules[1].custom_properties.get("accent"),
+            Some(&"red".to_string())
+        );
     }
 }

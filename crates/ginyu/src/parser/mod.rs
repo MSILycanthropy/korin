@@ -4,7 +4,9 @@ mod error;
 mod keyword;
 mod length;
 mod rule;
+mod selector;
 mod stylesheet;
+mod unresolved;
 mod value;
 
 use color::parse_color;
@@ -16,6 +18,7 @@ use keyword::{
     parse_visibility, parse_white_space,
 };
 use length::{parse_dimension, parse_length};
+pub use unresolved::parse_value_with_vars;
 
 pub use error::{ParseErrorKind, ParseResult};
 pub use stylesheet::*;

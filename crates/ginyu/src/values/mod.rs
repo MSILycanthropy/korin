@@ -6,6 +6,7 @@ mod length;
 mod overflow;
 mod specified;
 mod text;
+mod unresolved;
 
 pub use border::*;
 pub use color::*;
@@ -15,3 +16,4 @@ pub use length::*;
 pub use overflow::*;
 pub use specified::*;
 pub use text::*;
+pub use unresolved::*;

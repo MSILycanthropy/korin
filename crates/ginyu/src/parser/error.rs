@@ -15,6 +15,9 @@ pub enum ParseErrorKind {
     #[error("invalid color value")]
     InvalidColor,
 
+    #[error("invalid variable")]
+    InvalidVariable,
+
     #[error("invalid hex color format")]
     InvalidHexColor,
 
@@ -41,6 +44,9 @@ pub enum ParseErrorKind {
 
     #[error("unexpected token '{0}'")]
     UnexpectedToken(String),
+
+    #[error("failed to parse selector: {0}")]
+    BadSelector(String),
 }
 
 pub type ParseResult<'i, T> = Result<T, ParseError<'i, ParseErrorKind>>;
