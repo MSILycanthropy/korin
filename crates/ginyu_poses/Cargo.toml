@@ -1,0 +1,22 @@
+[package]
+name = "ginyu_poses"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+parking_lot.workspace = true
+rustc-hash.workspace = true
+
+[dev-dependencies]
+criterion.workspace = true
+
+[build-dependencies]
+quote.workspace = true
+proc-macro2.workspace = true
+
+[[bench]]
+name = "pose"
+harness = false
+
+[lints]
+workspace = true

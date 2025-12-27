@@ -20,6 +20,7 @@ missing_errors_doc = { level = "allow", priority = 1 }
 # korin deps
 dom_events = { workspace = true, path = "crates/dom_events" }
 korin_core = { workspace = true, path = "crates/korin_core" }
+ginyu_poses = { workspace = true, path = "crates/ginyu_poses" }
 
 # member deps
 bitflags = "2"
@@ -28,6 +29,10 @@ slotmap = "1"
 thiserror = "2"
 rustc-hash = "2"
 precomputed-hash = "0.1"
+parking_lot = "0.12"
+quote = "1"
+proc-macro2 = "1"
+criterion = "0.8"
 
 # Servo deps
 cssparser = "0.36"
