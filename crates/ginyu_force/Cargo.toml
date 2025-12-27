@@ -1,5 +1,5 @@
 [package]
-name = "ginyu_poses"
+name = "ginyu_force"
 version.workspace = true
 edition.workspace = true
 

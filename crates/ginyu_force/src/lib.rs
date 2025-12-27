@@ -4,7 +4,7 @@
 //! Dynamic poses (like custom property names) are interned at runtime.
 //!
 //! ```
-//! use ginyu_poses::{Pose, pose};
+//! use ginyu_force::{Pose, pose};
 //!
 //! // Static pose - no allocation
 //! let color = pose!("color");

@@ -20,7 +20,7 @@ missing_errors_doc = { level = "allow", priority = 1 }
 # korin deps
 dom_events = { workspace = true, path = "crates/dom_events" }
 korin_core = { workspace = true, path = "crates/korin_core" }
-ginyu_poses = { workspace = true, path = "crates/ginyu_poses" }
+ginyu_force = { workspace = true, path = "crates/ginyu_force" }
 
 # member deps
 bitflags = "2"

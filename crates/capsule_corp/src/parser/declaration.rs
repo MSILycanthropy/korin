@@ -1,5 +1,5 @@
 use cssparser::{Parser, Token, parse_important};
-use ginyu_poses::Pose;
+use ginyu_force::Pose;
 
 use crate::{
     Color, CustomValue, Dimension, GlobalKeyword, Length, ParseErrorKind, ParseResult, Property,

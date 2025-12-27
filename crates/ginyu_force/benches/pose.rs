@@ -1,5 +1,5 @@
 use criterion::{Criterion, criterion_group, criterion_main};
-use ginyu_poses::{Pose, pose};
+use ginyu_force::{Pose, pose};
 use std::hint::black_box;
 
 fn bench_static_pose_macro(c: &mut Criterion) {

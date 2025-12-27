@@ -1,5 +1,5 @@
 use cssparser::TokenSerializationType;
-use ginyu_poses::Pose;
+use ginyu_force::Pose;
 use thiserror::Error;
 
 #[derive(Debug, Clone, PartialEq, Eq)]

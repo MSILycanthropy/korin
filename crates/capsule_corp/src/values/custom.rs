@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use ginyu_poses::Pose;
+use ginyu_force::Pose;
 use rustc_hash::{FxHashMap, FxHashSet};
 use thiserror::Error;
 
@@ -12,7 +12,7 @@ pub struct CustomPropertiesMap {
 }
 
 impl CustomPropertiesMap {
-    #[must_use] 
+    #[must_use]
     pub const fn new() -> Self {
         Self { values: None }
     }
@@ -21,12 +21,12 @@ impl CustomPropertiesMap {
         self.values.as_ref()?.get(&name).map(String::as_str)
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.values.as_ref().is_none_or(|value| value.is_empty())
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn len(&self) -> usize {
         self.values.as_ref().map_or(0, |value| value.len())
     }
@@ -58,7 +58,7 @@ pub struct CustomPropertiesResolver<'a> {
 }
 
 impl<'a> CustomPropertiesResolver<'a> {
-    #[must_use] 
+    #[must_use]
     pub const fn new(inherited: Option<&'a CustomPropertiesMap>) -> Self {
         Self {
             inherited,
@@ -192,7 +192,7 @@ mod tests {
     use super::*;
     use crate::parser::parse_value_with_vars;
     use cssparser::{Parser, ParserInput};
-    use ginyu_poses::Pose;
+    use ginyu_force::Pose;
 
     fn make_unresolved(css: &str) -> UnresolvedValue {
         let mut input = ParserInput::new(css);

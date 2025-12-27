@@ -1,10 +1,10 @@
 [package]
-name = "ginyu"
+name = "capsule_corp"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
-ginyu_poses.workspace = true
+ginyu_force.workspace = true
 
 cssparser.workspace = true
 selectors.workspace = true

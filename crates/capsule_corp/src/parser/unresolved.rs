@@ -1,5 +1,5 @@
 use cssparser::{Parser, SourcePosition, Token, TokenSerializationType};
-use ginyu_poses::Pose;
+use ginyu_force::Pose;
 
 use crate::{ParseErrorKind, ParseResult, UnresolvedValue, VarFallback, VarReference};
 
@@ -214,7 +214,7 @@ fn byte_offset(start: SourcePosition, current: SourcePosition) -> usize {
 
 #[cfg(test)]
 mod tests {
-    use ginyu_poses::Pose;
+    use ginyu_force::Pose;
     use rustc_hash::FxHashMap;
 
     use crate::SubstituteError;
