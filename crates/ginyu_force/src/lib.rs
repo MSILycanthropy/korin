@@ -19,7 +19,7 @@
 
 mod interner;
 
-use std::{fmt, hash::Hash};
+use std::{cmp::Ordering, fmt, hash::Hash};
 
 include!(concat!(env!("OUT_DIR"), "/static_poses.rs"));
 
@@ -114,6 +114,28 @@ impl PartialEq<&str> for Pose {
     }
 }
 
+impl PartialOrd for Pose {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Pose {
+    fn cmp(&self, other: &Self) -> Ordering {
+        if self.0 == other.0 {
+            return Ordering::Equal;
+        }
+
+        self.as_str().cmp(other.as_str())
+    }
+}
+
+impl Default for Pose {
+    fn default() -> Self {
+        Self::from("")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -167,6 +189,24 @@ mod tests {
     fn compare_to_str() {
         let p = pose!("color");
         assert!(p == "color");
+    }
+
+    #[test]
+    fn ordering() {
+        let a = Pose::from("apple");
+        let b = Pose::from("banana");
+        let c = Pose::from("apple");
+
+        assert!(a < b);
+        assert!(b > a);
+        assert_eq!(a.cmp(&c), Ordering::Equal);
+    }
+
+    #[test]
+    fn ordering_same_pose_fast_path() {
+        let a = pose!("color");
+        let b = pose!("color");
+        assert_eq!(a.cmp(&b), Ordering::Equal);
     }
 
     #[test]

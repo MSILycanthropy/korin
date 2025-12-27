@@ -8,5 +8,7 @@ bitflags.workspace = true
 euclid.workspace = true
 keyboard-types.workspace = true
 
+ginyu_force.workspace = true
+
 [lints]
 workspace = true

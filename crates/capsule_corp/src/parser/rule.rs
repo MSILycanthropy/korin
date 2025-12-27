@@ -2,6 +2,7 @@ use cssparser::{
     AtRuleParser, CowRcStr, DeclarationParser, Parser, ParserState, QualifiedRuleParser,
     RuleBodyItemParser, RuleBodyParser,
 };
+use ginyu_force::Pose;
 use rustc_hash::FxHashMap;
 use selectors::SelectorList;
 
@@ -19,7 +20,7 @@ pub struct Rule {
     pub selectors: SelectorList<Selectors>,
     pub declarations: Vec<Declaration>,
     pub nested_rules: Vec<Rule>,
-    pub custom_properties: FxHashMap<String, String>,
+    pub custom_properties: FxHashMap<Pose, String>,
 }
 
 impl Rule {
@@ -35,7 +36,7 @@ impl Rule {
 
 enum RuleBodyItem {
     Declarations(Vec<Declaration>),
-    CustomProperty(String, String),
+    CustomProperty(Pose, String),
     NestedRule(Rule),
 }
 
@@ -54,7 +55,7 @@ impl<'i> DeclarationParser<'i> for RuleParser {
         if let Some(var_name) = name.strip_prefix("--") {
             let value = parse_custom_property(input);
 
-            return Ok(RuleBodyItem::CustomProperty(var_name.to_string(), value));
+            return Ok(RuleBodyItem::CustomProperty(Pose::from(var_name), value));
         }
 
         let declarations = parse_declaration(&name, input)?;
@@ -227,14 +228,12 @@ mod tests {
         assert_eq!(rule.declarations.len(), 1);
     }
 
-    // -- Custom property tests --
-
     #[test]
     fn custom_property_simple() {
         let rule = parse(".foo { --primary: red }").expect("parse failed");
         assert_eq!(rule.custom_properties.len(), 1);
         assert_eq!(
-            rule.custom_properties.get("primary"),
+            rule.custom_properties.get(&Pose::from("primary")),
             Some(&"red".to_string())
         );
     }
@@ -244,7 +243,7 @@ mod tests {
         let rule = parse(".foo { --spacing: calc(100% - 10) }").expect("parse failed");
         assert_eq!(rule.custom_properties.len(), 1);
         assert_eq!(
-            rule.custom_properties.get("spacing"),
+            rule.custom_properties.get(&Pose::from("spacing")),
             Some(&"calc(100% - 10)".to_string())
         );
     }
@@ -254,7 +253,7 @@ mod tests {
         let rule = parse(".foo { --color: var(--other, blue) }").expect("parse failed");
         assert_eq!(rule.custom_properties.len(), 1);
         assert_eq!(
-            rule.custom_properties.get("color"),
+            rule.custom_properties.get(&Pose::from("color")),
             Some(&"var(--other, blue)".to_string())
         );
     }
@@ -270,16 +269,28 @@ mod tests {
     fn multiple_custom_properties() {
         let rule = parse(".foo { --a: 1; --b: 2; --c: 3 }").expect("parse failed");
         assert_eq!(rule.custom_properties.len(), 3);
-        assert_eq!(rule.custom_properties.get("a"), Some(&"1".to_string()));
-        assert_eq!(rule.custom_properties.get("b"), Some(&"2".to_string()));
-        assert_eq!(rule.custom_properties.get("c"), Some(&"3".to_string()));
+        assert_eq!(
+            rule.custom_properties.get(&Pose::from("a")),
+            Some(&"1".to_string())
+        );
+        assert_eq!(
+            rule.custom_properties.get(&Pose::from("b")),
+            Some(&"2".to_string())
+        );
+        assert_eq!(
+            rule.custom_properties.get(&Pose::from("c")),
+            Some(&"3".to_string())
+        );
     }
 
     #[test]
     fn custom_property_last_wins() {
         let rule = parse(".foo { --x: first; --x: second }").expect("parse failed");
         assert_eq!(rule.custom_properties.len(), 1);
-        assert_eq!(rule.custom_properties.get("x"), Some(&"second".to_string()));
+        assert_eq!(
+            rule.custom_properties.get(&Pose::from("x")),
+            Some(&"second".to_string())
+        );
     }
 
     #[test]
@@ -289,12 +300,12 @@ mod tests {
         assert_eq!(rule.nested_rules.len(), 1);
         assert_eq!(rule.nested_rules[0].custom_properties.len(), 1);
         assert_eq!(
-            rule.nested_rules[0].custom_properties.get("nested"),
+            rule.nested_rules[0]
+                .custom_properties
+                .get(&Pose::from("nested")),
             Some(&"value".to_string())
         );
     }
-
-    // -- Nesting tests --
 
     #[test]
     fn nested_rule_with_class() {

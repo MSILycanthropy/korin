@@ -1,5 +1,4 @@
 use cssparser::{Parser, ParserInput, StyleSheetParser};
-use rustc_hash::FxHashMap;
 
 use crate::{
     ParseResult,
@@ -8,7 +7,6 @@ use crate::{
 
 #[derive(Debug, Clone, Default)]
 pub struct Stylesheet {
-    pub variables: FxHashMap<String, String>,
     pub rules: Vec<Rule>,
 }
 
@@ -49,6 +47,7 @@ pub fn parse_stylesheet<'i>(input: &mut Parser<'i, '_>) -> ParseResult<'i, Style
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ginyu_force::Pose;
 
     #[test]
     fn empty_stylesheet() {
@@ -110,7 +109,9 @@ mod tests {
         assert_eq!(stylesheet.rules.len(), 2);
         assert_eq!(stylesheet.rules[0].custom_properties.len(), 2);
         assert_eq!(
-            stylesheet.rules[0].custom_properties.get("primary"),
+            stylesheet.rules[0]
+                .custom_properties
+                .get(&Pose::from("primary")),
             Some(&"blue".to_string())
         );
     }
@@ -181,12 +182,14 @@ mod tests {
         assert_eq!(stylesheet.rules.len(), 2);
         assert_eq!(stylesheet.rules[0].custom_properties.len(), 1);
         assert_eq!(
-            stylesheet.rules[0].custom_properties.get("bg"),
+            stylesheet.rules[0].custom_properties.get(&Pose::from("bg")),
             Some(&"#1a1a2e".to_string())
         );
         assert_eq!(stylesheet.rules[1].custom_properties.len(), 1);
         assert_eq!(
-            stylesheet.rules[1].custom_properties.get("accent"),
+            stylesheet.rules[1]
+                .custom_properties
+                .get(&Pose::from("accent")),
             Some(&"red".to_string())
         );
     }

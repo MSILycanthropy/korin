@@ -1,5 +1,7 @@
 use std::ops::Deref;
 
+use ginyu_force::{Pose, pose};
+
 use crate::{
     CompositionEvent, CustomEvent, FocusEvent, InputEvent, KeyboardEvent, MouseEvent, PointerEvent,
     WheelEvent,
@@ -177,48 +179,48 @@ pub enum EventType<T> {
 
 impl<T> EventType<T> {
     /// Get the event type name as a string.
-    pub fn name(&self) -> &str {
+    pub const fn name(&self) -> Pose {
         match self {
-            Self::Click(_) => "click",
-            Self::DblClick(_) => "dblclick",
-            Self::MouseDown(_) => "mousedown",
-            Self::MouseUp(_) => "mouseup",
-            Self::MouseMove(_) => "mousemove",
-            Self::MouseEnter(_) => "mouseenter",
-            Self::MouseLeave(_) => "mouseleave",
-            Self::MouseOver(_) => "mouseover",
-            Self::MouseOut(_) => "mouseout",
-            Self::ContextMenu(_) => "contextmenu",
+            Self::Click(_) => pose!("click"),
+            Self::DblClick(_) => pose!("dblclick"),
+            Self::MouseDown(_) => pose!("mousedown"),
+            Self::MouseUp(_) => pose!("mouseup"),
+            Self::MouseMove(_) => pose!("mousemove"),
+            Self::MouseEnter(_) => pose!("mouseenter"),
+            Self::MouseLeave(_) => pose!("mouseleave"),
+            Self::MouseOver(_) => pose!("mouseover"),
+            Self::MouseOut(_) => pose!("mouseout"),
+            Self::ContextMenu(_) => pose!("contextmenu"),
 
-            Self::PointerDown(_) => "pointerdown",
-            Self::PointerUp(_) => "pointerup",
-            Self::PointerMove(_) => "pointermove",
-            Self::PointerEnter(_) => "pointerenter",
-            Self::PointerLeave(_) => "pointerleave",
-            Self::PointerOver(_) => "pointerover",
-            Self::PointerOut(_) => "pointerout",
-            Self::PointerCancel(_) => "pointercancel",
-            Self::GotPointerCapture(_) => "gotpointercapture",
-            Self::LostPointerCapture(_) => "lostpointercapture",
+            Self::PointerDown(_) => pose!("pointerdown"),
+            Self::PointerUp(_) => pose!("pointerup"),
+            Self::PointerMove(_) => pose!("pointermove"),
+            Self::PointerEnter(_) => pose!("pointerenter"),
+            Self::PointerLeave(_) => pose!("pointerleave"),
+            Self::PointerOver(_) => pose!("pointerover"),
+            Self::PointerOut(_) => pose!("pointerout"),
+            Self::PointerCancel(_) => pose!("pointercancel"),
+            Self::GotPointerCapture(_) => pose!("gotpointercapture"),
+            Self::LostPointerCapture(_) => pose!("lostpointercapture"),
 
-            Self::Wheel(_) => "wheel",
+            Self::Wheel(_) => pose!("wheel"),
 
-            Self::KeyDown(_) => "keydown",
-            Self::KeyUp(_) => "keyup",
+            Self::KeyDown(_) => pose!("keydown"),
+            Self::KeyUp(_) => pose!("keyup"),
 
-            Self::Focus(_) => "focus",
-            Self::Blur(_) => "blur",
-            Self::FocusIn(_) => "focusin",
-            Self::FocusOut(_) => "focusout",
+            Self::Focus(_) => pose!("focus"),
+            Self::Blur(_) => pose!("blur"),
+            Self::FocusIn(_) => pose!("focusin"),
+            Self::FocusOut(_) => pose!("focusout"),
 
-            Self::Input(_) => "input",
-            Self::BeforeInput(_) => "beforeinput",
+            Self::Input(_) => pose!("input"),
+            Self::BeforeInput(_) => pose!("beforeinput"),
 
-            Self::CompositionStart(_) => "compositionstart",
-            Self::CompositionUpdate(_) => "compositionupdate",
-            Self::CompositionEnd(_) => "compositionend",
+            Self::CompositionStart(_) => pose!("compositionstart"),
+            Self::CompositionUpdate(_) => pose!("compositionupdate"),
+            Self::CompositionEnd(_) => pose!("compositionend"),
 
-            Self::Custom(e) => &e.name,
+            Self::Custom(e) => e.name,
         }
     }
 }

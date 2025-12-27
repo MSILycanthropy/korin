@@ -1,10 +1,10 @@
 use std::ops::{Deref, DerefMut};
 
-use markup5ever::QualName;
+use ginyu_force::Pose;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Debug)]
 pub struct Attribute {
-    pub name: QualName,
+    pub name: Pose,
     pub value: String,
 }
 
@@ -19,7 +19,7 @@ impl Attributes {
         Self { inner }
     }
 
-    pub fn set(&mut self, name: QualName, value: String) {
+    pub fn set(&mut self, name: Pose, value: String) {
         if let Some(attr) = self.inner.iter_mut().find(|a| a.name == name) {
             attr.value.clear();
             attr.value.push_str(&value);
@@ -28,7 +28,7 @@ impl Attributes {
         }
     }
 
-    pub fn remove(&mut self, name: &QualName) -> Option<String> {
+    pub fn remove(&mut self, name: &Pose) -> Option<String> {
         if let Some(idx) = self.inner.iter().position(|a| a.name == *name) {
             Some(self.inner.remove(idx).value)
         } else {

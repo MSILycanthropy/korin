@@ -37,5 +37,4 @@ criterion = "0.8"
 # Servo deps
 cssparser = "0.36"
 euclid = "0.22"
-markup5ever = "0.36"
 selectors = "0.33"

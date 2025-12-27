@@ -6,7 +6,8 @@ edition.workspace = true
 [dependencies]
 dom_events.workspace = true
 euclid.workspace = true
-markup5ever.workspace = true
+
+ginyu_force.workspace = true
 
 [lints]
 workspace = true

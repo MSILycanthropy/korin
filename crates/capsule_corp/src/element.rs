@@ -1,5 +1,5 @@
 use cssparser::{CowRcStr, ParseError, ParseErrorKind, SourceLocation, ToCss};
-use rustc_hash::FxHasher;
+use ginyu_force::Pose;
 use std::{
     borrow::Borrow,
     hash::{Hash, Hasher},
@@ -15,37 +15,32 @@ use selectors::{
 pub struct Selectors;
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct Identifier {
-    pub name: String,
-    hash: u32,
-}
+pub struct Identifier(Pose);
 
 impl Identifier {
-    pub fn new(name: impl Into<String>) -> Self {
-        let name = name.into();
-        let mut hasher = FxHasher::default();
-        name.hash(&mut hasher);
-        let hash = u32::try_from(hasher.finish()).unwrap_or(u32::MAX);
-
-        Self { name, hash }
+    pub fn new(name: impl Into<Pose>) -> Self {
+        Self(name.into())
     }
 }
 
 impl Hash for Identifier {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.hash.hash(state);
+        self.0.as_str().hash(state);
     }
 }
 
 impl PrecomputedHash for Identifier {
+    #[allow(clippy::cast_possible_truncation)]
     fn precomputed_hash(&self) -> u32 {
-        self.hash
+        let mut hasher = rustc_hash::FxHasher::default();
+        self.0.as_str().hash(&mut hasher);
+        hasher.finish() as u32
     }
 }
 
 impl Borrow<str> for Identifier {
     fn borrow(&self) -> &str {
-        &self.name
+        self.0.as_str()
     }
 }
 
@@ -54,7 +49,7 @@ impl ToCss for Identifier {
     where
         W: std::fmt::Write,
     {
-        write!(dest, "{}", self.name)
+        write!(dest, "{}", self.0)
     }
 }
 
