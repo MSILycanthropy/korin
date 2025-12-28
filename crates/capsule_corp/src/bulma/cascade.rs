@@ -65,6 +65,9 @@ impl CascadeData {
         self.rules_by_class.clear();
         self.rules_by_tag.clear();
         self.universal_rules.clear();
+
+        self.num_declarations = 0;
+        self.num_selectors = 0;
     }
 
     pub fn shrink_to_fit(&mut self) {

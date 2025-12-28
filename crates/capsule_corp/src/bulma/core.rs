@@ -22,7 +22,6 @@ use crate::{
     parser::{Declaration, Rule, parse_inline_style, parse_property_value},
 };
 
-#[derive(Default)]
 pub struct Bulma {
     cascade_data: CascadeData,
     invalidation_map: InvalidationMap,
@@ -32,22 +31,50 @@ pub struct Bulma {
 }
 
 impl Bulma {
+    const AUTHOR_SOURCE_ORDER_START: u32 = 1_000_000;
+
     #[must_use]
     pub fn new() -> Self {
-        Self::default()
+        Self {
+            cascade_data: CascadeData::default(),
+            invalidation_map: InvalidationMap::default(),
+            num_rebuilds: 0,
+            source_order: Self::AUTHOR_SOURCE_ORDER_START,
+        }
+    }
+
+    pub fn add_ua_stylesheet(&mut self, stylesheet: &Stylesheet) {
+        let mut source_order = self.source_order & !Self::AUTHOR_SOURCE_ORDER_START;
+
+        for rule in &stylesheet.rules {
+            self.add_rule(rule, None, &mut source_order);
+        }
+
+        self.source_order = source_order | (self.source_order & Self::AUTHOR_SOURCE_ORDER_START);
+
+        self.cascade_data.shrink_to_fit();
+        self.invalidation_map.shrink_to_fit();
     }
 
     pub fn add_stylesheet(&mut self, stylesheet: &Stylesheet) {
+        let mut source_order = self.source_order;
+
         for rule in &stylesheet.rules {
-            self.add_rule(rule, None);
+            self.add_rule(rule, None, &mut source_order);
         }
 
+        self.source_order = source_order;
         self.cascade_data.shrink_to_fit();
         self.invalidation_map.shrink_to_fit();
         self.num_rebuilds += 1;
     }
 
-    fn add_rule(&mut self, rule: &Rule, parent_selectors: Option<&SelectorList<Selectors>>) {
+    fn add_rule(
+        &mut self,
+        rule: &Rule,
+        parent_selectors: Option<&SelectorList<Selectors>>,
+        source_order: &mut u32,
+    ) {
         let declations = Arc::new(rule.declarations.clone());
 
         for selector in rule.selectors.slice() {
@@ -61,18 +88,18 @@ impl Bulma {
             let bulma_rule = BulmaRule::new(final_selector, declations.clone(), self.source_order);
 
             self.cascade_data.insert(bulma_rule);
-            self.source_order += 1;
+            *source_order += 1;
         }
 
         for nested in &rule.nested_rules {
-            self.add_rule(nested, Some(&rule.selectors));
+            self.add_rule(nested, Some(&rule.selectors), source_order);
         }
     }
 
     pub fn clear(&mut self) {
         self.cascade_data.clear();
         self.invalidation_map.clear();
-        self.source_order = 0;
+        self.source_order = Self::AUTHOR_SOURCE_ORDER_START;
     }
 
     #[inline]
@@ -260,6 +287,12 @@ impl Bulma {
     #[must_use]
     pub const fn num_rebuilds(&self) -> usize {
         self.num_rebuilds
+    }
+}
+
+impl Default for Bulma {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -1090,5 +1123,173 @@ mod tests {
 
         assert_eq!(custom_props.get(Pose::from("accent")), Some("red"));
         assert_eq!(style.color, Color::RED);
+    }
+
+    #[test]
+    fn ua_stylesheet_applies() {
+        let mut bulma = Bulma::new();
+        let ua = Stylesheet::parse("div { color: red }").expect("failed");
+        bulma.add_ua_stylesheet(&ua);
+
+        let element = TestElement::new("div");
+        let mut caches = SelectorCaches::default();
+
+        let (style, _) = bulma.compute_style(&element, None, None, &mut caches);
+        assert_eq!(style.color, Color::RED);
+    }
+
+    #[test]
+    fn author_stylesheet_beats_ua() {
+        let mut bulma = Bulma::new();
+        let ua = Stylesheet::parse("div { color: red }").expect("failed");
+        let author = Stylesheet::parse("div { color: blue }").expect("failed");
+
+        bulma.add_ua_stylesheet(&ua);
+        bulma.add_stylesheet(&author);
+
+        let element = TestElement::new("div");
+        let mut caches = SelectorCaches::default();
+
+        let (style, _) = bulma.compute_style(&element, None, None, &mut caches);
+        assert_eq!(style.color, Color::BLUE);
+    }
+
+    #[test]
+    fn author_stylesheet_beats_ua_same_specificity() {
+        let mut bulma = Bulma::new();
+        let ua = Stylesheet::parse(".btn { color: red }").expect("failed");
+        let author = Stylesheet::parse(".btn { color: blue }").expect("failed");
+
+        bulma.add_ua_stylesheet(&ua);
+        bulma.add_stylesheet(&author);
+
+        let element = TestElement::new("div").with_class("btn");
+        let mut caches = SelectorCaches::default();
+
+        let (style, _) = bulma.compute_style(&element, None, None, &mut caches);
+        assert_eq!(style.color, Color::BLUE);
+    }
+
+    #[test]
+    fn ua_higher_specificity_still_loses_to_author() {
+        let mut bulma = Bulma::new();
+        // UA has higher specificity (id + class)
+        let ua = Stylesheet::parse("#main.btn { color: red }").expect("failed");
+        // Author has lower specificity (just class)
+        let author = Stylesheet::parse(".btn { color: blue }").expect("failed");
+
+        bulma.add_ua_stylesheet(&ua);
+        bulma.add_stylesheet(&author);
+
+        let element = TestElement::new("div").with_id("main").with_class("btn");
+        let mut caches = SelectorCaches::default();
+
+        let (style, _) = bulma.compute_style(&element, None, None, &mut caches);
+        // UA wins because it has higher specificity
+        assert_eq!(style.color, Color::RED);
+    }
+
+    #[test]
+    fn ua_important_vs_author_normal() {
+        let mut bulma = Bulma::new();
+        let ua = Stylesheet::parse("div { color: red !important }").expect("failed");
+        let author = Stylesheet::parse("div { color: blue }").expect("failed");
+
+        bulma.add_ua_stylesheet(&ua);
+        bulma.add_stylesheet(&author);
+
+        let element = TestElement::new("div");
+        let mut caches = SelectorCaches::default();
+
+        let (style, _) = bulma.compute_style(&element, None, None, &mut caches);
+        // UA !important beats author normal
+        assert_eq!(style.color, Color::RED);
+    }
+
+    #[test]
+    fn author_important_beats_ua_important() {
+        let mut bulma = Bulma::new();
+        let ua = Stylesheet::parse("div { color: red !important }").expect("failed");
+        let author = Stylesheet::parse("div { color: blue !important }").expect("failed");
+
+        bulma.add_ua_stylesheet(&ua);
+        bulma.add_stylesheet(&author);
+
+        let element = TestElement::new("div");
+        let mut caches = SelectorCaches::default();
+
+        let (style, _) = bulma.compute_style(&element, None, None, &mut caches);
+        // Author !important beats UA !important
+        assert_eq!(style.color, Color::BLUE);
+    }
+
+    #[test]
+    fn ua_stylesheet_with_custom_properties() {
+        let mut bulma = Bulma::new();
+        let ua = Stylesheet::parse(":root { --default-color: red }").expect("failed");
+        let author = Stylesheet::parse("div { color: var(--default-color) }").expect("failed");
+
+        bulma.add_ua_stylesheet(&ua);
+        bulma.add_stylesheet(&author);
+
+        // Get custom props from root
+        let root = TestElement::new("div");
+        let mut caches = SelectorCaches::default();
+        let (_, root_cp) = bulma.compute_style(&root, None, None, &mut caches);
+
+        let element = TestElement::new("div");
+        let mut caches = SelectorCaches::default();
+        let (style, _) = bulma.compute_style(&element, None, Some(&root_cp), &mut caches);
+
+        assert_eq!(style.color, Color::RED);
+    }
+
+    #[test]
+    fn author_custom_property_overrides_ua() {
+        let mut bulma = Bulma::new();
+        let ua = Stylesheet::parse(":root { --color: red }").expect("failed");
+        let author = Stylesheet::parse(":root { --color: blue }").expect("failed");
+
+        bulma.add_ua_stylesheet(&ua);
+        bulma.add_stylesheet(&author);
+
+        let root = TestElement::new("div");
+        let mut caches = SelectorCaches::default();
+        let (_, root_cp) = bulma.compute_style(&root, None, None, &mut caches);
+
+        assert_eq!(root_cp.get(Pose::from("color")), Some("blue"));
+    }
+
+    #[test]
+    fn clear_removes_ua_and_author() {
+        let mut bulma = Bulma::new();
+        let ua = Stylesheet::parse("div { color: red }").expect("failed");
+        let author = Stylesheet::parse(".foo { color: blue }").expect("failed");
+
+        bulma.add_ua_stylesheet(&ua);
+        bulma.add_stylesheet(&author);
+
+        assert_eq!(bulma.num_selectors(), 2);
+
+        bulma.clear();
+
+        assert_eq!(bulma.num_selectors(), 0);
+    }
+
+    #[test]
+    fn multiple_ua_stylesheets() {
+        let mut bulma = Bulma::new();
+        let ua1 = Stylesheet::parse("div { color: red }").expect("failed");
+        let ua2 = Stylesheet::parse("div { color: blue }").expect("failed");
+
+        bulma.add_ua_stylesheet(&ua1);
+        bulma.add_ua_stylesheet(&ua2);
+
+        let element = TestElement::new("div");
+        let mut caches = SelectorCaches::default();
+
+        let (style, _) = bulma.compute_style(&element, None, None, &mut caches);
+        // Later UA stylesheet wins
+        assert_eq!(style.color, Color::BLUE);
     }
 }

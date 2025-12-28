@@ -11,6 +11,8 @@ pub struct InvalidationMap {
     attribute: FxHashMap<Pose, SmallVec<[Dependency; 4]>>,
     class: FxHashMap<Pose, SmallVec<[Dependency; 4]>>,
     id: FxHashMap<Pose, SmallVec<[Dependency; 4]>>,
+
+    
 }
 
 impl InvalidationMap {
