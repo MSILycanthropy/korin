@@ -111,7 +111,7 @@ impl TElement for MockElement {
         self.next_sibling_data.as_ref().map(|data| {
             let mut el = Self::new(usize::MAX, data.tag.as_str());
             el.id = data.id;
-            el.classes = data.classes.clone();
+            el.classes.clone_from(&data.classes);
             el.state = data.state;
             el
         })

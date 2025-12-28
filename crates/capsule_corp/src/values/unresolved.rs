@@ -22,19 +22,38 @@ impl UnresolvedValue {
         &'a self,
         get_var: impl Fn(Pose) -> Option<&'a str>,
     ) -> Result<String, SubstituteError> {
-        let mut result = String::with_capacity(self.css.len());
-        let mut last_end = 0;
-        let mut last_token_type = self.first_token_type;
+        self.substitute_range(&get_var, 0, self.css.len())
+    }
 
-        for reference in &self.references {
-            result.push_str(&self.css[last_end..reference.start]);
+    fn substitute_range<'a>(
+        &'a self,
+        get_var: &impl Fn(Pose) -> Option<&'a str>,
+        range_start: usize,
+        range_end: usize,
+    ) -> Result<String, SubstituteError> {
+        let mut refs_in_range: Vec<&VarReference> = self
+            .references
+            .iter()
+            .filter(|r| r.start >= range_start && r.start < range_end)
+            .collect();
+        refs_in_range.sort_by_key(|r| r.start);
 
-            let (value, value_first_token) = match get_var(reference.name) {
-                Some(value) => (value, reference.prev_token_type),
+        let mut result = String::new();
+        let mut cursor = range_start;
+
+        for reference in refs_in_range {
+            if reference.start < cursor {
+                continue;
+            }
+
+            result.push_str(&self.css[cursor..reference.start]);
+
+            let value = match get_var(reference.name) {
+                Some(v) => v.to_string(),
                 None => {
                     if let Some(fallback) = &reference.fallback {
-                        let fallback_str = &self.css[fallback.start..reference.end - 1];
-                        (fallback_str, fallback.first_token_type)
+                        let fallback_end = reference.end.saturating_sub(1);
+                        self.substitute_range(get_var, fallback.start, fallback_end)?
                     } else {
                         return Err(SubstituteError::UndefinedVariable(
                             reference.name.to_string(),
@@ -43,17 +62,13 @@ impl UnresolvedValue {
                 }
             };
 
-            if last_token_type.needs_separator_when_before(value_first_token) {
-                result.push_str("/**/");
-            }
-
-            result.push_str(value);
-
-            last_end = reference.end;
-            last_token_type = reference.next_token_type;
+            result.push_str(&value);
+            cursor = reference.end;
         }
 
-        result.push_str(&self.css[last_end..]);
+        if cursor < range_end {
+            result.push_str(&self.css[cursor..range_end]);
+        }
 
         Ok(result)
     }
