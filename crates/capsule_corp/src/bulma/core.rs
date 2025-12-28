@@ -19,7 +19,7 @@ use crate::{
         cascade::CascadeData, invalidation::InvalidationMap, make_context, restyle::RestyleHint,
         rule::BulmaRule,
     },
-    parser::{Declaration, Rule, parse_property_value},
+    parser::{Declaration, Rule, parse_inline_style, parse_property_value},
 };
 
 #[derive(Default)]
@@ -169,6 +169,11 @@ impl Bulma {
 
         let mut resolver = CustomPropertiesResolver::new(parent_custom_properties);
 
+        let inline_declarations = element
+            .style_attribute()
+            .map(parse_inline_style)
+            .unwrap_or_default();
+
         for applicable in &matched {
             for declaration in applicable.declarations.iter() {
                 if let (Property::Custom(name), Value::Custom(value)) =
@@ -177,6 +182,15 @@ impl Bulma {
                 {
                     resolver.add(*name, value.clone());
                 }
+            }
+        }
+
+        for declaration in &inline_declarations {
+            if let (Property::Custom(name), Value::Custom(value)) =
+                (&declaration.property, &declaration.value)
+                && !declaration.important
+            {
+                resolver.add(*name, value.clone());
             }
         }
 
@@ -191,6 +205,15 @@ impl Bulma {
             }
         }
 
+        for declaration in &inline_declarations {
+            if let (Property::Custom(name), Value::Custom(value)) =
+                (&declaration.property, &declaration.value)
+                && declaration.important
+            {
+                resolver.add(*name, value.clone());
+            }
+        }
+
         let custom_properties = resolver.build();
 
         for applicable in &matched {
@@ -201,11 +224,23 @@ impl Bulma {
             }
         }
 
+        for declaration in &inline_declarations {
+            if !declaration.property.is_custom() && !declaration.important {
+                apply_declaration(&mut style, declaration, parent_style, &custom_properties);
+            }
+        }
+
         for applicable in &matched {
             for declaration in applicable.declarations.iter() {
                 if !declaration.property.is_custom() && declaration.important {
                     apply_declaration(&mut style, declaration, parent_style, &custom_properties);
                 }
+            }
+        }
+
+        for declaration in &inline_declarations {
+            if !declaration.property.is_custom() && declaration.important {
+                apply_declaration(&mut style, declaration, parent_style, &custom_properties);
             }
         }
 
@@ -409,6 +444,7 @@ fn apply_value(style: &mut ComputedStyle, property: Property, value: &Value) {
         (Property::FlexShrink, Value::Number(v)) => style.flex_shrink = *v,
         (Property::FlexBasis, Value::Dimension(v)) => style.flex_basis = v.clone(),
         (Property::AlignSelf, Value::AlignSelf(v)) => style.align_self = *v,
+        (Property::AlignContent, Value::AlignContent(v)) => style.align_content = *v,
         (Property::RowGap, Value::Length(v)) => style.row_gap = v.clone(),
         (Property::ColumnGap, Value::Length(v)) => style.column_gap = v.clone(),
         (Property::Width, Value::Dimension(v)) => style.width = v.clone(),
@@ -499,6 +535,7 @@ mod tests {
         id: Option<Pose>,
         classes: Vec<Pose>,
         state: ElementState,
+        style: Option<String>,
     }
 
     impl TestElement {
@@ -508,7 +545,13 @@ mod tests {
                 id: None,
                 classes: vec![],
                 state: ElementState::empty(),
+                style: None,
             }
+        }
+
+        fn with_style(mut self, style: &str) -> Self {
+            self.style = Some(style.to_string());
+            self
         }
 
         fn with_id(mut self, id: &str) -> Self {
@@ -548,6 +591,10 @@ mod tests {
 
         fn get_attribute(&self, _name: Pose) -> Option<&str> {
             None
+        }
+
+        fn style_attribute(&self) -> Option<&str> {
+            self.style.as_deref()
         }
 
         fn state(&self) -> ElementState {
@@ -908,5 +955,140 @@ mod tests {
 
         let hint = bulma.restyle_hint_for_id_change(Pose::from("sidebar"));
         assert!(hint.is_empty());
+    }
+
+    #[test]
+    fn root_selector_matches() {
+        let mut bulma = Bulma::new();
+        let stylesheet = Stylesheet::parse(":root { color: red }").expect("failed");
+        bulma.add_stylesheet(&stylesheet);
+
+        // Should have 1 universal rule
+        assert_eq!(bulma.num_selectors(), 1);
+
+        let root = TestElement::new("div");
+        let mut caches = SelectorCaches::default();
+
+        let matched = bulma.collect_matching_rules(&root, &mut caches);
+        assert_eq!(matched.len(), 1);
+    }
+
+    #[test]
+    fn compute_style_inline_style() {
+        let mut bulma = Bulma::new();
+
+        let element = TestElement::new("div").with_style("color: red");
+        let mut caches = SelectorCaches::default();
+
+        let (style, _) = bulma.compute_style(&element, None, None, &mut caches);
+        assert_eq!(style.color, Color::RED);
+    }
+
+    #[test]
+    fn compute_style_inline_beats_stylesheet() {
+        let mut bulma = Bulma::new();
+        let stylesheet = Stylesheet::parse(".foo { color: blue }").expect("failed");
+        bulma.add_stylesheet(&stylesheet);
+
+        let element = TestElement::new("div")
+            .with_class("foo")
+            .with_style("color: red");
+        let mut caches = SelectorCaches::default();
+
+        let (style, _) = bulma.compute_style(&element, None, None, &mut caches);
+        assert_eq!(style.color, Color::RED);
+    }
+
+    #[test]
+    fn compute_style_stylesheet_important_beats_inline() {
+        let mut bulma = Bulma::new();
+        let stylesheet = Stylesheet::parse(".foo { color: blue !important }").expect("failed");
+        bulma.add_stylesheet(&stylesheet);
+
+        let element = TestElement::new("div")
+            .with_class("foo")
+            .with_style("color: red");
+        let mut caches = SelectorCaches::default();
+
+        let (style, _) = bulma.compute_style(&element, None, None, &mut caches);
+        assert_eq!(style.color, Color::BLUE);
+    }
+
+    #[test]
+    fn compute_style_inline_important_beats_all() {
+        let mut bulma = Bulma::new();
+        let stylesheet = Stylesheet::parse(".foo { color: blue !important }").expect("failed");
+        bulma.add_stylesheet(&stylesheet);
+
+        let element = TestElement::new("div")
+            .with_class("foo")
+            .with_style("color: red !important");
+        let mut caches = SelectorCaches::default();
+
+        let (style, _) = bulma.compute_style(&element, None, None, &mut caches);
+        assert_eq!(style.color, Color::RED);
+    }
+
+    #[test]
+    fn compute_style_inline_multiple_properties() {
+        let mut bulma = Bulma::new();
+
+        let element = TestElement::new("div").with_style("color: red; display: flex");
+        let mut caches = SelectorCaches::default();
+
+        let (style, _) = bulma.compute_style(&element, None, None, &mut caches);
+        assert_eq!(style.color, Color::RED);
+        assert_eq!(style.display, Display::Flex);
+    }
+
+    #[test]
+    fn compute_style_inline_shorthand() {
+        let mut bulma = Bulma::new();
+
+        let element = TestElement::new("div").with_style("margin: 10");
+        let mut caches = SelectorCaches::default();
+
+        let (style, _) = bulma.compute_style(&element, None, None, &mut caches);
+        assert_eq!(style.margin.top, Length::Cells(10));
+        assert_eq!(style.margin.right, Length::Cells(10));
+        assert_eq!(style.margin.bottom, Length::Cells(10));
+        assert_eq!(style.margin.left, Length::Cells(10));
+    }
+
+    #[test]
+    fn compute_style_inline_var() {
+        let mut bulma = Bulma::new();
+        let stylesheet = Stylesheet::parse(":root { --primary: cyan }").expect("failed");
+        bulma.add_stylesheet(&stylesheet);
+
+        // Need a root element to get the custom property
+        let root = TestElement::new("div");
+        let mut caches = SelectorCaches::default();
+        let (_, root_style) = bulma.compute_style(&root, None, None, &mut caches);
+
+        assert_eq!(root_style.get(Pose::from("primary")), Some("cyan"));
+
+        let element = TestElement::new("div").with_style("color: var(--primary)");
+        let mut caches = SelectorCaches::default();
+        let (style, _) = bulma.compute_style(&element, None, Some(&root_style), &mut caches);
+
+        assert_eq!(style.color, Color::CYAN);
+    }
+
+    #[test]
+    fn compute_style_inline_custom_property() {
+        let mut bulma = Bulma::new();
+
+        let element = TestElement::new("div").with_style("--accent: red; color: var(--accent)");
+        let mut caches = SelectorCaches::default();
+
+        let inline = parse_inline_style("--accent: red; color: var(--accent)");
+        dbg!(&inline);
+
+        let (style, custom_props) = bulma.compute_style(&element, None, None, &mut caches);
+        dbg!(&custom_props);
+
+        assert_eq!(custom_props.get(Pose::from("accent")), Some("red"));
+        assert_eq!(style.color, Color::RED);
     }
 }

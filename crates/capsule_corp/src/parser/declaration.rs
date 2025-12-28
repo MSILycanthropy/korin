@@ -1,4 +1,4 @@
-use cssparser::{Parser, Token, parse_important};
+use cssparser::{ParseError, Parser, ParserInput, Token, parse_important};
 use ginyu_force::Pose;
 
 use crate::{
@@ -88,6 +88,40 @@ pub fn parse_declaration<'i>(
     Ok(declarations)
 }
 
+/// Parse an inline style attr
+pub fn parse_inline_style(css: &str) -> Vec<Declaration> {
+    let mut input = ParserInput::new(css);
+    let mut parser = Parser::new(&mut input);
+    let mut declarations = Vec::new();
+
+    loop {
+        let result = parser.try_parse::<_, _, ParseError<'_, ParseErrorKind>>(|input| {
+            let name = input.expect_ident()?.to_string();
+            input.expect_colon()?;
+            let decls = parse_declaration(&name, input)?;
+            // Consume optional semicolon
+            let _ = input.try_parse(cssparser::Parser::expect_semicolon);
+            Ok(decls)
+        });
+
+        if let Ok(decls) = result {
+            declarations.extend(decls);
+        } else {
+            // Try to recover by skipping to next semicolon
+            if parser.is_exhausted() {
+                break;
+            }
+            let _ = parser.next();
+        }
+
+        if parser.is_exhausted() {
+            break;
+        }
+    }
+
+    declarations
+}
+
 fn parse_custom_property_declaration<'i>(
     name: Pose,
     input: &mut Parser<'i, '_>,
@@ -123,18 +157,9 @@ fn parse_custom_property_declaration<'i>(
         }]);
     }
 
+    input.skip_whitespace();
     let start = input.position();
-    while !input.is_exhausted() {
-        let state = input.state();
-        if matches!(input.next(), Ok(Token::Delim('!')))
-            && input
-                .try_parse(|i| i.expect_ident_matching("important"))
-                .is_ok()
-        {
-            input.reset(&state);
-            break;
-        }
-    }
+    consume_value_tokens(input);
 
     let raw = input.slice_from(start).trim().to_string();
     let important = parse_important(input).is_ok();
@@ -144,6 +169,42 @@ fn parse_custom_property_declaration<'i>(
         value: Value::Custom(CustomValue::Resolved(raw)),
         important,
     }])
+}
+
+fn consume_value_tokens(input: &mut Parser<'_, '_>) {
+    while !input.is_exhausted() {
+        let state = input.state();
+        let token = input.next_including_whitespace_and_comments();
+
+        match token {
+            Ok(Token::Delim('!')) => {
+                if input
+                    .try_parse(|i| i.expect_ident_matching("important"))
+                    .is_ok()
+                {
+                    input.reset(&state);
+                    break;
+                }
+            }
+            Ok(Token::Semicolon) => {
+                input.reset(&state);
+                break;
+            }
+            Ok(
+                Token::Function(_)
+                | Token::ParenthesisBlock
+                | Token::SquareBracketBlock
+                | Token::CurlyBracketBlock,
+            ) => {
+                let _ = input.parse_nested_block(|i| {
+                    consume_value_tokens(i);
+                    Ok::<_, ParseError<'_, ParseErrorKind>>(())
+                });
+            }
+            Ok(_) => {}
+            Err(_) => break,
+        }
+    }
 }
 
 fn parse_shorthand<'i>(
@@ -499,6 +560,7 @@ fn parse_background_shorthand<'i>(input: &mut Parser<'i, '_>) -> ParseResult<'i,
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{Color, Display, Property, Value};
     use cssparser::ParserInput;
 
     fn parse(name: &str, value: &str) -> Result<Vec<Declaration>, String> {
@@ -580,5 +642,88 @@ mod tests {
         let decls = parse("color", "var(--a, var(--b))").expect("failed");
         let unresolved = decls[0].value.as_unresolved().expect("failed");
         assert_eq!(unresolved.references.len(), 2);
+    }
+
+    #[test]
+    fn empty_style() {
+        let decls = parse_inline_style("");
+        assert!(decls.is_empty());
+    }
+
+    #[test]
+    fn single_property() {
+        let decls = parse_inline_style("color: red");
+        assert_eq!(decls.len(), 1);
+        assert_eq!(decls[0].property, Property::Color);
+        assert_eq!(decls[0].value, Value::Color(Color::RED));
+    }
+
+    #[test]
+    fn single_property_with_semicolon() {
+        let decls = parse_inline_style("color: red;");
+        assert_eq!(decls.len(), 1);
+        assert_eq!(decls[0].property, Property::Color);
+    }
+
+    #[test]
+    fn multiple_properties() {
+        let decls = parse_inline_style("color: red; display: flex");
+        assert_eq!(decls.len(), 2);
+        assert_eq!(decls[0].property, Property::Color);
+        assert_eq!(decls[1].property, Property::Display);
+        assert_eq!(decls[1].value, Value::Display(Display::Flex));
+    }
+
+    #[test]
+    fn shorthand_expands() {
+        let decls = parse_inline_style("margin: 10");
+        assert_eq!(decls.len(), 4);
+        assert!(decls.iter().any(|d| d.property == Property::MarginTop));
+        assert!(decls.iter().any(|d| d.property == Property::MarginRight));
+        assert!(decls.iter().any(|d| d.property == Property::MarginBottom));
+        assert!(decls.iter().any(|d| d.property == Property::MarginLeft));
+    }
+
+    #[test]
+    fn style_important_flag() {
+        let decls = parse_inline_style("color: red !important");
+        assert_eq!(decls.len(), 1);
+        assert!(decls[0].important);
+    }
+
+    #[test]
+    fn mixed_important() {
+        let decls = parse_inline_style("color: red !important; display: flex");
+        assert_eq!(decls.len(), 2);
+        assert!(decls[0].important);
+        assert!(!decls[1].important);
+    }
+
+    #[test]
+    fn with_var() {
+        let decls = parse_inline_style("color: var(--primary)");
+        assert_eq!(decls.len(), 1);
+        assert!(decls[0].value.is_unresolved());
+    }
+
+    #[test]
+    fn recovers_from_invalid() {
+        let decls = parse_inline_style("color: red; gobbledygook::; display: flex");
+        // Should recover and get color and display
+        assert!(decls.iter().any(|d| d.property == Property::Color));
+        assert!(decls.iter().any(|d| d.property == Property::Display));
+    }
+
+    #[test]
+    fn custom_property() {
+        let decls = parse_inline_style("--primary: blue");
+        assert_eq!(decls.len(), 1);
+        assert!(decls[0].property.is_custom());
+    }
+
+    #[test]
+    fn whitespace_handling() {
+        let decls = parse_inline_style("  color:red  ;  display:flex  ");
+        assert_eq!(decls.len(), 2);
     }
 }

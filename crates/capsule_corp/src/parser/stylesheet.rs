@@ -47,7 +47,29 @@ pub fn parse_stylesheet<'i>(input: &mut Parser<'i, '_>) -> ParseResult<'i, Style
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{CustomValue, Property};
     use ginyu_force::Pose;
+
+    fn get_custom_property<'a>(rule: &'a Rule, name: &str) -> Option<&'a str> {
+        let pose = Pose::from(name);
+        rule.declarations.iter().find_map(|d| {
+            if d.property == Property::Custom(pose) {
+                d.value.as_custom().and_then(|c| match c {
+                    CustomValue::Resolved(s) => Some(s.as_str()),
+                    _ => None,
+                })
+            } else {
+                None
+            }
+        })
+    }
+
+    fn count_custom_properties(rule: &Rule) -> usize {
+        rule.declarations
+            .iter()
+            .filter(|d| d.property.is_custom())
+            .count()
+    }
 
     #[test]
     fn empty_stylesheet() {
@@ -105,14 +127,15 @@ mod tests {
         ",
         )
         .expect("failed");
-        // :root is now a normal rule
         assert_eq!(stylesheet.rules.len(), 2);
-        assert_eq!(stylesheet.rules[0].custom_properties.len(), 2);
+        assert_eq!(count_custom_properties(&stylesheet.rules[0]), 2);
         assert_eq!(
-            stylesheet.rules[0]
-                .custom_properties
-                .get(&Pose::from("primary")),
-            Some(&"blue".to_string())
+            get_custom_property(&stylesheet.rules[0], "primary"),
+            Some("blue")
+        );
+        assert_eq!(
+            get_custom_property(&stylesheet.rules[0], "spacing"),
+            Some("2")
         );
     }
 
@@ -180,17 +203,15 @@ mod tests {
         )
         .expect("failed");
         assert_eq!(stylesheet.rules.len(), 2);
-        assert_eq!(stylesheet.rules[0].custom_properties.len(), 1);
+        assert_eq!(count_custom_properties(&stylesheet.rules[0]), 1);
         assert_eq!(
-            stylesheet.rules[0].custom_properties.get(&Pose::from("bg")),
-            Some(&"#1a1a2e".to_string())
+            get_custom_property(&stylesheet.rules[0], "bg"),
+            Some("#1a1a2e")
         );
-        assert_eq!(stylesheet.rules[1].custom_properties.len(), 1);
+        assert_eq!(count_custom_properties(&stylesheet.rules[1]), 1);
         assert_eq!(
-            stylesheet.rules[1]
-                .custom_properties
-                .get(&Pose::from("accent")),
-            Some(&"red".to_string())
+            get_custom_property(&stylesheet.rules[1], "accent"),
+            Some("red")
         );
     }
 }

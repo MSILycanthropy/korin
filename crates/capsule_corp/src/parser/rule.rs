@@ -2,8 +2,6 @@ use cssparser::{
     AtRuleParser, CowRcStr, DeclarationParser, Parser, ParserState, QualifiedRuleParser,
     RuleBodyItemParser, RuleBodyParser,
 };
-use ginyu_force::Pose;
-use rustc_hash::FxHashMap;
 use selectors::SelectorList;
 
 use crate::{
@@ -19,23 +17,20 @@ pub struct Rule {
     pub selectors: SelectorList<Selectors>,
     pub declarations: Vec<Declaration>,
     pub nested_rules: Vec<Rule>,
-    pub custom_properties: FxHashMap<Pose, String>,
 }
 
 impl Rule {
-    pub fn new(selectors: SelectorList<Selectors>, declarations: Vec<Declaration>) -> Self {
+    pub const fn new(selectors: SelectorList<Selectors>, declarations: Vec<Declaration>) -> Self {
         Self {
             selectors,
             declarations,
             nested_rules: Vec::new(),
-            custom_properties: FxHashMap::default(),
         }
     }
 }
 
 enum RuleBodyItem {
     Declarations(Vec<Declaration>),
-    CustomProperty(Pose, String),
     NestedRule(Rule),
 }
 
@@ -51,14 +46,7 @@ impl<'i> DeclarationParser<'i> for RuleParser {
         input: &mut Parser<'i, 't>,
         _declaration_start: &ParserState,
     ) -> ParseResult<'i, Self::Declaration> {
-        if let Some(var_name) = name.strip_prefix("--") {
-            let value = parse_custom_property(input);
-
-            return Ok(RuleBodyItem::CustomProperty(Pose::from(var_name), value));
-        }
-
         let declarations = parse_declaration(&name, input)?;
-
         Ok(RuleBodyItem::Declarations(declarations))
     }
 }
@@ -130,7 +118,6 @@ impl<'i> QualifiedRuleParser<'i> for TopLevelRuleParser {
 fn parse_rule_body(selectors: SelectorList<Selectors>, input: &mut Parser<'_, '_>) -> Rule {
     let mut declarations = Vec::new();
     let mut nested_rules = Vec::new();
-    let mut custom_properties = FxHashMap::default();
 
     let mut parser = RuleParser;
     let items = RuleBodyParser::new(input, &mut parser);
@@ -143,9 +130,6 @@ fn parse_rule_body(selectors: SelectorList<Selectors>, input: &mut Parser<'_, '_
             Ok(RuleBodyItem::NestedRule(rule)) => {
                 nested_rules.push(rule);
             }
-            Ok(RuleBodyItem::CustomProperty(name, value)) => {
-                custom_properties.insert(name, value);
-            }
             Err((_err, _slice)) => {
                 // eprintln!("skipping invalid rule body item: {:?}", err);
             }
@@ -156,16 +140,7 @@ fn parse_rule_body(selectors: SelectorList<Selectors>, input: &mut Parser<'_, '_
         selectors,
         declarations,
         nested_rules,
-        custom_properties,
     }
-}
-
-fn parse_custom_property(input: &mut Parser<'_, '_>) -> String {
-    let start = input.position();
-
-    while input.next().is_ok() {}
-
-    input.slice_from(start).trim().to_string()
 }
 
 #[cfg(test)]
@@ -173,6 +148,7 @@ mod tests {
     use super::*;
     use crate::property::Property;
     use cssparser::{ParserInput, StyleSheetParser};
+    use ginyu_force::Pose;
 
     fn parse(s: &str) -> Result<Rule, String> {
         let mut input = ParserInput::new(s);
@@ -185,6 +161,27 @@ mod tests {
             Some(Err((e, _))) => Err(format!("{e:?}")),
             None => Err("no rule found".to_string()),
         }
+    }
+
+    fn get_custom_property<'a>(rule: &'a Rule, name: &str) -> Option<&'a str> {
+        let pose = Pose::from(name);
+        rule.declarations.iter().find_map(|d| {
+            if d.property == Property::Custom(pose) {
+                d.value.as_custom().and_then(|c| match c {
+                    crate::CustomValue::Resolved(s) => Some(s.as_str()),
+                    _ => None,
+                })
+            } else {
+                None
+            }
+        })
+    }
+
+    fn count_custom_properties(rule: &Rule) -> usize {
+        rule.declarations
+            .iter()
+            .filter(|d| d.property.is_custom())
+            .count()
     }
 
     #[test]
@@ -230,79 +227,67 @@ mod tests {
     #[test]
     fn custom_property_simple() {
         let rule = parse(".foo { --primary: red }").expect("parse failed");
-        assert_eq!(rule.custom_properties.len(), 1);
-        assert_eq!(
-            rule.custom_properties.get(&Pose::from("primary")),
-            Some(&"red".to_string())
-        );
+        assert_eq!(count_custom_properties(&rule), 1);
+        assert_eq!(get_custom_property(&rule, "primary"), Some("red"));
     }
 
     #[test]
     fn custom_property_complex_value() {
         let rule = parse(".foo { --spacing: calc(100% - 10) }").expect("parse failed");
-        assert_eq!(rule.custom_properties.len(), 1);
+        assert_eq!(count_custom_properties(&rule), 1);
         assert_eq!(
-            rule.custom_properties.get(&Pose::from("spacing")),
-            Some(&"calc(100% - 10)".to_string())
+            get_custom_property(&rule, "spacing"),
+            Some("calc(100% - 10)")
         );
     }
 
     #[test]
     fn custom_property_with_fallback() {
         let rule = parse(".foo { --color: var(--other, blue) }").expect("parse failed");
-        assert_eq!(rule.custom_properties.len(), 1);
-        assert_eq!(
-            rule.custom_properties.get(&Pose::from("color")),
-            Some(&"var(--other, blue)".to_string())
-        );
+        assert_eq!(count_custom_properties(&rule), 1);
+        // This one has a var() so it's unresolved, not resolved
+        let pose = Pose::from("color");
+        let decl = rule
+            .declarations
+            .iter()
+            .find(|d| d.property == Property::Custom(pose))
+            .expect("missing --color");
+        assert!(decl.value.as_custom().is_some());
     }
 
     #[test]
     fn mixed_properties_and_custom() {
         let rule = parse(".foo { --primary: blue; color: red; margin: 1 }").expect("parse failed");
-        assert_eq!(rule.custom_properties.len(), 1);
-        assert_eq!(rule.declarations.len(), 5); // color + margin (4 expanded)
+        assert_eq!(count_custom_properties(&rule), 1);
+        // custom + color + margin (4 expanded) = 6
+        assert_eq!(rule.declarations.len(), 6);
     }
 
     #[test]
     fn multiple_custom_properties() {
         let rule = parse(".foo { --a: 1; --b: 2; --c: 3 }").expect("parse failed");
-        assert_eq!(rule.custom_properties.len(), 3);
-        assert_eq!(
-            rule.custom_properties.get(&Pose::from("a")),
-            Some(&"1".to_string())
-        );
-        assert_eq!(
-            rule.custom_properties.get(&Pose::from("b")),
-            Some(&"2".to_string())
-        );
-        assert_eq!(
-            rule.custom_properties.get(&Pose::from("c")),
-            Some(&"3".to_string())
-        );
+        assert_eq!(count_custom_properties(&rule), 3);
+        assert_eq!(get_custom_property(&rule, "a"), Some("1"));
+        assert_eq!(get_custom_property(&rule, "b"), Some("2"));
+        assert_eq!(get_custom_property(&rule, "c"), Some("3"));
     }
 
     #[test]
     fn custom_property_last_wins() {
+        // Both declarations are present, cascade determines which wins at compute time
         let rule = parse(".foo { --x: first; --x: second }").expect("parse failed");
-        assert_eq!(rule.custom_properties.len(), 1);
-        assert_eq!(
-            rule.custom_properties.get(&Pose::from("x")),
-            Some(&"second".to_string())
-        );
+        assert_eq!(count_custom_properties(&rule), 2);
     }
 
     #[test]
     fn custom_property_in_nested_rule() {
         let rule = parse(".foo { .bar { --nested: value } }").expect("parse failed");
-        assert_eq!(rule.custom_properties.len(), 0);
+        assert_eq!(count_custom_properties(&rule), 0);
         assert_eq!(rule.nested_rules.len(), 1);
-        assert_eq!(rule.nested_rules[0].custom_properties.len(), 1);
+        assert_eq!(count_custom_properties(&rule.nested_rules[0]), 1);
         assert_eq!(
-            rule.nested_rules[0]
-                .custom_properties
-                .get(&Pose::from("nested")),
-            Some(&"value".to_string())
+            get_custom_property(&rule.nested_rules[0], "nested"),
+            Some("value")
         );
     }
 

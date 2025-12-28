@@ -11,7 +11,7 @@ mod value;
 
 use color::parse_color;
 use cssparser::{Parser, Token};
-pub use declaration::Declaration;
+pub use declaration::{Declaration, parse_inline_style};
 use keyword::{
     parse_align_items, parse_align_self, parse_border_style, parse_display, parse_flex_direction,
     parse_flex_wrap, parse_font_style, parse_font_weight, parse_justify_content, parse_overflow,

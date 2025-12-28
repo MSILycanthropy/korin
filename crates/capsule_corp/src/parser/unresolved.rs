@@ -7,6 +7,8 @@ pub fn parse_value_with_vars<'i>(
     input: &mut Parser<'i, '_>,
 ) -> ParseResult<'i, Option<UnresolvedValue>> {
     let state = input.state();
+
+    input.skip_whitespace();
     let start = input.position();
 
     let mut first_token_type = TokenSerializationType::Nothing;
@@ -75,6 +77,11 @@ fn collect_tokens_and_references_inner<'i>(
             Ok(t) => t.clone(),
             Err(_) => break,
         };
+
+        if token == Token::Semicolon {
+            input.reset(&state_before_token);
+            break;
+        }
 
         if check_important && token == Token::Delim('!') {
             let state_after_bang = input.state();

@@ -1,5 +1,5 @@
 use cssparser::{CowRcStr, ParseError, ParseErrorKind, SourceLocation, ToCss};
-use ginyu_force::Pose;
+use ginyu_force::{Pose, pose};
 use precomputed_hash::PrecomputedHash;
 use selectors::{
     Element, OpaqueElement, Parser, SelectorImpl,
@@ -187,6 +187,7 @@ impl<'i> Parser<'i> for SelectorParser {
             "checked" => Ok(PseudoClass::Checked),
             "first-child" => Ok(PseudoClass::FirstChild),
             "last-child" => Ok(PseudoClass::LastChild),
+            "root" => Ok(PseudoClass::Root),
             _ => Err(ParseError {
                 kind: ParseErrorKind::Custom(
                     SelectorParseErrorKind::UnsupportedPseudoClassOrElement(name),
@@ -228,6 +229,10 @@ pub trait TElement: Sized + Clone + Debug + PartialEq {
     fn each_class<F: FnMut(Pose)>(&self, callback: F);
 
     fn get_attribute(&self, name: Pose) -> Option<&str>;
+
+    fn style_attribute(&self) -> Option<&str> {
+        self.get_attribute(pose!("style"))
+    }
 
     fn state(&self) -> ElementState;
 
