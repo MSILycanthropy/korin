@@ -11,6 +11,7 @@ mod value;
 
 use color::parse_color;
 use cssparser::{Parser, Token};
+pub use declaration::Declaration;
 use keyword::{
     parse_align_items, parse_align_self, parse_border_style, parse_display, parse_flex_direction,
     parse_flex_wrap, parse_font_style, parse_font_weight, parse_justify_content, parse_overflow,
@@ -18,7 +19,9 @@ use keyword::{
     parse_visibility, parse_white_space,
 };
 use length::{parse_dimension, parse_length};
+pub use rule::Rule;
 pub use unresolved::parse_value_with_vars;
+pub use value::parse_property_value;
 
 pub use error::{ParseErrorKind, ParseResult};
 pub use stylesheet::*;

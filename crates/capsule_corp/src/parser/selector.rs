@@ -1,10 +1,6 @@
 use selectors::{SelectorList, parser::ParseRelative};
 
-use crate::{
-    ParseErrorKind, ParseResult,
-    element::{SelectorParser, Selectors},
-    parser::error::build_err,
-};
+use crate::{ParseErrorKind, ParseResult, SelectorParser, Selectors, parser::error::build_err};
 
 pub fn parse_selector<'i>(
     input: &mut cssparser::Parser<'i, '_>,

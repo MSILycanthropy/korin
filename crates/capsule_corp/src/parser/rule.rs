@@ -7,8 +7,7 @@ use rustc_hash::FxHashMap;
 use selectors::SelectorList;
 
 use crate::{
-    ParseErrorKind, ParseResult,
-    element::Selectors,
+    ParseErrorKind, ParseResult, Selectors,
     parser::{
         declaration::{Declaration, parse_declaration},
         selector::{parse_selector, parse_selector_for_nesting},

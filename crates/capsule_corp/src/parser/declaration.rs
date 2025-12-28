@@ -130,10 +130,10 @@ fn parse_custom_property_declaration<'i>(
             && input
                 .try_parse(|i| i.expect_ident_matching("important"))
                 .is_ok()
-            {
-                input.reset(&state);
-                break;
-            }
+        {
+            input.reset(&state);
+            break;
+        }
     }
 
     let raw = input.slice_from(start).trim().to_string();

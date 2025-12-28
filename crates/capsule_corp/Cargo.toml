@@ -9,9 +9,11 @@ ginyu_force.workspace = true
 cssparser.workspace = true
 selectors.workspace = true
 
+bitflags.workspace = true
 thiserror.workspace = true
 rustc-hash.workspace = true
 precomputed-hash.workspace = true
+smallvec.workspace = true
 
 [lints]
 workspace = true
