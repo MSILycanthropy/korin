@@ -23,7 +23,6 @@ fn parse_color_function<'i>(name: &str, input: &mut Parser<'i, '_>) -> ParseResu
 
     match name {
         "rgb" => {
-            dbg!("parsing RGB");
             let r = parse_u8(input)?;
             input.expect_comma()?;
             let g = parse_u8(input)?;

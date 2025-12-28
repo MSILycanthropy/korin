@@ -10,10 +10,11 @@ use selectors::{
 use smallvec::SmallVec;
 
 use crate::{
-    AlignItems, AlignSelf, BorderStyle, CapsuleElement, Color, ComputedStyle, CustomPropertiesMap,
-    CustomPropertiesResolver, Dimension, Display, ElementState, FlexDirection, FlexWrap, FontStyle,
-    FontWeight, JustifyContent, Length, Overflow, OverflowWrap, Property, Selectors, Stylesheet,
-    TElement, TextAlign, TextDecoration, Value, VerticalAlign, Visibility, WhiteSpace,
+    AlignContent, AlignItems, AlignSelf, BorderStyle, CapsuleElement, Color, ComputedStyle,
+    CustomPropertiesMap, CustomPropertiesResolver, Dimension, Display, ElementState, FlexDirection,
+    FlexWrap, FontStyle, FontWeight, JustifyContent, Length, Overflow, OverflowWrap, Property,
+    Selectors, Stylesheet, TElement, TextAlign, TextDecoration, Value, VerticalAlign, Visibility,
+    WhiteSpace,
     bulma::{
         cascade::CascadeData, invalidation::InvalidationMap, make_context, restyle::RestyleHint,
         rule::BulmaRule,
@@ -270,7 +271,7 @@ fn apply_declaration(
 
     if let Some(unresolved) = declaration.value.as_unresolved() {
         if let Ok(substituted) = unresolved.substitute(|name| custom_properties.get(name))
-            && let Some(value) = parse_custom_property(declaration.property, &substituted)
+            && let Some(value) = parse_substituted_value(declaration.property, &substituted)
         {
             apply_value(style, declaration.property, &value);
         }
@@ -288,6 +289,7 @@ fn apply_inherited(style: &mut ComputedStyle, property: Property, parent: &Compu
         Property::FlexWrap => style.flex_wrap = parent.flex_wrap,
         Property::JustifyContent => style.justify_content = parent.justify_content,
         Property::AlignItems => style.align_items = parent.align_items,
+        Property::AlignContent => style.align_content = parent.align_content,
         Property::FlexGrow => style.flex_grow = parent.flex_grow,
         Property::FlexShrink => style.flex_shrink = parent.flex_shrink,
         Property::FlexBasis => style.flex_basis = parent.flex_basis.clone(),
@@ -344,6 +346,7 @@ fn apply_initial(style: &mut ComputedStyle, property: Property) {
         Property::FlexWrap => style.flex_wrap = FlexWrap::default(),
         Property::JustifyContent => style.justify_content = JustifyContent::default(),
         Property::AlignItems => style.align_items = AlignItems::default(),
+        Property::AlignContent => style.align_content = AlignContent::default(),
         Property::FlexGrow => style.flex_grow = 0.0,
         Property::FlexShrink => style.flex_shrink = 1.0,
         Property::FlexBasis => style.flex_basis = Dimension::Auto,
@@ -460,10 +463,8 @@ fn apply_value(style: &mut ComputedStyle, property: Property, value: &Value) {
     }
 }
 
-fn parse_custom_property(property: Property, css: &str) -> Option<Value> {
-    if !property.is_custom() {
-        return None;
-    }
+fn parse_substituted_value(property: Property, css: &str) -> Option<Value> {
+    debug_assert!(!property.is_custom());
 
     let mut input = ParserInput::new(css);
     let mut input = Parser::new(&mut input);

@@ -83,7 +83,7 @@ keyword_enum! {
 }
 
 impl AlignSelf {
-    #[must_use] 
+    #[must_use]
     pub const fn resolve(self, parent: AlignItems) -> AlignItems {
         match self {
             Self::Auto => parent,
@@ -93,6 +93,19 @@ impl AlignSelf {
             Self::Stretch => AlignItems::Stretch,
             Self::Baseline => AlignItems::Baseline,
         }
+    }
+}
+
+keyword_enum! {
+    #[derive(Default)]
+    pub enum AlignContent {
+        #[default]
+        Stretch = "stretch",
+        FlexStart = "flex-start",
+        FlexEnd = "flex-end",
+        Center = "center",
+        SpaceBetween = "space-between",
+        SpaceAround = "space-around",
     }
 }
 

@@ -1,7 +1,7 @@
 use crate::{
-    AlignItems, AlignSelf, BorderStyle, Color, Dimension, Display, Edges, FlexDirection, FlexWrap,
-    FontStyle, FontWeight, JustifyContent, Length, Overflow, OverflowWrap, TextAlign,
-    TextDecoration, VerticalAlign, Visibility, WhiteSpace,
+    AlignContent, AlignItems, AlignSelf, BorderStyle, Color, Dimension, Display, Edges,
+    FlexDirection, FlexWrap, FontStyle, FontWeight, JustifyContent, Length, Overflow, OverflowWrap,
+    TextAlign, TextDecoration, VerticalAlign, Visibility, WhiteSpace,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -12,6 +12,7 @@ pub struct ComputedStyle {
     pub flex_wrap: FlexWrap,
     pub justify_content: JustifyContent,
     pub align_items: AlignItems,
+    pub align_content: AlignContent,
 
     pub flex_grow: f32,
     pub flex_shrink: f32,
@@ -61,6 +62,7 @@ impl Default for ComputedStyle {
             flex_wrap: FlexWrap::default(),
             justify_content: JustifyContent::default(),
             align_items: AlignItems::default(),
+            align_content: AlignContent::default(),
 
             flex_grow: 0.0,
             flex_shrink: 1.0,

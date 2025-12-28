@@ -98,6 +98,7 @@ pub enum PseudoClass {
     FirstChild,
     LastChild,
     NthChild(i32),
+    Root,
 }
 
 impl ToCss for PseudoClass {
@@ -114,6 +115,7 @@ impl ToCss for PseudoClass {
             Self::FirstChild => write!(dest, ":first-child"),
             Self::LastChild => write!(dest, ":last-child"),
             Self::NthChild(n) => write!(dest, ":nth-child({n})"),
+            Self::Root => write!(dest, ":root"),
         }
     }
 }
@@ -381,6 +383,7 @@ impl<E: TElement> Element for CapsuleElement<E> {
             FirstChild => self.is_first_child(),
             LastChild => self.is_last_child(),
             NthChild(n) => self.sibling_index() == (*n as usize),
+            Root => self.is_root(),
         }
     }
 

@@ -3,11 +3,11 @@ use cssparser::Parser;
 use crate::{
     ParseResult, Property, Value,
     parser::{
-        parse_align_items, parse_align_self, parse_border_style, parse_color, parse_dimension,
-        parse_display, parse_flex_direction, parse_flex_wrap, parse_font_style, parse_font_weight,
-        parse_integer, parse_justify_content, parse_length, parse_number, parse_overflow,
-        parse_overflow_wrap, parse_text_align, parse_text_decoration, parse_vertical_align,
-        parse_visibility, parse_white_space,
+        keyword::parse_align_content, parse_align_items, parse_align_self, parse_border_style,
+        parse_color, parse_dimension, parse_display, parse_flex_direction, parse_flex_wrap,
+        parse_font_style, parse_font_weight, parse_integer, parse_justify_content, parse_length,
+        parse_number, parse_overflow, parse_overflow_wrap, parse_text_align, parse_text_decoration,
+        parse_vertical_align, parse_visibility, parse_white_space,
     },
 };
 
@@ -24,6 +24,7 @@ pub fn parse_property_value<'i>(
         FlexWrap => parse_flex_wrap(input).map(Value::FlexWrap),
         JustifyContent => parse_justify_content(input).map(Value::JustifyContent),
         AlignItems => parse_align_items(input).map(Value::AlignItems),
+        AlignContent => parse_align_content(input).map(Value::AlignContent),
 
         FlexGrow | FlexShrink => parse_number(input).map(Value::Number),
         FlexBasis => parse_dimension(input).map(Value::Dimension),

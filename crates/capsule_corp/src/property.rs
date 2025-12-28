@@ -1,7 +1,8 @@
 use crate::{
-    AlignItems, AlignSelf, BorderStyle, Color, CustomValue, Dimension, Display, FlexDirection,
-    FlexWrap, FontStyle, FontWeight, JustifyContent, Length, Overflow, OverflowWrap, TextAlign,
-    TextDecoration, UnresolvedValue, VerticalAlign, Visibility, WhiteSpace, macros::keyword_enum,
+    AlignContent, AlignItems, AlignSelf, BorderStyle, Color, CustomValue, Dimension, Display,
+    FlexDirection, FlexWrap, FontStyle, FontWeight, JustifyContent, Length, Overflow, OverflowWrap,
+    TextAlign, TextDecoration, UnresolvedValue, VerticalAlign, Visibility, WhiteSpace,
+    macros::keyword_enum,
 };
 
 keyword_enum! {
@@ -13,6 +14,7 @@ keyword_enum! {
         FlexWrap = "flex-wrap",
         JustifyContent = "justify-content",
         AlignItems = "align-items",
+        AlignContent = "align-content",
 
         FlexGrow = "flex-grow",
         FlexShrink = "flex-shrink",
@@ -204,6 +206,7 @@ pub enum Value {
     JustifyContent(JustifyContent),
     AlignItems(AlignItems),
     AlignSelf(AlignSelf),
+    AlignContent(AlignContent),
     FontWeight(FontWeight),
     FontStyle(FontStyle),
     TextDecoration(TextDecoration),

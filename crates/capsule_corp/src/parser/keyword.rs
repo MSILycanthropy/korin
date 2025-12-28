@@ -1,9 +1,9 @@
 use cssparser::{Parser, Token};
 
 use crate::{
-    AlignItems, AlignSelf, BorderStyle, Display, FlexDirection, FlexWrap, FontStyle, FontWeight,
-    JustifyContent, Overflow, OverflowWrap, ParseErrorKind, ParseResult, TextAlign, TextDecoration,
-    VerticalAlign, Visibility, WhiteSpace,
+    AlignContent, AlignItems, AlignSelf, BorderStyle, Display, FlexDirection, FlexWrap, FontStyle,
+    FontWeight, JustifyContent, Overflow, OverflowWrap, ParseErrorKind, ParseResult, TextAlign,
+    TextDecoration, VerticalAlign, Visibility, WhiteSpace,
     parser::error::{build_err, expected},
 };
 
@@ -53,6 +53,7 @@ keyword_parsers! {
     parse_justify_content => JustifyContent, "justify-content";
     parse_align_items => AlignItems, "align-items";
     parse_align_self => AlignSelf, "align-self";
+    parse_align_content => AlignContent, "align-content";
 
     parse_text_align => TextAlign, "text-align";
     parse_vertical_align => VerticalAlign, "vertical-align";

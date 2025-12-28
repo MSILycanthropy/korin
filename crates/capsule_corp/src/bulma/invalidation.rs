@@ -178,9 +178,7 @@ const fn pseudo_class_to_state(pseudo: &PseudoClass) -> ElementState {
         PseudoClass::Active => ElementState::ACTIVE,
         PseudoClass::Disabled => ElementState::DISABLED,
         PseudoClass::Checked => ElementState::CHECKED,
-        PseudoClass::FirstChild | PseudoClass::LastChild | PseudoClass::NthChild(_) => {
-            ElementState::empty()
-        }
+        _ => ElementState::empty(),
     }
 }
 
