@@ -337,6 +337,17 @@ fn apply_declaration(
         return;
     }
 
+    if declaration.value.is_unset() {
+        if declaration.property.inherited() {
+            if let Some(parent) = parent_style {
+                apply_inherited(style, declaration.property, parent);
+            }
+        } else {
+            apply_initial(style, declaration.property);
+        }
+        return;
+    }
+
     if let Some(unresolved) = declaration.value.as_unresolved() {
         if let Ok(substituted) = unresolved.substitute(|name| custom_properties.get(name))
             && let Some(value) = parse_substituted_value(declaration.property, &substituted)

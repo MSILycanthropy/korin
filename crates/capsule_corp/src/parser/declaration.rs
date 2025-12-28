@@ -42,6 +42,7 @@ fn try_parse_global(input: &mut Parser<'_, '_>) -> Option<Value> {
             match GlobalKeyword::from_name(ident) {
                 Some(GlobalKeyword::Inherit) => Ok(Value::Inherit),
                 Some(GlobalKeyword::Initial) => Ok(Value::Initial),
+                Some(GlobalKeyword::Unset) => Ok(Value::Unset),
                 None => Err(()),
             }
         })

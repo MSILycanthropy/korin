@@ -21,32 +21,38 @@ bitflags! {
 
 impl RestyleHint {
     #[inline]
+    #[must_use] 
     pub fn affects_self(self) -> bool {
         self.intersects(Self::RECASCADE_SELF | Self::RESTYLE_SELF | Self::RESTYLE_STYLE_ATTRIBUTE)
     }
 
     #[inline]
+    #[must_use] 
     pub fn affects_descendants(self) -> bool {
         self.intersects(Self::RESTYLE_DESCENDANTS | Self::RECASCADE_DESCENDANTS)
     }
 
     #[inline]
+    #[must_use] 
     pub const fn affects_later_siblings(self) -> bool {
         self.contains(Self::RESTYLE_LATER_SIBLINGS)
     }
 
     #[inline]
+    #[must_use] 
     pub fn needs_selector_match(self) -> bool {
         self.intersects(Self::RESTYLE_SELF | Self::RESTYLE_DESCENDANTS)
     }
 
     #[inline]
+    #[must_use] 
     pub fn needs_recascade_only(self) -> bool {
         !self.needs_selector_match()
             && self.intersects(Self::RECASCADE_SELF | Self::RECASCADE_DESCENDANTS)
     }
 
     #[inline]
+    #[must_use] 
     pub fn propagate_to_child(self) -> Self {
         let mut child_hint = Self::empty();
 
@@ -66,6 +72,7 @@ impl RestyleHint {
     }
 
     #[inline]
+    #[must_use] 
     pub const fn propagate_to_later_sibling(self) -> Self {
         if self.contains(Self::RESTYLE_LATER_SIBLINGS) {
             Self::RESTYLE_SELF

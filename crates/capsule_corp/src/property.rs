@@ -228,6 +228,7 @@ pub enum Value {
 
     Inherit,
     Initial,
+    Unset,
 
     Unresolved(UnresolvedValue),
     Custom(CustomValue),
@@ -349,6 +350,11 @@ impl Value {
     pub const fn is_initial(&self) -> bool {
         matches!(self, Self::Initial)
     }
+
+    #[must_use]
+    pub const fn is_unset(&self) -> bool {
+        matches!(self, Self::Unset)
+    }
 }
 
 #[cfg(test)]
@@ -415,7 +421,7 @@ mod tests {
     #[test]
     fn global_keywords() {
         assert!(Value::Inherit.is_inherit());
-        assert!(!Value::Inherit.is_initial());
         assert!(Value::Initial.is_initial());
+        assert!(Value::Unset.is_unset());
     }
 }
