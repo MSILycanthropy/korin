@@ -11,10 +11,10 @@ use smallvec::SmallVec;
 
 use crate::{
     AlignContent, AlignItems, AlignSelf, BorderStyle, CapsuleElement, Color, ComputedStyle,
-    CustomPropertiesMap, CustomPropertiesResolver, Dimension, Display, ElementState, FlexDirection,
-    FlexWrap, FontStyle, FontWeight, JustifyContent, Length, Overflow, OverflowWrap, Property,
-    Selectors, Stylesheet, TElement, TextAlign, TextDecoration, Value, VerticalAlign, Visibility,
-    WhiteSpace,
+    ConcreteCapsuleElement, CustomPropertiesMap, CustomPropertiesResolver, Dimension, Display,
+    ElementState, FlexDirection, FlexWrap, FontStyle, FontWeight, JustifyContent, Length, Overflow,
+    OverflowWrap, Property, Selectors, Stylesheet, TextAlign, TextDecoration, Value, VerticalAlign,
+    Visibility, WhiteSpace,
     bulma::{
         cascade::CascadeData, invalidation::InvalidationMap, make_context, restyle::RestyleHint,
         rule::BulmaRule,
@@ -144,13 +144,13 @@ impl Bulma {
         self.invalidation_map.has_attribute_dependency(attribute)
     }
 
-    pub fn collect_matching_rules<E: TElement>(
+    pub fn collect_matching_rules<E: CapsuleElement>(
         &mut self,
         element: &E,
         caches: &mut SelectorCaches,
     ) -> SmallVec<[ApplicableDeclaration; 8]> {
         let mut matched = SmallVec::new();
-        let wrapped = CapsuleElement::new(element.clone());
+        let wrapped = ConcreteCapsuleElement::new(element.clone());
         let cascade_data = &self.cascade_data;
         let mut context = make_context(caches);
 
@@ -182,7 +182,7 @@ impl Bulma {
         matched
     }
 
-    pub fn compute_style<E: TElement>(
+    pub fn compute_style<E: CapsuleElement>(
         &mut self,
         element: &E,
         parent_style: Option<&ComputedStyle>,
@@ -296,8 +296,8 @@ impl Default for Bulma {
     }
 }
 
-fn collect_if_matching<E: TElement>(
-    element: &CapsuleElement<E>,
+fn collect_if_matching<E: CapsuleElement>(
+    element: &ConcreteCapsuleElement<E>,
     rules: &[BulmaRule],
     context: &mut MatchingContext<'_, Selectors>,
     matched: &mut SmallVec<[ApplicableDeclaration; 8]>,
@@ -570,7 +570,7 @@ impl ApplicableDeclaration {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Stylesheet;
+    use crate::{CapsuleNode, Layout, Stylesheet};
     use selectors::context::SelectorCaches;
 
     #[derive(Debug, Clone, PartialEq)]
@@ -614,7 +614,37 @@ mod tests {
         }
     }
 
-    impl TElement for TestElement {
+    impl CapsuleNode for TestElement {
+        fn text_content(&self) -> Option<&str> {
+            None
+        }
+
+        fn computed_style(&self) -> Option<&ComputedStyle> {
+            None
+        }
+
+        fn set_style(&mut self, _style: ComputedStyle, _custom_properties: CustomPropertiesMap) {}
+
+        fn clear_needs_layout(&mut self) {}
+
+        fn custom_properties(&self) -> Option<&CustomPropertiesMap> {
+            None
+        }
+
+        fn layout(&self) -> crate::Layout {
+            Layout::ZERO
+        }
+
+        fn mark_needs_layout(&mut self) {}
+
+        fn needs_layout(&self) -> bool {
+            false
+        }
+
+        fn set_layout(&mut self, _layout: Layout) {}
+    }
+
+    impl CapsuleElement for TestElement {
         fn tag_name(&self) -> Pose {
             self.tag
         }
@@ -1126,11 +1156,7 @@ mod tests {
         let element = TestElement::new("div").with_style("--accent: red; color: var(--accent)");
         let mut caches = SelectorCaches::default();
 
-        let inline = parse_inline_style("--accent: red; color: var(--accent)");
-        dbg!(&inline);
-
         let (style, custom_props) = bulma.compute_style(&element, None, None, &mut caches);
-        dbg!(&custom_props);
 
         assert_eq!(custom_props.get(Pose::from("accent")), Some("red"));
         assert_eq!(style.color, Color::RED);

@@ -1,29 +1,10 @@
 use selectors::context::SelectorCaches;
 
-use crate::{Bulma, ComputedStyle, CustomPropertiesMap, TElement, bulma::restyle::RestyleHint};
+use crate::{
+    Bulma, CapsuleDocument, ComputedStyle, CustomPropertiesMap, bulma::restyle::RestyleHint,
+};
 
-pub trait TDocument {
-    type Element: TElement;
-    type NodeId: Copy + Eq;
-
-    fn root(&self) -> Self::NodeId;
-    fn as_element(&self, node: Self::NodeId) -> Self::Element;
-    fn parent(&self, node: Self::NodeId) -> Option<Self::NodeId>;
-    fn children(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId>;
-    fn next_siblings(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId>;
-    fn computed_style(&self, node: Self::NodeId) -> Option<&ComputedStyle>;
-    fn custom_properties(&self, node: Self::NodeId) -> Option<&CustomPropertiesMap>;
-    fn set_style(
-        &mut self,
-        node: Self::NodeId,
-        style: ComputedStyle,
-        custom_properties: CustomPropertiesMap,
-    );
-    fn take_stylist(&mut self) -> Bulma;
-    fn set_stylist(&mut self, stylist: Bulma);
-}
-
-pub fn compute_styles<D: TDocument>(document: &mut D) {
+pub fn compute_styles<D: CapsuleDocument>(document: &mut D) {
     let mut stylist = document.take_stylist();
     let mut caches = SelectorCaches::default();
     let root = document.root();
@@ -33,7 +14,7 @@ pub fn compute_styles<D: TDocument>(document: &mut D) {
     document.set_stylist(stylist);
 }
 
-pub fn restyle_subtree<D: TDocument>(document: &mut D, node: D::NodeId, hint: RestyleHint) {
+pub fn restyle_subtree<D: CapsuleDocument>(document: &mut D, node: D::NodeId, hint: RestyleHint) {
     if hint.is_empty() {
         return;
     }
@@ -46,7 +27,7 @@ pub fn restyle_subtree<D: TDocument>(document: &mut D, node: D::NodeId, hint: Re
     document.set_stylist(stylist);
 }
 
-fn restyle_subtree_inner<D: TDocument>(
+fn restyle_subtree_inner<D: CapsuleDocument>(
     document: &mut D,
     stylist: &mut Bulma,
     caches: &mut SelectorCaches,
@@ -62,7 +43,7 @@ fn restyle_subtree_inner<D: TDocument>(
         });
 
     if hint.affects_self() {
-        let element = document.as_element(node);
+        let element = document.get_element_strict(node);
         let (style, custom_properties) =
             stylist.compute_style(&element, parent_style, parent_custom_properties, caches);
 
@@ -95,7 +76,7 @@ fn restyle_subtree_inner<D: TDocument>(
     }
 }
 
-fn compute_styles_recursive<D: TDocument>(
+fn compute_styles_recursive<D: CapsuleDocument>(
     document: &mut D,
     stylist: &mut Bulma,
     caches: &mut SelectorCaches,
@@ -103,7 +84,7 @@ fn compute_styles_recursive<D: TDocument>(
     parent_style: Option<&ComputedStyle>,
     parent_custom_properties: Option<&CustomPropertiesMap>,
 ) {
-    let element = document.as_element(node);
+    let element = document.get_element_strict(node);
     let (style, custom_properties) =
         stylist.compute_style(&element, parent_style, parent_custom_properties, caches);
 
@@ -123,7 +104,7 @@ fn compute_styles_recursive<D: TDocument>(
     }
 }
 
-fn restyle_subtree_recursive<D: TDocument>(
+fn restyle_subtree_recursive<D: CapsuleDocument>(
     document: &mut D,
     stylist: &mut Bulma,
     caches: &mut SelectorCaches,
@@ -131,7 +112,7 @@ fn restyle_subtree_recursive<D: TDocument>(
     parent_style: Option<&ComputedStyle>,
     parent_custom_properties: Option<&CustomPropertiesMap>,
 ) {
-    let element = document.as_element(node);
+    let element = document.get_element_strict(node);
     let (style, custom_properties) =
         stylist.compute_style(&element, parent_style, parent_custom_properties, caches);
 
@@ -154,7 +135,7 @@ fn restyle_subtree_recursive<D: TDocument>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Color, Display, ElementState, Stylesheet};
+    use crate::{CapsuleElement, CapsuleNode, Color, Display, ElementState, Layout, Stylesheet};
     use ginyu_force::Pose;
     use std::collections::HashMap;
 
@@ -168,7 +149,37 @@ mod tests {
         parent_id: Option<usize>,
     }
 
-    impl TElement for TestEl {
+    impl CapsuleNode for TestEl {
+        fn text_content(&self) -> Option<&str> {
+            None
+        }
+
+        fn computed_style(&self) -> Option<&ComputedStyle> {
+            None
+        }
+
+        fn set_style(&mut self, _style: ComputedStyle, _custom_properties: CustomPropertiesMap) {}
+
+        fn clear_needs_layout(&mut self) {}
+
+        fn custom_properties(&self) -> Option<&CustomPropertiesMap> {
+            None
+        }
+
+        fn layout(&self) -> crate::Layout {
+            Layout::ZERO
+        }
+
+        fn mark_needs_layout(&mut self) {}
+
+        fn needs_layout(&self) -> bool {
+            false
+        }
+
+        fn set_layout(&mut self, _layout: Layout) {}
+    }
+
+    impl CapsuleElement for TestEl {
         fn tag_name(&self) -> Pose {
             self.tag
         }
@@ -267,16 +278,25 @@ mod tests {
         }
     }
 
-    impl TDocument for TestDoc {
+    impl CapsuleDocument for TestDoc {
         type Element = TestEl;
+        type Node = TestEl;
         type NodeId = usize;
 
         fn root(&self) -> usize {
             self.root
         }
 
-        fn as_element(&self, node: usize) -> TestEl {
-            self.nodes.get(&node).cloned().expect("node not found")
+        fn get_node(&self, node: Self::NodeId) -> &Self::Node {
+            self.nodes.get(&node).expect("not found")
+        }
+
+        fn get_node_mut(&mut self, node: Self::NodeId) -> &mut Self::Node {
+            self.nodes.get_mut(&node).expect("not found")
+        }
+
+        fn get_element(&self, node: Self::NodeId) -> Option<Self::Element> {
+            self.nodes.get(&node).cloned()
         }
 
         fn parent(&self, node: usize) -> Option<usize> {

@@ -47,19 +47,24 @@ keyword_enum! {
 keyword_enum! {
     #[derive(Default)]
     pub enum JustifyContent {
+        Stretch = "stretch",
         #[default]
         FlexStart = "flex-start",
         FlexEnd = "flex-end",
+        Start = "start",
+        End = "end",
         Center = "center",
         SpaceBetween = "space-between",
         SpaceAround = "space-around",
-        SpaceEvenly = "space-evenly",
+        SpaceEvenly = "space-evenly"
     }
 }
 
 keyword_enum! {
     #[derive(Default)]
     pub enum AlignItems {
+        Start = "start",
+        End = "end",
         FlexStart = "flex-start",
         FlexEnd = "flex-end",
         Center = "center",
@@ -74,7 +79,9 @@ keyword_enum! {
     pub enum AlignSelf {
         #[default]
         Auto = "auto",
+        Start = "start",
         FlexStart = "flex-start",
+        End = "end",
         FlexEnd = "flex-end",
         Center = "center",
         Stretch = "stretch",
@@ -92,6 +99,8 @@ impl AlignSelf {
             Self::Center => AlignItems::Center,
             Self::Stretch => AlignItems::Stretch,
             Self::Baseline => AlignItems::Baseline,
+            Self::End => AlignItems::End,
+            Self::Start => AlignItems::Start,
         }
     }
 }
@@ -99,13 +108,16 @@ impl AlignSelf {
 keyword_enum! {
     #[derive(Default)]
     pub enum AlignContent {
-        #[default]
         Stretch = "stretch",
+        #[default]
         FlexStart = "flex-start",
         FlexEnd = "flex-end",
+        Start = "start",
+        End = "end",
         Center = "center",
         SpaceBetween = "space-between",
         SpaceAround = "space-around",
+        SpaceEvenly = "space-evenly"
     }
 }
 

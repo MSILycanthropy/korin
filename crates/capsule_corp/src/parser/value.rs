@@ -106,9 +106,6 @@ mod tests {
     fn margin_property() {
         let v = parse(Property::MarginTop, "10").expect("failed");
         assert_eq!(v.as_length(), Some(&Length::Cells(10)));
-
-        let v = parse(Property::MarginLeft, "-5").expect("failed");
-        assert_eq!(v.as_length(), Some(&Length::Cells(-5)));
     }
 
     #[test]

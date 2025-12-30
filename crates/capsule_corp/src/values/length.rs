@@ -1,6 +1,6 @@
 #[derive(Debug, Clone, PartialEq)]
 pub enum Length {
-    Cells(i16),
+    Cells(u16),
     Percent(f32),
     Calc(Box<CalcExpr>),
 }
@@ -8,12 +8,12 @@ pub enum Length {
 impl Length {
     pub const ZERO: Self = Self::Cells(0);
 
-    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     #[must_use]
-    pub fn resolve(&self, parent: i16) -> i16 {
+    pub fn resolve(&self, parent: u16) -> u16 {
         match self {
             Self::Cells(c) => *c,
-            Self::Percent(p) => (f32::from(parent) * p / 100.0).round() as i16,
+            Self::Percent(p) => (f32::from(parent) * p / 100.0).round() as u16,
             Self::Calc(expr) => expr.resolve(parent),
         }
     }
@@ -37,7 +37,7 @@ impl Dimension {
     pub const ZERO: Self = Self::Length(Length::ZERO);
 
     #[must_use]
-    pub fn resolve(&self, parent: i16) -> Option<i16> {
+    pub fn resolve(&self, parent: u16) -> Option<u16> {
         match self {
             Self::Auto | Self::None => None,
             Self::Length(l) => Some(l.resolve(parent)),
@@ -56,10 +56,10 @@ pub enum CalcExpr {
 }
 
 impl CalcExpr {
-    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     #[must_use]
-    pub fn resolve(&self, parent: i16) -> i16 {
-        self.resolve_f32(f32::from(parent)).round() as i16
+    pub fn resolve(&self, parent: u16) -> u16 {
+        self.resolve_f32(f32::from(parent)).round() as u16
     }
 
     fn resolve_f32(&self, parent: f32) -> f32 {
@@ -83,12 +83,6 @@ mod tests {
         let l = Length::Cells(10);
         assert_eq!(l.resolve(100), 10);
         assert_eq!(l.resolve(50), 10); // cells don't depend on parent
-    }
-
-    #[test]
-    fn length_negative_cells() {
-        let l = Length::Cells(-5);
-        assert_eq!(l.resolve(100), -5);
     }
 
     #[test]

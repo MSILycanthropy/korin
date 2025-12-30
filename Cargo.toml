@@ -33,6 +33,8 @@ parking_lot = "0.12"
 quote = "1"
 proc-macro2 = "1"
 criterion = "0.8"
+unicode-width = "0.2"
+unicode-segmentation = "1"
 
 # Servo deps
 cssparser = "0.36"

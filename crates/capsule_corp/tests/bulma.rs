@@ -3,15 +3,160 @@
 use std::collections::HashMap;
 
 use capsule_corp::{
-    Bulma, Color, ComputedStyle, CustomPropertiesMap, Display, ElementState, FlexDirection,
-    FontWeight, Length, Overflow, RestyleHint, Stylesheet, TDocument, TElement, TextAlign,
-    Visibility, compute_styles, restyle_subtree,
+    Bulma, CapsuleDocument, CapsuleElement, CapsuleNode, Color, ComputedStyle, CustomPropertiesMap,
+    Display, ElementState, FlexDirection, FontWeight, Layout, Length, Overflow, RestyleHint,
+    Stylesheet, TextAlign, Visibility, compute_styles, restyle_subtree,
 };
 use ginyu_force::Pose;
 
 #[derive(Debug, Clone)]
+struct MockElementData {
+    tag: Pose,
+    id: Option<Pose>,
+    classes: Vec<Pose>,
+    state: ElementState,
+}
+
+#[derive(Debug, Clone)]
+struct MockNode {
+    layout: Layout,
+    needs_layout: bool,
+    kind: MockNodeKind,
+}
+
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+enum MockNodeKind {
+    Element(Box<MockElementNode>),
+    Text(String),
+}
+
+#[derive(Debug, Clone)]
+struct MockElementNode {
+    tag: Pose,
+    id: Option<Pose>,
+    classes: Vec<Pose>,
+    attributes: HashMap<Pose, String>,
+    state: ElementState,
+    inline_style: Option<String>,
+    parent_data: Option<Box<MockElementData>>,
+    prev_sibling_data: Option<Box<MockElementData>>,
+    next_sibling_data: Option<Box<MockElementData>>,
+    has_children: bool,
+    style: Option<ComputedStyle>,
+    custom_properties: Option<CustomPropertiesMap>,
+}
+
+impl MockNode {
+    fn element(tag: &str) -> Self {
+        Self {
+            layout: Layout::ZERO,
+            needs_layout: false,
+            kind: MockNodeKind::Element(
+                MockElementNode {
+                    tag: Pose::from(tag),
+                    id: None,
+                    classes: vec![],
+                    attributes: HashMap::new(),
+                    state: ElementState::empty(),
+                    inline_style: None,
+                    parent_data: None,
+                    prev_sibling_data: None,
+                    next_sibling_data: None,
+                    has_children: false,
+                    style: None,
+                    custom_properties: None,
+                }
+                .into(),
+            ),
+        }
+    }
+
+    fn get_element(&self) -> Option<MockElement> {
+        match &self.kind {
+            MockNodeKind::Element(el) => Some(MockElement {
+                tag: el.tag,
+                id: el.id,
+                classes: el.classes.clone(),
+                attributes: el.attributes.clone(),
+                state: el.state,
+                inline_style: el.inline_style.clone(),
+                parent_data: el.parent_data.clone(),
+                prev_sibling_data: el.prev_sibling_data.clone(),
+                next_sibling_data: el.next_sibling_data.clone(),
+                has_children: el.has_children,
+            }),
+            MockNodeKind::Text(_) => None,
+        }
+    }
+
+    const fn get_element_node(&self) -> Option<&MockElementNode> {
+        match &self.kind {
+            MockNodeKind::Element(el) => Some(el),
+            MockNodeKind::Text(_) => None,
+        }
+    }
+
+    const fn get_element_node_mut(&mut self) -> Option<&mut MockElementNode> {
+        match &mut self.kind {
+            MockNodeKind::Element(el) => Some(el),
+            MockNodeKind::Text(_) => None,
+        }
+    }
+}
+
+impl CapsuleNode for MockNode {
+    fn text_content(&self) -> Option<&str> {
+        match &self.kind {
+            MockNodeKind::Text(str) => Some(str),
+            MockNodeKind::Element(_) => None,
+        }
+    }
+
+    fn computed_style(&self) -> Option<&ComputedStyle> {
+        match &self.kind {
+            MockNodeKind::Element(el) => el.style.as_ref(),
+            MockNodeKind::Text(_) => None,
+        }
+    }
+
+    fn custom_properties(&self) -> Option<&CustomPropertiesMap> {
+        match &self.kind {
+            MockNodeKind::Element(el) => el.custom_properties.as_ref(),
+            MockNodeKind::Text(_) => None,
+        }
+    }
+
+    fn set_style(&mut self, style: ComputedStyle, custom_properties: CustomPropertiesMap) {
+        if let MockNodeKind::Element(el) = &mut self.kind {
+            el.style = Some(style);
+            el.custom_properties = Some(custom_properties);
+        }
+    }
+
+    fn layout(&self) -> Layout {
+        self.layout
+    }
+
+    fn set_layout(&mut self, layout: Layout) {
+        self.layout = layout;
+    }
+
+    fn needs_layout(&self) -> bool {
+        self.needs_layout
+    }
+
+    fn mark_needs_layout(&mut self) {
+        self.needs_layout = true;
+    }
+
+    fn clear_needs_layout(&mut self) {
+        self.needs_layout = false;
+    }
+}
+
+#[derive(Debug, Clone)]
 struct MockElement {
-    node_id: usize,
     tag: Pose,
     id: Option<Pose>,
     classes: Vec<Pose>,
@@ -24,39 +169,13 @@ struct MockElement {
     has_children: bool,
 }
 
-#[derive(Debug, Clone)]
-struct MockElementData {
-    tag: Pose,
-    id: Option<Pose>,
-    classes: Vec<Pose>,
-    state: ElementState,
-}
-
-impl MockElement {
-    fn new(node_id: usize, tag: &str) -> Self {
-        Self {
-            node_id,
-            tag: Pose::from(tag),
-            id: None,
-            classes: vec![],
-            attributes: HashMap::new(),
-            state: ElementState::empty(),
-            inline_style: None,
-            parent_data: None,
-            prev_sibling_data: None,
-            next_sibling_data: None,
-            has_children: false,
-        }
-    }
-}
-
 impl PartialEq for MockElement {
     fn eq(&self, other: &Self) -> bool {
-        self.node_id == other.node_id
+        self.tag == other.tag && self.id == other.id
     }
 }
 
-impl TElement for MockElement {
+impl CapsuleElement for MockElement {
     fn tag_name(&self) -> Pose {
         self.tag
     }
@@ -88,32 +207,47 @@ impl TElement for MockElement {
     }
 
     fn parent(&self) -> Option<Self> {
-        self.parent_data.as_ref().map(|data| {
-            let mut el = Self::new(usize::MAX, data.tag.as_str());
-            el.id = data.id;
-            el.classes.clone_from(&data.classes);
-            el.state = data.state;
-            el
+        self.parent_data.as_ref().map(|data| Self {
+            tag: data.tag,
+            id: data.id,
+            classes: data.classes.clone(),
+            state: data.state,
+            attributes: HashMap::new(),
+            inline_style: None,
+            parent_data: None,
+            prev_sibling_data: None,
+            next_sibling_data: None,
+            has_children: false,
         })
     }
 
     fn prev_sibling(&self) -> Option<Self> {
-        self.prev_sibling_data.as_ref().map(|data| {
-            let mut el = Self::new(usize::MAX, data.tag.as_str());
-            el.id = data.id;
-            el.classes.clone_from(&data.classes);
-            el.state = data.state;
-            el
+        self.prev_sibling_data.as_ref().map(|data| Self {
+            tag: data.tag,
+            id: data.id,
+            classes: data.classes.clone(),
+            state: data.state,
+            attributes: HashMap::new(),
+            inline_style: None,
+            parent_data: None,
+            prev_sibling_data: None,
+            next_sibling_data: None,
+            has_children: false,
         })
     }
 
     fn next_sibling(&self) -> Option<Self> {
-        self.next_sibling_data.as_ref().map(|data| {
-            let mut el = Self::new(usize::MAX, data.tag.as_str());
-            el.id = data.id;
-            el.classes.clone_from(&data.classes);
-            el.state = data.state;
-            el
+        self.next_sibling_data.as_ref().map(|data| Self {
+            tag: data.tag,
+            id: data.id,
+            classes: data.classes.clone(),
+            state: data.state,
+            attributes: HashMap::new(),
+            inline_style: None,
+            parent_data: None,
+            prev_sibling_data: None,
+            next_sibling_data: None,
+            has_children: false,
         })
     }
 
@@ -123,10 +257,9 @@ impl TElement for MockElement {
 }
 
 struct MockDocument {
-    nodes: HashMap<usize, MockElement>,
+    nodes: HashMap<usize, MockNode>,
     children: HashMap<usize, Vec<usize>>,
     parent: HashMap<usize, usize>,
-    styles: HashMap<usize, (ComputedStyle, CustomPropertiesMap)>,
     stylist: Bulma,
     root: usize,
     next_id: usize,
@@ -138,7 +271,6 @@ impl MockDocument {
             nodes: HashMap::new(),
             children: HashMap::new(),
             parent: HashMap::new(),
-            styles: HashMap::new(),
             stylist: Bulma::new(),
             root: 0,
             next_id: 0,
@@ -166,7 +298,7 @@ impl MockDocument {
     fn create_element(&mut self, tag: &str) -> usize {
         let id = self.next_id;
         self.next_id += 1;
-        self.nodes.insert(id, MockElement::new(id, tag));
+        self.nodes.insert(id, MockNode::element(tag));
         if id == 0 {
             self.root = id;
         }
@@ -174,44 +306,61 @@ impl MockDocument {
     }
 
     fn append_child(&mut self, parent: usize, child: usize) {
-        if let Some(parent_el) = self.nodes.get_mut(&parent) {
-            parent_el.has_children = true;
+        // Update parent's has_children flag
+        if let Some(parent_node) = self.nodes.get_mut(&parent)
+            && let Some(el) = parent_node.get_element_node_mut()
+        {
+            el.has_children = true;
         }
 
-        if let Some(parent_el) = self.nodes.get(&parent) {
+        // Set child's parent_data
+        if let Some(parent_node) = self.nodes.get(&parent)
+            && let Some(parent_el) = parent_node.get_element_node()
+        {
             let parent_data = MockElementData {
                 tag: parent_el.tag,
                 id: parent_el.id,
                 classes: parent_el.classes.clone(),
                 state: parent_el.state,
             };
-            if let Some(child_el) = self.nodes.get_mut(&child) {
+            if let Some(child_node) = self.nodes.get_mut(&child)
+                && let Some(child_el) = child_node.get_element_node_mut()
+            {
                 child_el.parent_data = Some(Box::new(parent_data));
             }
         }
 
+        // Handle sibling relationships
         let siblings = self.children.entry(parent).or_default();
         if let Some(&prev_id) = siblings.last() {
-            if let Some(prev_el) = self.nodes.get(&prev_id) {
+            if let Some(prev_node) = self.nodes.get(&prev_id)
+                && let Some(prev_el) = prev_node.get_element_node()
+            {
                 let prev_data = MockElementData {
                     tag: prev_el.tag,
                     id: prev_el.id,
                     classes: prev_el.classes.clone(),
                     state: prev_el.state,
                 };
-                if let Some(child_el) = self.nodes.get_mut(&child) {
+                if let Some(child_node) = self.nodes.get_mut(&child)
+                    && let Some(child_el) = child_node.get_element_node_mut()
+                {
                     child_el.prev_sibling_data = Some(Box::new(prev_data));
                 }
             }
 
-            if let Some(child_el) = self.nodes.get(&child) {
+            if let Some(child_node) = self.nodes.get(&child)
+                && let Some(child_el) = child_node.get_element_node()
+            {
                 let next_data = MockElementData {
                     tag: child_el.tag,
                     id: child_el.id,
                     classes: child_el.classes.clone(),
                     state: child_el.state,
                 };
-                if let Some(prev_el) = self.nodes.get_mut(&prev_id) {
+                if let Some(prev_node) = self.nodes.get_mut(&prev_id)
+                    && let Some(prev_el) = prev_node.get_element_node_mut()
+                {
                     prev_el.next_sibling_data = Some(Box::new(next_data));
                 }
             }
@@ -222,48 +371,71 @@ impl MockDocument {
     }
 
     fn set_id(&mut self, node: usize, id: &str) {
-        if let Some(el) = self.nodes.get_mut(&node) {
+        if let Some(n) = self.nodes.get_mut(&node)
+            && let Some(el) = n.get_element_node_mut()
+        {
             el.id = Some(Pose::from(id));
         }
     }
 
     fn add_class(&mut self, node: usize, class: &str) {
-        if let Some(el) = self.nodes.get_mut(&node) {
+        if let Some(n) = self.nodes.get_mut(&node)
+            && let Some(el) = n.get_element_node_mut()
+        {
             el.classes.push(Pose::from(class));
         }
     }
 
     fn set_inline_style(&mut self, node: usize, style: &str) {
-        if let Some(el) = self.nodes.get_mut(&node) {
+        if let Some(n) = self.nodes.get_mut(&node)
+            && let Some(el) = n.get_element_node_mut()
+        {
             el.inline_style = Some(style.to_string());
         }
     }
 
     fn set_state(&mut self, node: usize, state: ElementState) {
-        if let Some(el) = self.nodes.get_mut(&node) {
+        if let Some(n) = self.nodes.get_mut(&node)
+            && let Some(el) = n.get_element_node_mut()
+        {
             el.state = state;
         }
     }
 
     fn style(&self, node: usize) -> Option<&ComputedStyle> {
-        self.styles.get(&node).map(|(s, _)| s)
+        self.nodes
+            .get(&node)
+            .and_then(|n| n.get_element_node())
+            .and_then(|el| el.style.as_ref())
     }
 
     fn custom_props(&self, node: usize) -> Option<&CustomPropertiesMap> {
-        self.styles.get(&node).map(|(_, cp)| cp)
+        self.nodes
+            .get(&node)
+            .and_then(|n| n.get_element_node())
+            .and_then(|el| el.custom_properties.as_ref())
     }
 }
 
-impl TDocument for MockDocument {
+impl CapsuleDocument for MockDocument {
     type Element = MockElement;
+    type Node = MockNode;
     type NodeId = usize;
 
     fn root(&self) -> usize {
         self.root
     }
 
-    fn as_element(&self, node: usize) -> MockElement {
-        self.nodes.get(&node).cloned().expect("node not found")
+    fn get_node(&self, node: usize) -> &MockNode {
+        self.nodes.get(&node).expect("node not found")
+    }
+
+    fn get_node_mut(&mut self, node: usize) -> &mut MockNode {
+        self.nodes.get_mut(&node).expect("node not found")
+    }
+
+    fn get_element(&self, node: usize) -> Option<MockElement> {
+        self.nodes.get(&node).and_then(MockNode::get_element)
     }
 
     fn parent(&self, node: usize) -> Option<usize> {
@@ -291,15 +463,26 @@ impl TDocument for MockDocument {
     }
 
     fn computed_style(&self, node: usize) -> Option<&ComputedStyle> {
-        self.styles.get(&node).map(|(s, _)| s)
+        self.nodes
+            .get(&node)
+            .and_then(|n| n.get_element_node())
+            .and_then(|el| el.style.as_ref())
     }
 
     fn custom_properties(&self, node: usize) -> Option<&CustomPropertiesMap> {
-        self.styles.get(&node).map(|(_, cp)| cp)
+        self.nodes
+            .get(&node)
+            .and_then(|n| n.get_element_node())
+            .and_then(|el| el.custom_properties.as_ref())
     }
 
     fn set_style(&mut self, node: usize, style: ComputedStyle, cp: CustomPropertiesMap) {
-        self.styles.insert(node, (style, cp));
+        if let Some(n) = self.nodes.get_mut(&node)
+            && let Some(el) = n.get_element_node_mut()
+        {
+            el.style = Some(style);
+            el.custom_properties = Some(cp);
+        }
     }
 
     fn take_stylist(&mut self) -> Bulma {

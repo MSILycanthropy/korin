@@ -6,7 +6,7 @@ use crate::{
 };
 
 /// Parse a length: integer, integer + 'c', or percentage.
-#[allow(clippy::cast_possible_truncation)]
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 pub fn parse_length<'i>(input: &mut Parser<'i, '_>) -> ParseResult<'i, Length> {
     if input
         .try_parse(|i| i.expect_function_matching("calc"))
@@ -25,7 +25,7 @@ pub fn parse_length<'i>(input: &mut Parser<'i, '_>) -> ParseResult<'i, Length> {
     match token {
         Token::Number {
             int_value: Some(n), ..
-        } => Ok(Length::Cells(*n as i16)),
+        } => Ok(Length::Cells(*n as u16)),
 
         Token::Number { .. } => integer_required(location),
 
@@ -35,7 +35,7 @@ pub fn parse_length<'i>(input: &mut Parser<'i, '_>) -> ParseResult<'i, Length> {
             int_value: Some(n),
             unit,
             ..
-        } if unit.eq_ignore_ascii_case("c") => Ok(Length::Cells(*n as i16)),
+        } if unit.eq_ignore_ascii_case("c") => Ok(Length::Cells(*n as u16)),
 
         Token::Dimension { unit, .. } if unit.eq_ignore_ascii_case("c") => {
             integer_required(location)
@@ -213,12 +213,6 @@ mod tests {
     fn length_percent() {
         let l = parse("50%", parse_length).expect("failed");
         assert_eq!(l, Length::Percent(50.0));
-    }
-
-    #[test]
-    fn length_negative() {
-        let l = parse("-5", parse_length).expect("failed");
-        assert_eq!(l, Length::Cells(-5));
     }
 
     #[test]

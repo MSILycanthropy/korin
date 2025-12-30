@@ -1,5 +1,5 @@
 use cssparser::{CowRcStr, ParseError, ParseErrorKind, SourceLocation, ToCss};
-use ginyu_force::{Pose, pose};
+use ginyu_force::Pose;
 use precomputed_hash::PrecomputedHash;
 use selectors::{
     Element, OpaqueElement, Parser, SelectorImpl,
@@ -9,14 +9,13 @@ use selectors::{
     matching::ElementSelectorFlags,
     parser::{NonTSPseudoClass, SelectorParseErrorKind},
 };
+use std::fmt::Debug;
 use std::{
     borrow::Borrow,
     hash::{Hash, Hasher},
-    ops::DerefMut,
 };
-use std::{fmt::Debug, ops::Deref};
 
-use crate::ElementState;
+use crate::{CapsuleElement, ConcreteCapsuleElement, ElementState};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Selectors;
@@ -219,79 +218,7 @@ impl<'i> Parser<'i> for SelectorParser {
     }
 }
 
-pub trait TElement: Sized + Clone + Debug + PartialEq {
-    fn tag_name(&self) -> Pose;
-
-    fn id(&self) -> Option<Pose>;
-
-    fn has_class(&self, name: &str) -> bool;
-
-    fn each_class<F: FnMut(Pose)>(&self, callback: F);
-
-    fn get_attribute(&self, name: Pose) -> Option<&str>;
-
-    fn style_attribute(&self) -> Option<&str> {
-        self.get_attribute(pose!("style"))
-    }
-
-    fn state(&self) -> ElementState;
-
-    fn parent(&self) -> Option<Self>;
-
-    fn prev_sibling(&self) -> Option<Self>;
-
-    fn next_sibling(&self) -> Option<Self>;
-
-    fn has_children(&self) -> bool;
-
-    fn is_first_child(&self) -> bool {
-        self.prev_sibling().is_none()
-    }
-
-    fn is_last_child(&self) -> bool {
-        self.next_sibling().is_none()
-    }
-
-    fn sibling_index(&self) -> usize {
-        let mut index = 1;
-        let mut current = self.clone();
-        while let Some(prev) = current.prev_sibling() {
-            index += 1;
-            current = prev;
-        }
-        index
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[repr(transparent)]
-pub struct CapsuleElement<E>(pub E);
-
-impl<E> CapsuleElement<E> {
-    pub const fn new(element: E) -> Self {
-        Self(element)
-    }
-
-    pub fn into_inner(self) -> E {
-        self.0
-    }
-}
-
-impl<E> Deref for CapsuleElement<E> {
-    type Target = E;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl<E> DerefMut for CapsuleElement<E> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
-impl<E: TElement> Element for CapsuleElement<E> {
+impl<E: CapsuleElement> Element for ConcreteCapsuleElement<E> {
     type Impl = Selectors;
 
     fn opaque(&self) -> OpaqueElement {
@@ -299,7 +226,7 @@ impl<E: TElement> Element for CapsuleElement<E> {
     }
 
     fn parent_element(&self) -> Option<Self> {
-        self.parent().map(CapsuleElement)
+        self.parent().map(ConcreteCapsuleElement)
     }
 
     fn parent_node_is_shadow_root(&self) -> bool {
@@ -315,11 +242,11 @@ impl<E: TElement> Element for CapsuleElement<E> {
     }
 
     fn prev_sibling_element(&self) -> Option<Self> {
-        self.prev_sibling().map(CapsuleElement)
+        self.prev_sibling().map(ConcreteCapsuleElement)
     }
 
     fn next_sibling_element(&self) -> Option<Self> {
-        self.next_sibling().map(CapsuleElement)
+        self.next_sibling().map(ConcreteCapsuleElement)
     }
 
     fn first_element_child(&self) -> Option<Self> {

@@ -280,7 +280,7 @@ impl_accessors! {
 
 impl Value {
     #[must_use]
-    pub const fn cells(cells: i16) -> Self {
+    pub const fn cells(cells: u16) -> Self {
         Self::Length(Length::Cells(cells))
     }
 
