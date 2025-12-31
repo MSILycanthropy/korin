@@ -1,0 +1,18 @@
+[package]
+name = "korin_tower"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+capsule_corp.workspace = true
+ginyu_force.workspace = true
+potara.workspace = true
+
+indexmap.workspace = true
+indextree.workspace = true
+tracing.workspace = true
+smallvec.workspace = true
+rustc-hash.workspace = true
+
+[lints]
+workspace = true

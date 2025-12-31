@@ -18,14 +18,14 @@ missing_errors_doc = { level = "allow", priority = 1 }
 
 [workspace.dependencies]
 # korin deps
+capsule_corp = { workspace = true, path = "crates/capsule_corp" }
 dom_events = { workspace = true, path = "crates/dom_events" }
-korin_core = { workspace = true, path = "crates/korin_core" }
 ginyu_force = { workspace = true, path = "crates/ginyu_force" }
+potara = { workspace = true, path = "crates/potara" }
 
 # member deps
 bitflags = "2"
 keyboard-types = "0.8"
-slotmap = "1"
 thiserror = "2"
 rustc-hash = "2"
 precomputed-hash = "0.1"
@@ -35,6 +35,9 @@ proc-macro2 = "1"
 criterion = "0.8"
 unicode-width = "0.2"
 unicode-segmentation = "1"
+indexmap = "2"
+indextree = "4"
+tracing = "0.1"
 
 # Servo deps
 cssparser = "0.36"

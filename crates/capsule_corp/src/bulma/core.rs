@@ -22,6 +22,7 @@ use crate::{
     parser::{Declaration, Rule, parse_inline_style, parse_property_value},
 };
 
+#[derive(Debug)]
 pub struct Bulma {
     cascade_data: CascadeData,
     invalidation_map: InvalidationMap,

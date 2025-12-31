@@ -21,6 +21,7 @@ impl<T> State<T>
 where
     T: Send + Clone + 'static,
 {
+    #[must_use]
     pub fn get(&self) -> T {
         RUNTIME.with(|runtime| {
             let runtime = runtime.borrow();

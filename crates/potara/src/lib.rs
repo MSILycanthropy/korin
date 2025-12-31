@@ -8,4 +8,4 @@ pub use context::{provide_context, use_context};
 pub use refs::use_ref_at;
 pub use runtime::reset_frame;
 pub use scope::with_scope;
-pub use state::use_state_at;
+pub use state::{State, use_state_at};
