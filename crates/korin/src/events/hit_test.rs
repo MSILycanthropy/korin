@@ -5,6 +5,7 @@ use tracing::trace;
 use crate::Document;
 
 impl Document {
+    // TODO: take z-index into account when hit testing <3
     pub fn hit_test(&self, x: u16, y: u16) -> Option<NodeId> {
         let result = self.hit_test_node(self.root(), x, y);
 

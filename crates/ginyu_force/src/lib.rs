@@ -1,4 +1,4 @@
-//! Interned strings (poses) for ginyu.
+//! A small library for interned strings. Think a shittier `string-cache`.
 //!
 //! Static poses are defined in `poses.txt` and are free to create.
 //! Dynamic poses (like custom property names) are interned at runtime.

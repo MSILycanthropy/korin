@@ -1,7 +1,7 @@
 use capsule_corp::{ElementState, QuerySelector};
 use dom_events::{Code, Key, KeyboardEvent, Location, Modifiers, NamedKey};
 use ginyu_force::pose;
-use korin_tower::{
+use korin::{
     Document, fragment,
     view::{
         AnyView, BuildContext, Mountable, RebuildContext, View, button, div, for_each, input, span,
@@ -10,7 +10,7 @@ use korin_tower::{
 };
 use potara::{reset_frame, use_state_at};
 
-type EventType = korin_tower::EventType;
+type EventType = korin::EventType;
 
 const fn make_tab(shift: bool) -> EventType {
     EventType::KeyDown(KeyboardEvent {
@@ -39,9 +39,8 @@ fn get_name(doc: &Document, id: indextree::NodeId) -> Option<String> {
 }
 
 mod focusability {
-    use korin_tower::a;
-
     use super::*;
+    use korin::a;
 
     #[test]
     fn form_controls_are_focusable() {

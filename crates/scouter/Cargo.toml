@@ -1,13 +1,9 @@
 [package]
-name = "korin_core"
+name = "scouter"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
-dom_events.workspace = true
-euclid.workspace = true
-
-ginyu_force.workspace = true
 
 [lints]
 workspace = true

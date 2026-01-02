@@ -125,7 +125,6 @@ impl ResolvedBox {
         )
     }
 
-    /// Margin box size (content + padding + border + margin)
     #[inline]
     #[must_use]
     pub const fn margin_box_size(&self) -> Size {

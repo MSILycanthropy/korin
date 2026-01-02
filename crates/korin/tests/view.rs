@@ -5,7 +5,7 @@
 use std::rc::Rc;
 
 use ginyu_force::pose;
-use korin_tower::{
+use korin::{
     Document, fragment,
     view::{
         AnyView, BuildContext, Either, Mountable, RebuildContext, TextView, View, div, footer,
