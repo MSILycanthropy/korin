@@ -16,9 +16,9 @@ pub enum PointerType {
 ///
 /// Specification: <https://w3c.github.io/pointerevents/#pointerevent-interface>
 #[derive(Clone, Debug)]
-pub struct PointerEvent<T> {
+pub struct PointerEvent<T, U> {
     /// Inherited mouse event data.
-    pub mouse: MouseEvent<T>,
+    pub mouse: MouseEvent<T, U>,
     /// Unique identifier for this pointer.
     ///
     /// Specification: <https://w3c.github.io/pointerevents/#dom-pointerevent-pointerid>
@@ -69,8 +69,8 @@ pub struct PointerEvent<T> {
     pub is_primary: bool,
 }
 
-impl<T> Deref for PointerEvent<T> {
-    type Target = MouseEvent<T>;
+impl<T, U> Deref for PointerEvent<T, U> {
+    type Target = MouseEvent<T, U>;
 
     fn deref(&self) -> &Self::Target {
         &self.mouse

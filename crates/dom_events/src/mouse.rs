@@ -1,4 +1,3 @@
-
 use bitflags::bitflags;
 use keyboard_types::Modifiers;
 
@@ -40,7 +39,7 @@ bitflags! {
 /// Specification: <https://w3c.github.io/uievents/#interface-mouseevent>
 /// Extensions: <https://drafts.csswg.org/cssom-view/#extensions-to-the-mouseevent-interface>
 #[derive(Clone, Debug)]
-pub struct MouseEvent<T> {
+pub struct MouseEvent<T, U> {
     /// Related target (for enter/leave/over/out events).
     ///
     /// Specification: <https://w3c.github.io/uievents/#dom-mouseevent-relatedtarget>
@@ -48,19 +47,19 @@ pub struct MouseEvent<T> {
     /// Screen coordinates.
     ///
     /// Specification: <https://w3c.github.io/uievents/#dom-mouseevent-screenx>
-    pub screen: ScreenPoint,
+    pub screen: ScreenPoint<U>,
     /// Viewport coordinates.
     ///
     /// Specification: <https://w3c.github.io/uievents/#dom-mouseevent-clientx>
-    pub client: ClientPoint,
+    pub client: ClientPoint<U>,
     /// Document coordinates (includes scroll).
     ///
     /// Specification: <https://drafts.csswg.org/cssom-view/#dom-mouseevent-pagex>
-    pub page: PagePoint,
+    pub page: PagePoint<U>,
     /// Offset from target element.
     ///
     /// Specification: <https://drafts.csswg.org/cssom-view/#dom-mouseevent-offsetx>
-    pub offset: OffsetPoint,
+    pub offset: OffsetPoint<U>,
     /// Button that triggered this event (for down/up).
     /// None for move events.
     ///

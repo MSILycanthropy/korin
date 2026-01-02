@@ -35,7 +35,7 @@ pub enum EventPhase {
 ///
 /// Specification: <https://dom.spec.whatwg.org/#interface-event>
 #[derive(Debug)]
-pub struct Event<T> {
+pub struct Event<T, U> {
     /// The original target of the event.
     ///
     /// Specification: <https://dom.spec.whatwg.org/#dom-event-target>
@@ -55,11 +55,11 @@ pub struct Event<T> {
     /// Whether the default action has been prevented.
     default_prevented: bool,
 
-    inner: EventType<T>,
+    inner: EventType<T, U>,
 }
 
-impl<T> Event<T> {
-    pub const fn new(target: T, current_target: T, event: EventType<T>) -> Self {
+impl<T, U> Event<T, U> {
+    pub const fn new(target: T, current_target: T, event: EventType<T, U>) -> Self {
         Self {
             target,
             current_target,
@@ -106,8 +106,8 @@ impl<T> Event<T> {
     }
 }
 
-impl<T> Deref for Event<T> {
-    type Target = EventType<T>;
+impl<T, U> Deref for Event<T, U> {
+    type Target = EventType<T, U>;
 
     fn deref(&self) -> &Self::Target {
         &self.inner
@@ -118,36 +118,36 @@ impl<T> Deref for Event<T> {
 ///
 /// The event name/type wrapping the appropriate event data.
 #[derive(Debug)]
-pub enum EventType<T> {
+pub enum EventType<T, U> {
     // Mouse events
     // Ref: https://w3c.github.io/uievents/#events-mouse-types
-    Click(MouseEvent<T>),
-    DblClick(MouseEvent<T>),
-    MouseDown(MouseEvent<T>),
-    MouseUp(MouseEvent<T>),
-    MouseMove(MouseEvent<T>),
-    MouseEnter(MouseEvent<T>),
-    MouseLeave(MouseEvent<T>),
-    MouseOver(MouseEvent<T>),
-    MouseOut(MouseEvent<T>),
-    ContextMenu(MouseEvent<T>),
+    Click(MouseEvent<T, U>),
+    DblClick(MouseEvent<T, U>),
+    MouseDown(MouseEvent<T, U>),
+    MouseUp(MouseEvent<T, U>),
+    MouseMove(MouseEvent<T, U>),
+    MouseEnter(MouseEvent<T, U>),
+    MouseLeave(MouseEvent<T, U>),
+    MouseOver(MouseEvent<T, U>),
+    MouseOut(MouseEvent<T, U>),
+    ContextMenu(MouseEvent<T, U>),
 
     // Pointer events
     // Ref: https://w3c.github.io/pointerevents/#pointer-event-types
-    PointerDown(PointerEvent<T>),
-    PointerUp(PointerEvent<T>),
-    PointerMove(PointerEvent<T>),
-    PointerEnter(PointerEvent<T>),
-    PointerLeave(PointerEvent<T>),
-    PointerOver(PointerEvent<T>),
-    PointerOut(PointerEvent<T>),
-    PointerCancel(PointerEvent<T>),
-    GotPointerCapture(PointerEvent<T>),
-    LostPointerCapture(PointerEvent<T>),
+    PointerDown(PointerEvent<T, U>),
+    PointerUp(PointerEvent<T, U>),
+    PointerMove(PointerEvent<T, U>),
+    PointerEnter(PointerEvent<T, U>),
+    PointerLeave(PointerEvent<T, U>),
+    PointerOver(PointerEvent<T, U>),
+    PointerOut(PointerEvent<T, U>),
+    PointerCancel(PointerEvent<T, U>),
+    GotPointerCapture(PointerEvent<T, U>),
+    LostPointerCapture(PointerEvent<T, U>),
 
     // Wheel events
     // Ref: https://w3c.github.io/uievents/#events-wheel-types
-    Wheel(WheelEvent<T>),
+    Wheel(WheelEvent<T, U>),
 
     // Keyboard events
     // Ref: https://w3c.github.io/uievents/#events-keyboard-types
@@ -177,7 +177,7 @@ pub enum EventType<T> {
     Custom(CustomEvent),
 }
 
-impl<T> EventType<T> {
+impl<T, U> EventType<T, U> {
     /// Get the event type name as a string.
     pub const fn name(&self) -> Pose {
         match self {
@@ -233,7 +233,7 @@ macro_rules! event_type_accessors {
             }
         );+ $(;)?
     ) => {
-        impl<T> EventType<T> {
+        impl<T, U> EventType<T, U> {
             $(
                 pub const fn $as_name(&self) -> Option<&$event_ty> {
                     match self {
@@ -247,16 +247,16 @@ macro_rules! event_type_accessors {
 }
 
 event_type_accessors! {
-    as_mouse => MouseEvent<T> {
+    as_mouse => MouseEvent<T, U> {
         Click, DblClick, MouseDown, MouseUp, MouseMove,
         MouseEnter, MouseLeave, MouseOver, MouseOut, ContextMenu,
     };
-    as_pointer => PointerEvent<T> {
+    as_pointer => PointerEvent<T, U> {
         PointerDown, PointerUp, PointerMove,
         PointerEnter, PointerLeave, PointerOver, PointerOut,
         PointerCancel, GotPointerCapture, LostPointerCapture,
     };
-    as_wheel => WheelEvent<T> {
+    as_wheel => WheelEvent<T, U> {
         Wheel,
     };
     as_keyboard => KeyboardEvent {

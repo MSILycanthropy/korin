@@ -1,11 +1,13 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use capsule_corp::{Bulma, ComputedStyle, CustomPropertiesMap, Layout};
+use capsule_corp::{Bulma, ComputedStyle, CustomPropertiesMap, ElementState, Layout};
 use ginyu_force::Pose;
 use indextree::{Arena, NodeId};
+use slotmap::SlotMap;
+use smallvec::SmallVec;
 use tracing::{debug, trace};
 
-use crate::{element::Element, node::Node};
+use crate::{Event, EventHandler, HandlerId, element::Element, node::Node};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct DocumentId(pub(crate) u64);
@@ -27,9 +29,14 @@ impl std::fmt::Display for DocumentId {
 #[derive(Debug)]
 pub struct Document {
     id: DocumentId,
-    arena: Arena<Node>,
+    pub(crate) arena: Arena<Node>,
     root: NodeId,
     stylist: Bulma,
+
+    handlers: SlotMap<HandlerId, EventHandler>,
+    focused: Option<NodeId>,
+    hovered: Option<NodeId>,
+    active_node: Option<NodeId>,
 }
 
 impl Document {
@@ -45,20 +52,25 @@ impl Document {
             arena,
             root,
             stylist: Bulma::new(),
+
+            handlers: SlotMap::default(),
+            focused: None,
+            hovered: None,
+            active_node: None,
         }
     }
 
-    #[must_use] 
+    #[must_use]
     pub const fn id(&self) -> DocumentId {
         self.id
     }
 
-    #[must_use] 
+    #[must_use]
     pub const fn root(&self) -> NodeId {
         self.root
     }
 
-    #[must_use] 
+    #[must_use]
     pub const fn stylist(&self) -> &Bulma {
         &self.stylist
     }
@@ -172,7 +184,7 @@ impl Document {
         id.remove_subtree(&mut self.arena);
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn parent(&self, id: NodeId) -> Option<NodeId> {
         self.arena.get(id)?.parent()
     }
@@ -197,24 +209,132 @@ impl Document {
         id.preceding_siblings(&self.arena).skip(1)
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn first_child(&self, id: NodeId) -> Option<NodeId> {
         self.arena.get(id)?.first_child()
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn last_child(&self, id: NodeId) -> Option<NodeId> {
         self.arena.get(id)?.last_child()
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn next_sibling(&self, id: NodeId) -> Option<NodeId> {
         self.arena.get(id)?.next_sibling()
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn prev_sibling(&self, id: NodeId) -> Option<NodeId> {
         self.arena.get(id)?.previous_sibling()
+    }
+
+    pub fn add_event_handler<F>(&mut self, callback: F) -> HandlerId
+    where
+        F: FnMut(&mut Event) + 'static,
+    {
+        let handler = EventHandler::new(callback);
+        let id = self.handlers.insert(handler);
+        trace!(doc = %self.id, ?id, "added event handler");
+        id
+    }
+
+    pub fn remove_event_handler(&mut self, id: HandlerId) -> Option<EventHandler> {
+        let handler = self.handlers.remove(id);
+
+        if handler.is_some() {
+            trace!(doc = %self.id, ?id, "removed handler");
+        }
+        handler
+    }
+
+    pub fn get_event_handler_mut(&mut self, id: HandlerId) -> Option<&mut EventHandler> {
+        self.handlers.get_mut(id)
+    }
+
+    #[must_use]
+    pub fn has_event_handler(&self, id: HandlerId) -> bool {
+        self.handlers.contains_key(id)
+    }
+
+    pub fn register_event_handler(&mut self, id: NodeId, event: Pose, handler_id: HandlerId) {
+        debug_assert!(self.arena.get(id).is_some(), "node {id:?} does not exist");
+        debug_assert!(
+            self.handlers.contains_key(handler_id),
+            "handler {handler_id:?} does not exist"
+        );
+
+        let Some(element) = self.get_mut(id).and_then(|node| node.as_element_mut()) else {
+            return;
+        };
+
+        element
+            .handlers
+            .entry(event)
+            .or_insert_with(SmallVec::new)
+            .push(handler_id);
+
+        trace!(doc = %self.id, ?id, %event, ?handler_id, "registered handler");
+    }
+
+    pub fn unregister_handler(&mut self, id: NodeId, event: Pose, handler_id: HandlerId) {
+        if let Some(element) = self.get_mut(id).and_then(|n| n.as_element_mut())
+            && let Some(handlers) = element.handlers.get_mut(&event)
+        {
+            handlers.retain(|id| *id != handler_id);
+            if handlers.is_empty() {
+                element.handlers.remove(&event);
+            }
+            trace!(doc = %self.id, ?id, %event, ?handler_id, "unregistered handler");
+        }
+    }
+
+    #[must_use]
+    pub const fn active(&self) -> Option<NodeId> {
+        self.active_node
+    }
+
+    #[must_use]
+    pub const fn focused(&self) -> Option<NodeId> {
+        self.focused
+    }
+
+    pub(crate) const fn set_focused(&mut self, id: Option<NodeId>) {
+        self.focused = id;
+    }
+
+    #[must_use]
+    pub const fn hovered(&self) -> Option<NodeId> {
+        self.hovered
+    }
+
+    pub(crate) const fn set_hovered(&mut self, id: Option<NodeId>) {
+        self.hovered = id;
+    }
+
+    pub(crate) const fn set_active_node(&mut self, id: Option<NodeId>) {
+        self.active_node = id;
+    }
+
+    pub fn set_active(&mut self, id: NodeId, active: bool) {
+        debug_assert!(
+            self.get(id).is_some_and(Node::is_element),
+            "node {id:?} does not exist or is not an element"
+        );
+
+        if let Some(element) = self.get_mut(id).and_then(Node::as_element_mut) {
+            if active {
+                element.add_state(ElementState::ACTIVE);
+            } else {
+                element.remove_state(ElementState::ACTIVE);
+            }
+        }
+
+        if active {
+            self.set_active_node(Some(id));
+        } else if self.active() == Some(id) {
+            self.set_active_node(None);
+        }
     }
 }
 

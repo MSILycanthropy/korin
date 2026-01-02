@@ -4,6 +4,7 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
+dom_events.workspace = true
 capsule_corp.workspace = true
 ginyu_force.workspace = true
 potara.workspace = true
@@ -13,6 +14,7 @@ indextree.workspace = true
 tracing.workspace = true
 smallvec.workspace = true
 rustc-hash.workspace = true
+slotmap.workspace = true
 
 [lints]
 workspace = true

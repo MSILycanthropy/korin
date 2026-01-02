@@ -20,6 +20,7 @@ use keyword::{
 };
 use length::{parse_dimension, parse_length};
 pub use rule::Rule;
+pub use selector::parse_selector;
 pub use unresolved::parse_value_with_vars;
 pub use value::parse_property_value;
 

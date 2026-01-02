@@ -25,9 +25,9 @@ pub enum DeltaMode {
 ///
 /// Specification: <https://w3c.github.io/uievents/#interface-wheelevent>
 #[derive(Clone, Debug)]
-pub struct WheelEvent<T> {
+pub struct WheelEvent<T, U> {
     /// Inherited mouse event data.
-    pub mouse: MouseEvent<T>,
+    pub mouse: MouseEvent<T, U>,
     /// Horizontal scroll amount.
     pub delta_x: f32,
     /// Vertical scroll amount.
@@ -38,8 +38,8 @@ pub struct WheelEvent<T> {
     pub delta_mode: DeltaMode,
 }
 
-impl<T> Deref for WheelEvent<T> {
-    type Target = MouseEvent<T>;
+impl<T, U> Deref for WheelEvent<T, U> {
+    type Target = MouseEvent<T, U>;
 
     fn deref(&self) -> &Self::Target {
         &self.mouse

@@ -16,7 +16,7 @@ pub struct Page;
 /// Origin is top-left of the target element.
 pub struct Offset;
 
-pub type ScreenPoint = Point2D<f32, Screen>;
-pub type ClientPoint = Point2D<f32, Client>;
-pub type PagePoint = Point2D<f32, Page>;
-pub type OffsetPoint = Point2D<f32, Offset>;
+pub type ScreenPoint<T> = Point2D<T, Screen>;
+pub type ClientPoint<T> = Point2D<T, Client>;
+pub type PagePoint<T> = Point2D<T, Page>;
+pub type OffsetPoint<T> = Point2D<T, Offset>;

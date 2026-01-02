@@ -21,6 +21,11 @@ impl<T> State<T>
 where
     T: Send + Clone + 'static,
 {
+    /// Get state from the runtime
+    ///
+    /// # Panics
+    ///
+    /// Panics if the `HookKey` is not recognized or stale.
     #[must_use]
     pub fn get(&self) -> T {
         RUNTIME.with(|runtime| {

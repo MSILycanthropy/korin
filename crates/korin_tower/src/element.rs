@@ -3,13 +3,17 @@ use ginyu_force::Pose;
 use rustc_hash::FxHashMap;
 use smallvec::SmallVec;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+use crate::HandlerId;
+
+#[derive(Debug, Clone, Eq)]
 pub struct Element {
     pub tag: Pose,
     pub id: Option<Pose>,
     pub classes: SmallVec<[Pose; 4]>,
     pub attributes: FxHashMap<Pose, String>,
     pub state: ElementState,
+
+    pub handlers: FxHashMap<Pose, SmallVec<[HandlerId; 2]>>,
 }
 
 impl Element {
@@ -21,13 +25,13 @@ impl Element {
             classes: SmallVec::new(),
             attributes: FxHashMap::default(),
             state: ElementState::empty(),
+            handlers: FxHashMap::default(),
         }
     }
 
     #[must_use]
     pub const fn with_id(mut self, id: Pose) -> Self {
         self.id = Some(id);
-
         self
     }
 
@@ -92,5 +96,29 @@ impl Element {
 
     pub fn remove_state(&mut self, state: ElementState) {
         self.state.remove(state);
+    }
+
+    #[must_use]
+    pub fn get_event_handlers(&self, name: Pose) -> Option<&SmallVec<[HandlerId; 2]>> {
+        self.handlers.get(&name)
+    }
+
+    pub fn has_event_handlers(&self, name: Pose) -> bool {
+        self.get_event_handlers(name)
+            .is_some_and(SmallVec::is_empty)
+    }
+
+    pub fn handleable_events(&self) -> impl Iterator<Item = Pose> + '_ {
+        self.handlers.keys().copied()
+    }
+}
+
+impl PartialEq for Element {
+    fn eq(&self, other: &Self) -> bool {
+        self.tag == other.tag
+            && self.id == other.id
+            && self.classes == other.classes
+            && self.attributes == other.attributes
+            && self.state == other.state
     }
 }

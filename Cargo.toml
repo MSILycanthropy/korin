@@ -38,6 +38,7 @@ unicode-segmentation = "1"
 indexmap = "2"
 indextree = "4"
 tracing = "0.1"
+slotmap = "1"
 
 # Servo deps
 cssparser = "0.36"
