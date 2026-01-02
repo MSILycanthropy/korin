@@ -16,9 +16,9 @@ pub use parser::{ParseErrorKind, ParseResult, Stylesheet, parse_stylesheet};
 pub use property::*;
 pub use values::*;
 
-pub use selectors::SelectorList;
+pub type SelectorList = selectors::SelectorList<Selectors>;
 
-pub fn parse_selector(selector: &str) -> Result<SelectorList<Selectors>, String> {
+pub fn parse_selector(selector: &str) -> Result<SelectorList, String> {
     let mut input = ParserInput::new(selector);
     let mut parser = cssparser::Parser::new(&mut input);
     parser::parse_selector(&mut parser).map_err(|err| format!("{:?}", err.kind))

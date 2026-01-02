@@ -1,3 +1,5 @@
+use dom_events::{Key, NamedKey};
+
 use crate::{Document, Event, events::EventType};
 
 impl Document {
@@ -61,10 +63,33 @@ impl Document {
 
                 target.map(|target| self.dispatch(target, event_type))
             }
-            Wheel(wheel) => {
-                let target = self.hit_test(wheel.mouse.client.x, wheel.mouse.client.y);
+            Wheel(wheel_event) => {
+                let target = self.hit_test(wheel_event.mouse.client.x, wheel_event.mouse.client.y);
 
                 target.map(|target| self.dispatch(target, event_type))
+            }
+            KeyDown(key_event) => {
+                let target = self.focused();
+                let key_is_tab = key_event.key == Key::Named(NamedKey::Tab);
+                let modifier_is_shift = key_event.modifiers.shift();
+
+                dbg!(target);
+
+                let event = target.map(|target| self.dispatch(target, event_type));
+
+                if event
+                    .as_ref()
+                    .is_none_or(|event| !event.default_prevented())
+                    && key_is_tab
+                {
+                    if modifier_is_shift {
+                        self.focus_prev();
+                    } else {
+                        self.focus_next();
+                    }
+                }
+
+                event
             }
             _ => {
                 let target = self.focused();

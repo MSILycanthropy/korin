@@ -14,10 +14,6 @@ use korin_tower::{
 };
 use potara::{reset_frame, use_state_at, with_scope};
 
-// ============================================================================
-// Helper functions
-// ============================================================================
-
 fn collect_text_content(doc: &Document, node: indextree::NodeId) -> Vec<String> {
     let mut result = Vec::new();
     collect_text_recursive(doc, node, &mut result);
@@ -49,10 +45,6 @@ fn get_element_tags(doc: &Document, parent: indextree::NodeId) -> Vec<String> {
 fn test_state<T: Clone + Send + 'static>(id: u32, init: impl FnOnce() -> T) -> potara::State<T> {
     use_state_at("test", id, 0, init)
 }
-
-// ============================================================================
-// 1. Basic Build → Mount → Render Cycle
-// ============================================================================
 
 mod basic_cycle {
     use super::*;
@@ -215,10 +207,6 @@ mod basic_cycle {
     }
 }
 
-// ============================================================================
-// 2. Rebuild Cycle
-// ============================================================================
-
 mod rebuild_cycle {
     use super::*;
 
@@ -322,10 +310,6 @@ mod rebuild_cycle {
         assert_eq!(collect_text_content(&doc, root), vec!["X", "Y"]);
     }
 }
-
-// ============================================================================
-// 3. Either / Conditional Rendering
-// ============================================================================
 
 mod either_conditional {
     use super::*;
@@ -529,10 +513,6 @@ mod either_conditional {
     }
 }
 
-// ============================================================================
-// 4. For Loop / Keyed Lists
-// ============================================================================
-
 mod for_loop {
     use super::*;
 
@@ -726,10 +706,6 @@ mod for_loop {
     }
 }
 
-// ============================================================================
-// 5. Unmount
-// ============================================================================
-
 mod unmount {
     use super::*;
 
@@ -800,10 +776,6 @@ mod unmount {
         assert_eq!(collect_text_content(&doc, root), vec!["Content"]);
     }
 }
-
-// ============================================================================
-// 6. Hooks Integration
-// ============================================================================
 
 mod hooks_integration {
     use super::*;
@@ -890,10 +862,6 @@ mod hooks_integration {
         reset_frame();
     }
 }
-
-// ============================================================================
-// 7. Complex Composition
-// ============================================================================
 
 mod complex_composition {
     use super::*;

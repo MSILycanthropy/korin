@@ -411,6 +411,10 @@ impl CapsuleDocument for MockDocument {
             .flatten()
     }
 
+    fn descendants(&self, _node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
+        Vec::<Self::NodeId>::new().into_iter()
+    }
+
     fn next_siblings(&self, node: usize) -> impl Iterator<Item = usize> {
         let parent = self.parent.get(&node).copied();
         let siblings = parent.and_then(|p| self.children.get(&p));

@@ -19,6 +19,7 @@ pub trait CapsuleDocument {
     fn get_node_mut(&mut self, node: Self::NodeId) -> &mut Self::Node;
     fn parent(&self, node: Self::NodeId) -> Option<Self::NodeId>;
     fn children(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId>;
+    fn descendants(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId>;
     fn next_siblings(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId>;
     fn computed_style(&self, node: Self::NodeId) -> Option<&ComputedStyle>;
     fn custom_properties(&self, node: Self::NodeId) -> Option<&CustomPropertiesMap>;

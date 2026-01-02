@@ -102,6 +102,7 @@ define_elements! {
     details,
     summary,
     dialog,
+    a
 }
 
 // Other elements

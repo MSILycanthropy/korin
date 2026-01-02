@@ -30,7 +30,7 @@ impl std::fmt::Display for DocumentId {
 pub struct Document {
     id: DocumentId,
     pub(crate) arena: Arena<Node>,
-    root: NodeId,
+    pub(crate) root: NodeId,
     stylist: Bulma,
 
     handlers: SlotMap<HandlerId, EventHandler>,
@@ -371,6 +371,10 @@ impl capsule_corp::CapsuleDocument for Document {
 
     fn children(&self, id: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
         self.children(id)
+    }
+
+    fn descendants(&self, id: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
+        self.descendants(id)
     }
 
     fn next_siblings(&self, id: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {

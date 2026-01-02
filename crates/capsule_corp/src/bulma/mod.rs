@@ -4,6 +4,7 @@ mod core;
 mod document;
 mod element;
 mod invalidation;
+mod query;
 mod restyle;
 mod rule;
 
@@ -11,6 +12,7 @@ pub use computed::*;
 pub use core::*;
 pub use document::*;
 pub use element::*;
+pub use query::*;
 pub use restyle::RestyleHint;
 use selectors::context::{
     MatchingContext, MatchingForInvalidation, MatchingMode, NeedsSelectorFlags, QuirksMode,

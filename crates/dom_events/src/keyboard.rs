@@ -1,5 +1,4 @@
-
-pub use keyboard_types::{Code, Key, Location, Modifiers};
+pub use keyboard_types::{Code, Key, Location, Modifiers, NamedKey};
 
 /// Keyboard event data.
 ///
