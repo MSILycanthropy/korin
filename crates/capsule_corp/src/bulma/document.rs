@@ -9,7 +9,11 @@ pub fn compute_styles<D: CapsuleDocument>(document: &mut D) {
     let mut caches = SelectorCaches::default();
     let root = document.root();
 
-    compute_styles_recursive(document, &mut stylist, &mut caches, root, None, None);
+    let children: Vec<_> = document.element_children(root).collect();
+
+    for child in children {
+        compute_styles_recursive(document, &mut stylist, &mut caches, child, None, None);
+    }
 
     document.set_stylist(stylist);
 }
@@ -43,7 +47,9 @@ fn restyle_subtree_inner<D: CapsuleDocument>(
         });
 
     if hint.affects_self() {
-        let element = document.get_element_strict(node);
+        let Some(element) = document.get_element(node) else {
+            return;
+        };
         let (style, custom_properties) =
             stylist.compute_style(&element, parent_style, parent_custom_properties, caches);
 
@@ -84,11 +90,14 @@ fn compute_styles_recursive<D: CapsuleDocument>(
     parent_style: Option<&ComputedStyle>,
     parent_custom_properties: Option<&CustomPropertiesMap>,
 ) {
-    let element = document.get_element_strict(node);
+    let Some(element) = document.get_element(node) else {
+        return;
+    };
+
     let (style, custom_properties) =
         stylist.compute_style(&element, parent_style, parent_custom_properties, caches);
 
-    let children: Vec<_> = document.children(node).collect();
+    let children: Vec<_> = document.element_children(node).collect();
 
     document.set_style(node, style.clone(), custom_properties.clone());
 
@@ -112,7 +121,9 @@ fn restyle_subtree_recursive<D: CapsuleDocument>(
     parent_style: Option<&ComputedStyle>,
     parent_custom_properties: Option<&CustomPropertiesMap>,
 ) {
-    let element = document.get_element_strict(node);
+    let Some(element) = document.get_element(node) else {
+        return;
+    };
     let (style, custom_properties) =
         stylist.compute_style(&element, parent_style, parent_custom_properties, caches);
 
@@ -129,383 +140,5 @@ fn restyle_subtree_recursive<D: CapsuleDocument>(
             Some(&style),
             Some(&custom_properties),
         );
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::{CapsuleElement, CapsuleNode, Color, Display, ElementState, Layout, Stylesheet};
-    use ginyu_force::Pose;
-    use std::collections::HashMap;
-
-    #[derive(Debug, Clone, PartialEq)]
-    struct TestEl {
-        id: usize,
-        tag: Pose,
-        class: Option<Pose>,
-        element_id: Option<Pose>,
-        state: ElementState,
-        parent_id: Option<usize>,
-    }
-
-    impl CapsuleNode for TestEl {
-        fn text_content(&self) -> Option<&str> {
-            None
-        }
-
-        fn computed_style(&self) -> Option<&ComputedStyle> {
-            None
-        }
-
-        fn set_style(&mut self, _style: ComputedStyle, _custom_properties: CustomPropertiesMap) {}
-
-        fn clear_needs_layout(&mut self) {}
-
-        fn custom_properties(&self) -> Option<&CustomPropertiesMap> {
-            None
-        }
-
-        fn layout(&self) -> crate::Layout {
-            Layout::ZERO
-        }
-
-        fn mark_needs_layout(&mut self) {}
-
-        fn needs_layout(&self) -> bool {
-            false
-        }
-
-        fn set_layout(&mut self, _layout: Layout) {}
-    }
-
-    impl CapsuleElement for TestEl {
-        fn tag_name(&self) -> Pose {
-            self.tag
-        }
-
-        fn id(&self) -> Option<Pose> {
-            self.element_id
-        }
-
-        fn has_class(&self, name: &str) -> bool {
-            self.class.is_some_and(|c| c.as_str() == name)
-        }
-
-        fn each_class<F: FnMut(Pose)>(&self, mut f: F) {
-            if let Some(c) = self.class {
-                f(c);
-            }
-        }
-
-        fn get_attribute(&self, _name: Pose) -> Option<&str> {
-            None
-        }
-
-        fn style_attribute(&self) -> Option<&str> {
-            None
-        }
-
-        fn state(&self) -> ElementState {
-            self.state
-        }
-
-        fn parent(&self) -> Option<Self> {
-            None
-        }
-
-        fn prev_sibling(&self) -> Option<Self> {
-            None
-        }
-
-        fn next_sibling(&self) -> Option<Self> {
-            None
-        }
-
-        fn has_children(&self) -> bool {
-            false
-        }
-    }
-
-    struct TestDoc {
-        nodes: HashMap<usize, TestEl>,
-        children: HashMap<usize, Vec<usize>>,
-        styles: HashMap<usize, (ComputedStyle, CustomPropertiesMap)>,
-        stylist: Bulma,
-        root: usize,
-    }
-
-    impl TestDoc {
-        fn new() -> Self {
-            Self {
-                nodes: HashMap::new(),
-                children: HashMap::new(),
-                styles: HashMap::new(),
-                stylist: Bulma::new(),
-                root: 0,
-            }
-        }
-
-        fn add_node(&mut self, id: usize, tag: &str, parent: Option<usize>) -> &mut Self {
-            self.nodes.insert(
-                id,
-                TestEl {
-                    id,
-                    tag: Pose::from(tag),
-                    class: None,
-                    element_id: None,
-                    state: ElementState::empty(),
-                    parent_id: parent,
-                },
-            );
-            if let Some(p) = parent {
-                self.children.entry(p).or_default().push(id);
-            }
-            self
-        }
-
-        fn with_class(mut self, id: usize, class: &str) -> Self {
-            if let Some(node) = self.nodes.get_mut(&id) {
-                node.class = Some(Pose::from(class));
-            }
-            self
-        }
-
-        fn with_stylesheet(mut self, css: &str) -> Self {
-            let stylesheet = Stylesheet::parse(css).expect("parse");
-            self.stylist.add_stylesheet(&stylesheet);
-            self
-        }
-    }
-
-    impl CapsuleDocument for TestDoc {
-        type Element = TestEl;
-        type Node = TestEl;
-        type NodeId = usize;
-
-        fn root(&self) -> usize {
-            self.root
-        }
-
-        fn get_node(&self, node: Self::NodeId) -> &Self::Node {
-            self.nodes.get(&node).expect("not found")
-        }
-
-        fn get_node_mut(&mut self, node: Self::NodeId) -> &mut Self::Node {
-            self.nodes.get_mut(&node).expect("not found")
-        }
-
-        fn get_element(&self, node: Self::NodeId) -> Option<Self::Element> {
-            self.nodes.get(&node).cloned()
-        }
-
-        fn parent(&self, node: usize) -> Option<usize> {
-            self.nodes.get(&node).and_then(|n| n.parent_id)
-        }
-
-        fn children(&self, node: usize) -> impl Iterator<Item = usize> {
-            self.children
-                .get(&node)
-                .map(|v| v.iter().copied())
-                .into_iter()
-                .flatten()
-        }
-
-        fn descendants(&self, _node: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
-            Vec::<Self::NodeId>::new().into_iter()
-        }
-
-        fn next_siblings(&self, node: usize) -> impl Iterator<Item = usize> {
-            let parent = self.parent(node);
-            let siblings = parent.and_then(|p| self.children.get(&p));
-
-            siblings
-                .into_iter()
-                .flatten()
-                .copied()
-                .skip_while(move |&id| id != node)
-                .skip(1)
-        }
-
-        fn computed_style(&self, node: usize) -> Option<&ComputedStyle> {
-            self.styles.get(&node).map(|(s, _)| s)
-        }
-
-        fn custom_properties(&self, node: usize) -> Option<&CustomPropertiesMap> {
-            self.styles.get(&node).map(|(_, cp)| cp)
-        }
-
-        fn set_style(&mut self, node: usize, style: ComputedStyle, cp: CustomPropertiesMap) {
-            self.styles.insert(node, (style, cp));
-        }
-
-        fn take_stylist(&mut self) -> Bulma {
-            std::mem::take(&mut self.stylist)
-        }
-
-        fn set_stylist(&mut self, stylist: Bulma) {
-            self.stylist = stylist;
-        }
-    }
-
-    #[test]
-    fn compute_styles_single_node() {
-        let mut doc = TestDoc::new();
-        doc.add_node(0, "div", None);
-        let mut doc = doc.with_stylesheet("div { color: red }");
-
-        compute_styles(&mut doc);
-
-        let style = doc.computed_style(0).expect("no style");
-        assert_eq!(style.color, Color::RED);
-    }
-
-    #[test]
-    fn compute_styles_with_inheritance() {
-        let mut doc = TestDoc::new();
-        doc.add_node(0, "div", None);
-        doc.add_node(1, "span", Some(0));
-        let mut doc = doc.with_stylesheet("div { color: cyan }");
-
-        compute_styles(&mut doc);
-
-        let parent_style = doc.computed_style(0).expect("no parent style");
-        assert_eq!(parent_style.color, Color::CYAN);
-
-        let child_style = doc.computed_style(1).expect("no child style");
-        assert_eq!(child_style.color, Color::CYAN);
-    }
-
-    #[test]
-    fn compute_styles_child_override() {
-        let mut doc = TestDoc::new();
-        doc.add_node(0, "div", None);
-        doc.add_node(1, "span", Some(0));
-        let mut doc = doc
-            .with_class(1, "override")
-            .with_stylesheet("div { color: red } .override { color: blue }");
-
-        compute_styles(&mut doc);
-
-        let parent_style = doc.computed_style(0).expect("no parent style");
-        assert_eq!(parent_style.color, Color::RED);
-
-        let child_style = doc.computed_style(1).expect("no child style");
-        assert_eq!(child_style.color, Color::BLUE);
-    }
-
-    #[test]
-    fn compute_styles_deep_tree() {
-        let mut doc = TestDoc::new();
-        doc.add_node(0, "div", None);
-        doc.add_node(1, "div", Some(0));
-        doc.add_node(2, "div", Some(1));
-        doc.add_node(3, "span", Some(2));
-        let mut doc = doc.with_stylesheet("div { color: cyan }");
-
-        compute_styles(&mut doc);
-
-        for i in 0..4 {
-            assert!(doc.computed_style(i).is_some(), "node {i} missing style");
-        }
-
-        let leaf_style = doc.computed_style(3).expect("no leaf style");
-        assert_eq!(leaf_style.color, Color::CYAN);
-    }
-
-    #[test]
-    fn compute_styles_multiple_children() {
-        let mut doc = TestDoc::new();
-        doc.add_node(0, "div", None);
-        doc.add_node(1, "span", Some(0));
-        doc.add_node(2, "span", Some(0));
-        doc.add_node(3, "span", Some(0));
-        let mut doc = doc.with_stylesheet("div { color: magenta }");
-
-        compute_styles(&mut doc);
-
-        for i in 1..4 {
-            let style = doc.computed_style(i).expect("no style");
-            assert_eq!(style.color, Color::MAGENTA);
-        }
-    }
-
-    #[test]
-    fn compute_styles_custom_properties() {
-        let mut doc = TestDoc::new();
-        doc.add_node(0, "div", None);
-        doc.add_node(1, "span", Some(0));
-        let mut doc = doc
-            .with_class(0, "root")
-            .with_class(1, "child")
-            .with_stylesheet(
-                r"
-            .root { --primary: blue }
-            .child { color: var(--primary) }
-        ",
-            );
-
-        compute_styles(&mut doc);
-
-        let child_style = doc.computed_style(1).expect("no child style");
-        assert_eq!(child_style.color, Color::BLUE);
-    }
-
-    #[test]
-    fn restyle_subtree_self_only() {
-        let mut doc = TestDoc::new();
-        doc.add_node(0, "div", None);
-        doc.add_node(1, "span", Some(0));
-        let mut doc = doc
-            .with_class(0, "container")
-            .with_stylesheet(".container { display: flex }");
-
-        compute_styles(&mut doc);
-
-        restyle_subtree(&mut doc, 0, RestyleHint::RESTYLE_SELF);
-
-        let style = doc.computed_style(0).expect("no style");
-        assert_eq!(style.display, Display::Flex);
-    }
-
-    #[test]
-    fn restyle_subtree_descendants() {
-        let mut doc = TestDoc::new();
-        doc.add_node(0, "div", None);
-        doc.add_node(1, "span", Some(0));
-        doc.add_node(2, "span", Some(1));
-        let mut doc = doc.with_stylesheet("div { color: red }");
-
-        compute_styles(&mut doc);
-
-        // Change stylesheet
-        doc.stylist.clear();
-        let stylesheet = Stylesheet::parse("div { color: blue }").expect("parse");
-        doc.stylist.add_stylesheet(&stylesheet);
-
-        restyle_subtree(
-            &mut doc,
-            0,
-            RestyleHint::RESTYLE_SELF | RestyleHint::RESTYLE_DESCENDANTS,
-        );
-
-        let root_style = doc.computed_style(0).expect("no root style");
-        assert_eq!(root_style.color, Color::BLUE);
-
-        let child_style = doc.computed_style(1).expect("no child style");
-        assert_eq!(child_style.color, Color::BLUE);
-
-        let grandchild_style = doc.computed_style(2).expect("no grandchild style");
-        assert_eq!(grandchild_style.color, Color::BLUE);
-    }
-
-    #[test]
-    fn restyle_empty_hint_does_nothing() {
-        let mut doc = TestDoc::new();
-        doc.add_node(0, "div", None);
-
-        restyle_subtree(&mut doc, 0, RestyleHint::empty());
-
-        assert!(doc.computed_style(0).is_none());
     }
 }

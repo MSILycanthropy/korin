@@ -31,18 +31,18 @@ pub fn layout<D: CapsuleDocument>(
         (constraints.height, constraints.width)
     };
 
-    let available_main_px = available_main.as_definite().unwrap_or(0);
-    let available_cross_px = available_cross.as_definite().unwrap_or(0);
+    let available_main_cells = available_main.as_definite().unwrap_or(0);
+    let available_cross_cells = available_cross.as_definite().unwrap_or(0);
 
     let (main_gap, cross_gap) = if is_row {
         (
-            style.column_gap.resolve(available_main_px),
-            style.row_gap.resolve(available_cross_px),
+            style.column_gap.resolve(available_main_cells),
+            style.row_gap.resolve(available_cross_cells),
         )
     } else {
         (
-            style.row_gap.resolve(available_main_px),
-            style.column_gap.resolve(available_cross_px),
+            style.row_gap.resolve(available_main_cells),
+            style.column_gap.resolve(available_cross_cells),
         )
     };
 
@@ -58,28 +58,23 @@ pub fn layout<D: CapsuleDocument>(
         items.reverse();
     }
 
-    let mut lines = lines::collect_into_lines(
-        &items,
-        available_main_px,
-        available_cross_px,
-        style.flex_wrap,
-        main_gap,
-    );
+    let mut lines =
+        lines::collect_into_lines(&items, available_main_cells, style.flex_wrap, main_gap);
 
     for line in &mut lines {
-        flexible::resolve_flexible_lengths(line, available_main_px, main_gap);
+        flexible::resolve_flexible_lengths(line, available_main_cells, main_gap);
     }
 
     cross::resolve_cross_axis(
         &mut lines,
-        available_cross_px,
+        available_cross_cells,
         style.align_content,
         cross_gap,
     );
 
     align::justify_items(
         &mut lines,
-        available_main_px,
+        available_main_cells,
         style.justify_content,
         main_gap,
     );

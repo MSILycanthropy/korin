@@ -73,8 +73,6 @@ impl Document {
                 let key_is_tab = key_event.key == Key::Named(NamedKey::Tab);
                 let modifier_is_shift = key_event.modifiers.shift();
 
-                dbg!(target);
-
                 let event = target.map(|target| self.dispatch(target, event_type));
 
                 if event

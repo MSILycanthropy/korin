@@ -12,7 +12,7 @@ pub fn collect_flex_items<D: CapsuleDocument>(
     available_cross: AvailableSpace,
 ) -> Vec<FlexItem<D::NodeId>> {
     let is_row = matches!(direction, FlexDirection::Row | FlexDirection::RowReverse);
-    let available_main_px = available_main.as_definite().unwrap_or(0);
+    let available_main_cells = available_main.as_definite().unwrap_or(0);
 
     let children: Vec<_> = document.children(container_id).collect();
     let mut items = Vec::with_capacity(children.len());
@@ -37,7 +37,7 @@ pub fn collect_flex_items<D: CapsuleDocument>(
             items.push(FlexItem {
                 node_id: child,
                 align_self: AlignSelf::Auto,
-                flex_grow: 0.0,
+                flex_grow: 1.0,
                 flex_shrink: 0.0,
                 flex_basis: main_size,
                 min_main_size: main_size,
@@ -65,18 +65,19 @@ pub fn collect_flex_items<D: CapsuleDocument>(
             continue;
         }
 
-        let margin = style.margin.resolve(available_main_px);
-        let flex_basis = resolve_flex_basis(&style.flex_basis, is_row, &style, available_main_px);
+        let margin = style.margin.resolve(available_main_cells);
+        let flex_basis =
+            resolve_flex_basis(&style.flex_basis, is_row, &style, available_main_cells);
 
         let (min_main, max_main) = if is_row {
             (
-                style.min_width.resolve(available_main_px).unwrap_or(0),
-                style.max_width.resolve(available_main_px),
+                style.min_width.resolve(available_main_cells).unwrap_or(0),
+                style.max_width.resolve(available_main_cells),
             )
         } else {
             (
-                style.min_height.resolve(available_main_px).unwrap_or(0),
-                style.max_height.resolve(available_main_px),
+                style.min_height.resolve(available_main_cells).unwrap_or(0),
+                style.max_height.resolve(available_main_cells),
             )
         };
 

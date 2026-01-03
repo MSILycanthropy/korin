@@ -12,13 +12,11 @@ pub trait CapsuleDocument {
 
     fn root(&self) -> Self::NodeId;
     fn get_element(&self, node: Self::NodeId) -> Option<Self::Element>;
-    fn get_element_strict(&self, node: Self::NodeId) -> Self::Element {
-        self.get_element(node).expect("not a valid element id")
-    }
     fn get_node(&self, node: Self::NodeId) -> &Self::Node;
     fn get_node_mut(&mut self, node: Self::NodeId) -> &mut Self::Node;
     fn parent(&self, node: Self::NodeId) -> Option<Self::NodeId>;
     fn children(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId>;
+    fn element_children(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId>;
     fn descendants(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId>;
     fn next_siblings(&self, node: Self::NodeId) -> impl Iterator<Item = Self::NodeId>;
     fn computed_style(&self, node: Self::NodeId) -> Option<&ComputedStyle>;

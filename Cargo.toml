@@ -39,6 +39,7 @@ indexmap = "2"
 indextree = "4"
 tracing = "0.1"
 slotmap = "1"
+ratatui = "0.30"
 
 # Servo deps
 cssparser = "0.36"

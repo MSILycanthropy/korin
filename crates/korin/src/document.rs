@@ -373,6 +373,11 @@ impl capsule_corp::CapsuleDocument for Document {
         self.children(id)
     }
 
+    fn element_children(&self, id: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
+        self.children(id)
+            .filter(|&id| self.get(id).is_some_and(Node::is_element))
+    }
+
     fn descendants(&self, id: Self::NodeId) -> impl Iterator<Item = Self::NodeId> {
         self.descendants(id)
     }
